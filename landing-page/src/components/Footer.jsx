@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Mail, MessageCircle, Send, Disc, Users, Globe, ArrowRight, Sparkles, Youtube, Linkedin, Github, Instagram, Facebook, Twitter } from 'lucide-react';
+import { Mail, MessageCircle, Send, Disc, Users, Globe, ArrowRight, Sparkles, Youtube, Linkedin, Github, Instagram, Facebook, Twitter, CheckCircle, Loader2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { trackNewsletterSubscribe } from '../utils/analytics';
 
 const RedditIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 text-white">
@@ -22,6 +24,34 @@ import { Link } from 'react-router-dom';
 import logo from '../assets/logo.png';
 
 export const Footer = () => {
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterStatus, setNewsletterStatus] = useState('idle'); // idle | loading | success | error
+  const [newsletterMsg, setNewsletterMsg] = useState('');
+
+  const handleNewsletterSubmit = async (e) => {
+    e.preventDefault();
+    const email = newsletterEmail.trim().toLowerCase();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setNewsletterStatus('error');
+      setNewsletterMsg('Please enter a valid email.');
+      return;
+    }
+    setNewsletterStatus('loading');
+    try {
+      const { error } = await supabase
+        .from('newsletter_subscribers')
+        .upsert({ email, source: 'footer' }, { onConflict: 'email' });
+      if (error) throw error;
+      setNewsletterStatus('success');
+      setNewsletterMsg("You're in! We'll keep you updated.");
+      setNewsletterEmail('');
+      trackNewsletterSubscribe();
+    } catch (err) {
+      setNewsletterStatus('error');
+      setNewsletterMsg('Something went wrong. Try again.');
+    }
+  };
+
   const footerLinks = {
     Product: [
       { name: 'Features', href: '#features' },
@@ -68,7 +98,38 @@ export const Footer = () => {
             <p className="mb-2 max-w-sm text-[15px] leading-relaxed" style={{ color: '#A8977A' }}>
               Your money tells a story. <span className="font-semibold" style={{ color: '#FFFBF0' }}>FinTrack</span> helps you write a better one — with AI that listens, learns, and lights the way to financial freedom.
             </p>
-            <p className="text-xs italic" style={{ color: '#5C5040' }}>Built for dreamers. Designed for doers.</p>
+            <p className="text-xs italic mb-5" style={{ color: '#5C5040' }}>Built for dreamers. Designed for doers.</p>
+
+            {/* Newsletter Signup */}
+            <div className="max-w-sm">
+              <h4 className="text-sm font-semibold mb-2" style={{ color: '#FFFBF0' }}>Stay in the loop</h4>
+              {newsletterStatus === 'success' ? (
+                <div className="flex items-center gap-2 text-sm text-emerald-400">
+                  <CheckCircle className="w-4 h-4" />
+                  {newsletterMsg}
+                </div>
+              ) : (
+                <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
+                  <input
+                    type="email"
+                    placeholder="you@example.com"
+                    value={newsletterEmail}
+                    onChange={(e) => { setNewsletterEmail(e.target.value); setNewsletterStatus('idle'); }}
+                    className="flex-1 px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50 transition-colors"
+                  />
+                  <button
+                    type="submit"
+                    disabled={newsletterStatus === 'loading'}
+                    className="px-3 py-2 rounded-lg text-sm font-medium bg-amber-600 hover:bg-amber-500 text-white transition-colors disabled:opacity-50 flex items-center gap-1"
+                  >
+                    {newsletterStatus === 'loading' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  </button>
+                </form>
+              )}
+              {newsletterStatus === 'error' && (
+                <p className="text-xs text-red-400 mt-1">{newsletterMsg}</p>
+              )}
+            </div>
           </div>
 
           {/* Links Columns */}
