@@ -47,6 +47,33 @@ export const VALIDATION_RULES = {
         pattern: /^[A-Z]{1,10}$/,
         maxLength: 10,
     },
+
+    // UUID format (Supabase IDs)
+    uuid: {
+        pattern: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    },
+
+    // Goal name
+    goalName: {
+        minLength: 1,
+        maxLength: 100,
+    },
+
+    // Bill name
+    billName: {
+        minLength: 1,
+        maxLength: 100,
+    },
+
+    // Date (YYYY-MM-DD)
+    date: {
+        pattern: /^\d{4}-\d{2}-\d{2}$/,
+    },
+
+    // Month format (YYYY-MM) used by budgets
+    monthFormat: {
+        pattern: /^\d{4}-(0[1-9]|1[0-2])$/,
+    },
 };
 
 // ============================================
@@ -326,6 +353,272 @@ export function validateInvestmentData(data) {
         errors.purchasePrice = priceResult.error;
     } else {
         sanitizedData.purchasePrice = priceResult.value;
+    }
+
+    return {
+        valid: Object.keys(errors).length === 0,
+        errors: Object.keys(errors).length > 0 ? errors : undefined,
+        data: sanitizedData,
+    };
+}
+
+/**
+ * Validate UUID format (Supabase record IDs)
+ * @param {string} id
+ * @returns {{ valid: boolean, error?: string, value?: string }}
+ */
+export function validateUUID(id) {
+    if (!id || typeof id !== 'string') {
+        return { valid: false, error: 'ID is required' };
+    }
+    const trimmed = id.trim();
+    if (!VALIDATION_RULES.uuid.pattern.test(trimmed)) {
+        return { valid: false, error: 'Invalid ID format' };
+    }
+    return { valid: true, value: trimmed };
+}
+
+/**
+ * Validate and sanitize budget data
+ * @param {object} data - Budget data object
+ * @returns {{ valid: boolean, errors?: object, data?: object }}
+ */
+export function validateBudgetData(data) {
+    const errors = {};
+    const sanitizedData = {};
+
+    // Validate amount
+    const amountResult = validateAmount(data.amount);
+    if (!amountResult.valid) {
+        errors.amount = amountResult.error;
+    } else {
+        sanitizedData.amount = amountResult.value;
+    }
+
+    // Validate category
+    if (!data.category || typeof data.category !== 'string') {
+        errors.category = 'Category is required';
+    } else {
+        const sanitizedCategory = sanitizeString(data.category).slice(0, VALIDATION_RULES.category.maxLength);
+        if (!VALIDATION_RULES.category.pattern.test(sanitizedCategory)) {
+            errors.category = 'Invalid category format';
+        } else {
+            sanitizedData.category = sanitizedCategory;
+        }
+    }
+
+    // Validate month (YYYY-MM format)
+    if (data.month) {
+        const month = String(data.month).trim();
+        if (!VALIDATION_RULES.monthFormat.pattern.test(month)) {
+            errors.month = 'Invalid month format (expected YYYY-MM)';
+        } else {
+            sanitizedData.month = month;
+        }
+    }
+
+    // Whitelist check
+    const allowedFields = ['amount', 'category', 'month', 'userId'];
+    Object.keys(data).forEach(key => {
+        if (!allowedFields.includes(key)) {
+            console.warn(`[SECURITY] Budget: unexpected field rejected: ${key}`);
+        }
+    });
+
+    return {
+        valid: Object.keys(errors).length === 0,
+        errors: Object.keys(errors).length > 0 ? errors : undefined,
+        data: sanitizedData,
+    };
+}
+
+/**
+ * Validate and sanitize goal data
+ * @param {object} data - Goal data object
+ * @returns {{ valid: boolean, errors?: object, data?: object }}
+ */
+export function validateGoalData(data) {
+    const errors = {};
+    const sanitizedData = {};
+
+    // Validate name
+    if (!data.name || typeof data.name !== 'string') {
+        errors.name = 'Goal name is required';
+    } else {
+        const name = sanitizeString(data.name).slice(0, VALIDATION_RULES.goalName.maxLength);
+        if (name.length < VALIDATION_RULES.goalName.minLength) {
+            errors.name = 'Goal name is too short';
+        } else {
+            sanitizedData.name = name;
+        }
+    }
+
+    // Validate target amount
+    const targetResult = validateAmount(data.targetAmount);
+    if (!targetResult.valid) {
+        errors.targetAmount = targetResult.error;
+    } else {
+        sanitizedData.targetAmount = targetResult.value;
+    }
+
+    // Validate current amount (optional, defaults to 0)
+    if (data.currentAmount !== undefined) {
+        const currentResult = sanitizeAmount(data.currentAmount);
+        if (currentResult === null || currentResult < 0) {
+            errors.currentAmount = 'Invalid current amount';
+        } else {
+            sanitizedData.currentAmount = currentResult;
+        }
+    } else {
+        sanitizedData.currentAmount = 0;
+    }
+
+    // Validate deadline (optional)
+    if (data.deadline) {
+        const d = new Date(data.deadline);
+        if (isNaN(d.getTime())) {
+            errors.deadline = 'Invalid deadline date';
+        } else {
+            sanitizedData.deadline = d.toISOString().split('T')[0];
+        }
+    }
+
+    // Validate category (optional)
+    if (data.category) {
+        sanitizedData.category = sanitizeString(data.category).slice(0, VALIDATION_RULES.category.maxLength);
+    }
+
+    const allowedFields = ['name', 'targetAmount', 'currentAmount', 'deadline', 'category', 'userId'];
+    Object.keys(data).forEach(key => {
+        if (!allowedFields.includes(key)) {
+            console.warn(`[SECURITY] Goal: unexpected field rejected: ${key}`);
+        }
+    });
+
+    return {
+        valid: Object.keys(errors).length === 0,
+        errors: Object.keys(errors).length > 0 ? errors : undefined,
+        data: sanitizedData,
+    };
+}
+
+/**
+ * Validate and sanitize bill data
+ * @param {object} data - Bill data object
+ * @returns {{ valid: boolean, errors?: object, data?: object }}
+ */
+export function validateBillData(data) {
+    const errors = {};
+    const sanitizedData = {};
+
+    // Validate name
+    if (!data.name || typeof data.name !== 'string') {
+        errors.name = 'Bill name is required';
+    } else {
+        const name = sanitizeString(data.name).slice(0, VALIDATION_RULES.billName.maxLength);
+        if (name.length < VALIDATION_RULES.billName.minLength) {
+            errors.name = 'Bill name is too short';
+        } else {
+            sanitizedData.name = name;
+        }
+    }
+
+    // Validate amount
+    const amountResult = validateAmount(data.amount);
+    if (!amountResult.valid) {
+        errors.amount = amountResult.error;
+    } else {
+        sanitizedData.amount = amountResult.value;
+    }
+
+    // Validate due date
+    if (!data.dueDate) {
+        errors.dueDate = 'Due date is required';
+    } else {
+        const d = new Date(data.dueDate);
+        if (isNaN(d.getTime())) {
+            errors.dueDate = 'Invalid due date';
+        } else {
+            sanitizedData.dueDate = d.toISOString().split('T')[0];
+        }
+    }
+
+    // Validate category (optional)
+    if (data.category) {
+        sanitizedData.category = sanitizeString(data.category).slice(0, VALIDATION_RULES.category.maxLength);
+    }
+
+    // Boolean fields
+    if (data.isPaid !== undefined) sanitizedData.isPaid = Boolean(data.isPaid);
+    if (data.isRecurring !== undefined) sanitizedData.isRecurring = Boolean(data.isRecurring);
+    if (data.recurrence !== undefined) {
+        if (['weekly', 'monthly', 'yearly'].includes(data.recurrence)) {
+            sanitizedData.recurrence = data.recurrence;
+        } else if (data.recurrence !== null) {
+            errors.recurrence = 'Invalid recurrence type';
+        }
+    }
+
+    // Paid date (optional)
+    if (data.paidDate) {
+        const pd = new Date(data.paidDate);
+        if (!isNaN(pd.getTime())) {
+            sanitizedData.paidDate = pd.toISOString().split('T')[0];
+        }
+    }
+
+    const allowedFields = ['name', 'amount', 'dueDate', 'category', 'isPaid', 'paidDate', 'isRecurring', 'recurrence', 'userId'];
+    Object.keys(data).forEach(key => {
+        if (!allowedFields.includes(key)) {
+            console.warn(`[SECURITY] Bill: unexpected field rejected: ${key}`);
+        }
+    });
+
+    return {
+        valid: Object.keys(errors).length === 0,
+        errors: Object.keys(errors).length > 0 ? errors : undefined,
+        data: sanitizedData,
+    };
+}
+
+/**
+ * Validate category data
+ * @param {string} type - 'income' or 'expense'
+ * @param {object} data - { name, icon?, color? }
+ * @returns {{ valid: boolean, errors?: object, data?: object }}
+ */
+export function validateCategoryData(type, data) {
+    const errors = {};
+    const sanitizedData = {};
+
+    // Validate type
+    if (!['income', 'expense'].includes(type)) {
+        errors.type = 'Invalid category type';
+    } else {
+        sanitizedData.type = type;
+    }
+
+    // Validate name
+    if (!data.name || typeof data.name !== 'string') {
+        errors.name = 'Category name is required';
+    } else {
+        const name = sanitizeString(data.name).slice(0, VALIDATION_RULES.category.maxLength);
+        if (!VALIDATION_RULES.category.pattern.test(name)) {
+            errors.name = 'Invalid category name format';
+        } else {
+            sanitizedData.name = name;
+        }
+    }
+
+    // Icon (optional, sanitize)
+    if (data.icon) sanitizedData.icon = sanitizeString(data.icon).slice(0, 10);
+
+    // Color (optional, validate hex/named color)
+    if (data.color) {
+        const color = String(data.color).trim();
+        if (/^#[0-9a-fA-F]{3,8}$/.test(color) || /^[a-zA-Z]+$/.test(color)) {
+            sanitizedData.color = color;
+        }
     }
 
     return {

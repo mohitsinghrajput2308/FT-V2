@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { User, Mail, Phone, Briefcase, Camera, Save } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import Card from '../components/Common/Card';
 import Input from '../components/Common/Input';
 import Button from '../components/Common/Button';

@@ -6,14 +6,15 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 // Dashboard Providers
-import { DashboardAuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { FinanceProvider } from './context/FinanceContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { isAppInitialized, initializeWithSampleData } from './utils/localStorage';
 
 // Layout
 import Layout from './components/Layout/Layout';
 import ProtectedRoute from './components/Layout/ProtectedRoute';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 // Pages
 import Dashboard from './pages/Dashboard';
@@ -32,12 +33,17 @@ import Settings from './pages/Settings';
 import Help from './pages/Help';
 
 const DashboardApp = () => {
+    // Initialize sample finance data if this is the first visit
+    if (!isAppInitialized()) {
+        initializeWithSampleData();
+    }
+
     return (
         <ThemeProvider>
             <NotificationProvider>
-                <DashboardAuthProvider>
-                    <FinanceProvider>
-                        <ProtectedRoute>
+                <FinanceProvider>
+                    <ProtectedRoute>
+                        <ErrorBoundary>
                             <Layout>
                                 <Routes>
                                     <Route index element={<Dashboard />} />
@@ -57,9 +63,9 @@ const DashboardApp = () => {
                                     <Route path="*" element={<Navigate to="/dashboard" replace />} />
                                 </Routes>
                             </Layout>
-                        </ProtectedRoute>
-                    </FinanceProvider>
-                </DashboardAuthProvider>
+                        </ErrorBoundary>
+                    </ProtectedRoute>
+                </FinanceProvider>
             </NotificationProvider>
         </ThemeProvider>
     );

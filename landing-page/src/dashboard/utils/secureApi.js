@@ -1,263 +1,245 @@
 /**
- * Secure API Client
- * Wraps all API calls with security features:
- * - Rate limiting
- * - Input validation
- * - Secure headers
- * - Error handling
- * 
+ * Secure API Gateway
+ *
+ * THE SINGLE ENTRY POINT for all financial data operations.
+ * Every mutation flows through this layer before reaching Supabase:
+ *
+ *   Dashboard → FinanceContext → secureApi.js → supabaseService.js → Supabase
+ *                                    ↑
+ *                          validation + rate limiting + sanitization
+ *
+ * Security features:
+ *   ✓ Input validation & sanitization (OWASP)
+ *   ✓ Client-side rate limiting (per-user, per-action)
+ *   ✓ UUID validation for all record IDs
+ *   ✓ Whitelist-based field filtering (rejects unexpected fields)
+ *   ✓ Structured error responses (never leak internals)
+ *
  * Following OWASP Best Practices
  */
 
-import { config, getSecureHeaders } from './config';
-import { apiRateLimiter, authRateLimiter, mutationRateLimiter, createRateLimitResponse } from './rateLimit';
-import { sanitizeString, validateEmail, validatePassword, validateTransactionData, validateInvestmentData } from './security';
+import { config } from './config';
+import { mutationRateLimiter, apiRateLimiter, createRateLimitResponse } from './rateLimit';
+import {
+    validateTransactionData,
+    validateInvestmentData,
+    validateBudgetData,
+    validateGoalData,
+    validateBillData,
+    validateCategoryData,
+    validateUUID,
+    sanitizeString,
+} from './security';
+
+import {
+    TransactionService,
+    BudgetService,
+    GoalService,
+    InvestmentService,
+    BillService,
+    CategoryService,
+    SettingsService,
+} from '../services/supabaseService';
 
 // ============================================
-// SECURE FETCH WRAPPER
+// INTERNAL: Rate limit check wrapper
 // ============================================
 
-/**
- * Secure fetch with rate limiting and error handling
- * @param {string} url - API endpoint
- * @param {object} options - Fetch options
- * @param {object} securityOptions - Security configuration
- * @returns {Promise<object>}
- */
-async function secureFetch(url, options = {}, securityOptions = {}) {
-    const {
-        rateLimiter = apiRateLimiter,
-        userId = 'anonymous',
-        skipRateLimit = false,
-    } = securityOptions;
-
-    // Check rate limit
-    if (!skipRateLimit && config.security.enableRateLimiting) {
-        const rateLimitResult = rateLimiter.checkLimit(userId, url);
-
-        if (!rateLimitResult.allowed) {
-            console.warn(`[SECURITY] Rate limit exceeded for ${userId} on ${url}`);
-            return createRateLimitResponse(rateLimitResult.retryAfter);
-        }
+function checkRate(userId, action, limiter = mutationRateLimiter) {
+    if (!config.security.enableRateLimiting) return null;
+    const result = limiter.checkLimit(userId || 'anonymous', action);
+    if (!result.allowed) {
+        console.warn(`[SECURITY] Rate limit exceeded: ${action} by ${userId}`);
+        return createRateLimitResponse(result.retryAfter);
     }
-
-    // Get auth token
-    const authToken = localStorage.getItem('authToken');
-
-    // Prepare secure headers
-    const headers = {
-        ...getSecureHeaders(authToken),
-        ...options.headers,
-    };
-
-    try {
-        const response = await fetch(url, {
-            ...options,
-            headers,
-            credentials: 'same-origin', // CSRF protection
-        });
-
-        // Handle rate limit response from server
-        if (response.status === 429) {
-            const retryAfter = parseInt(response.headers.get('Retry-After') || '60');
-            return createRateLimitResponse(retryAfter);
-        }
-
-        // Handle unauthorized
-        if (response.status === 401) {
-            // Clear auth state
-            localStorage.removeItem('authToken');
-            window.dispatchEvent(new CustomEvent('auth:logout'));
-            return {
-                success: false,
-                error: {
-                    code: 'UNAUTHORIZED',
-                    message: 'Your session has expired. Please log in again.',
-                },
-            };
-        }
-
-        // Parse response
-        const data = await response.json();
-
-        if (!response.ok) {
-            return {
-                success: false,
-                error: {
-                    code: data.code || 'API_ERROR',
-                    message: data.message || 'An error occurred',
-                },
-            };
-        }
-
-        return { success: true, data };
-
-    } catch (error) {
-        console.error('[API Error]', error);
-        return {
-            success: false,
-            error: {
-                code: 'NETWORK_ERROR',
-                message: 'Unable to connect to the server. Please check your connection.',
-            },
-        };
-    }
+    return null; // allowed
 }
 
-// ============================================
-// SECURE AUTH API
-// ============================================
-
-export const AuthAPI = {
-    /**
-     * Login with email and password
-     * @param {string} email
-     * @param {string} password
-     * @returns {Promise<object>}
-     */
-    async login(email, password) {
-        // Validate inputs
-        const emailResult = validateEmail(email);
-        if (!emailResult.valid) {
-            return { success: false, error: { message: emailResult.error } };
-        }
-
-        // Use stricter rate limiting for auth
-        const userId = sanitizeString(email);
-
-        return secureFetch(`${config.api.baseUrl}/auth/login`, {
-            method: 'POST',
-            body: JSON.stringify({
-                email: emailResult.value,
-                password, // Don't log or sanitize passwords, just pass through
-            }),
-        }, {
-            rateLimiter: authRateLimiter,
-            userId,
-        });
-    },
-
-    /**
-     * Register new user
-     * @param {string} email
-     * @param {string} password
-     * @param {string} username
-     * @returns {Promise<object>}
-     */
-    async register(email, password, username) {
-        // Validate all inputs
-        const emailResult = validateEmail(email);
-        if (!emailResult.valid) {
-            return { success: false, error: { message: emailResult.error } };
-        }
-
-        const passwordResult = validatePassword(password);
-        if (!passwordResult.valid) {
-            return { success: false, error: { message: passwordResult.error } };
-        }
-
-        const sanitizedUsername = sanitizeString(username).slice(0, 30);
-        if (sanitizedUsername.length < 3) {
-            return { success: false, error: { message: 'Username must be at least 3 characters' } };
-        }
-
-        return secureFetch(`${config.api.baseUrl}/auth/register`, {
-            method: 'POST',
-            body: JSON.stringify({
-                email: emailResult.value,
-                password,
-                username: sanitizedUsername,
-            }),
-        }, {
-            rateLimiter: authRateLimiter,
-            userId: emailResult.value,
-        });
-    },
-
-    /**
-     * Logout current user
-     * @returns {Promise<object>}
-     */
-    async logout() {
-        localStorage.removeItem('authToken');
-        return secureFetch(`${config.api.baseUrl}/auth/logout`, {
-            method: 'POST',
-        }, {
-            skipRateLimit: true,
-        });
-    },
-};
+/**
+ * Create a standardised error response matching what FinanceContext expects.
+ * { error: string }
+ */
+function validationError(message, details) {
+    console.warn(`[SECURITY] Validation failed: ${message}`, details);
+    return { error: message, details };
+}
 
 // ============================================
 // SECURE TRANSACTION API
 // ============================================
 
-export const TransactionAPI = {
-    /**
-     * Create a new transaction
-     * @param {object} transactionData
-     * @returns {Promise<object>}
-     */
-    async create(transactionData) {
-        // Validate and sanitize
-        const validation = validateTransactionData(transactionData);
+export const SecureTransactionAPI = {
+    async getAll(userId) {
+        const blocked = checkRate(userId, 'transactions.getAll', apiRateLimiter);
+        if (blocked) return { error: blocked.error.message };
+        return TransactionService.getAll();
+    },
+
+    async create(data, userId) {
+        // Rate limit
+        const blocked = checkRate(userId, 'transactions.create');
+        if (blocked) return { error: blocked.error.message };
+
+        // Validate
+        const validation = validateTransactionData(data);
         if (!validation.valid) {
-            return {
-                success: false,
-                error: {
-                    code: 'VALIDATION_ERROR',
-                    message: 'Invalid transaction data',
-                    details: validation.errors,
-                },
-            };
+            return validationError('Invalid transaction data', validation.errors);
         }
 
-        return secureFetch(`${config.api.baseUrl}/transactions`, {
-            method: 'POST',
-            body: JSON.stringify(validation.data),
-        }, {
-            rateLimiter: mutationRateLimiter,
-        });
+        // Pass validated + sanitized data to Supabase layer
+        return TransactionService.create({ ...validation.data, userId });
     },
 
-    /**
-     * Get all transactions
-     * @param {object} filters
-     * @returns {Promise<object>}
-     */
-    async getAll(filters = {}) {
-        const params = new URLSearchParams();
+    async update(id, data, userId) {
+        const blocked = checkRate(userId, 'transactions.update');
+        if (blocked) return { error: blocked.error.message };
 
-        // Sanitize filter inputs
-        if (filters.startDate) params.set('startDate', sanitizeString(filters.startDate));
-        if (filters.endDate) params.set('endDate', sanitizeString(filters.endDate));
-        if (filters.category) params.set('category', sanitizeString(filters.category));
-        if (filters.type && ['income', 'expense'].includes(filters.type)) {
-            params.set('type', filters.type);
+        const idCheck = validateUUID(id);
+        if (!idCheck.valid) return validationError(idCheck.error);
+
+        // Partial validation — only validate provided fields
+        const sanitized = {};
+        if (data.type !== undefined) {
+            if (!['income', 'expense'].includes(data.type)) return validationError('Invalid transaction type');
+            sanitized.type = data.type;
+        }
+        if (data.amount !== undefined) {
+            const num = parseFloat(data.amount);
+            if (isNaN(num) || num <= 0) return validationError('Invalid amount');
+            sanitized.amount = Math.round(num * 100) / 100;
+        }
+        if (data.category !== undefined) {
+            sanitized.category = sanitizeString(data.category).slice(0, 50);
+        }
+        if (data.description !== undefined) {
+            sanitized.description = sanitizeString(data.description).slice(0, 500);
+        }
+        if (data.date !== undefined) {
+            const d = new Date(data.date);
+            if (isNaN(d.getTime())) return validationError('Invalid date');
+            sanitized.date = d.toISOString().split('T')[0];
         }
 
-        return secureFetch(`${config.api.baseUrl}/transactions?${params.toString()}`, {
-            method: 'GET',
-        });
+        return TransactionService.update(idCheck.value, sanitized);
     },
 
-    /**
-     * Delete a transaction
-     * @param {string} id
-     * @returns {Promise<object>}
-     */
-    async delete(id) {
-        // Validate ID format (prevent injection)
-        const sanitizedId = sanitizeString(id);
-        if (!sanitizedId || sanitizedId.length > 36) {
-            return { success: false, error: { message: 'Invalid transaction ID' } };
-        }
+    async delete(id, userId) {
+        const blocked = checkRate(userId, 'transactions.delete');
+        if (blocked) return { error: blocked.error.message };
 
-        return secureFetch(`${config.api.baseUrl}/transactions/${sanitizedId}`, {
-            method: 'DELETE',
-        }, {
-            rateLimiter: mutationRateLimiter,
-        });
+        const idCheck = validateUUID(id);
+        if (!idCheck.valid) return validationError(idCheck.error);
+
+        return TransactionService.delete(idCheck.value);
+    },
+};
+
+// ============================================
+// SECURE BUDGET API
+// ============================================
+
+export const SecureBudgetAPI = {
+    async getAll(userId) {
+        const blocked = checkRate(userId, 'budgets.getAll', apiRateLimiter);
+        if (blocked) return { error: blocked.error.message };
+        return BudgetService.getAll();
+    },
+
+    async create(data, userId) {
+        const blocked = checkRate(userId, 'budgets.create');
+        if (blocked) return { error: blocked.error.message };
+
+        const validation = validateBudgetData(data);
+        if (!validation.valid) return validationError('Invalid budget data', validation.errors);
+
+        return BudgetService.create({ ...validation.data, userId });
+    },
+
+    async update(id, data, userId) {
+        const blocked = checkRate(userId, 'budgets.update');
+        if (blocked) return { error: blocked.error.message };
+
+        const idCheck = validateUUID(id);
+        if (!idCheck.valid) return validationError(idCheck.error);
+
+        // Partial field validation
+        const sanitized = {};
+        if (data.category !== undefined) sanitized.category = sanitizeString(data.category).slice(0, 50);
+        if (data.amount !== undefined) {
+            const num = parseFloat(data.amount);
+            if (isNaN(num) || num < 0) return validationError('Invalid amount');
+            sanitized.amount = Math.round(num * 100) / 100;
+        }
+        if (data.month !== undefined) sanitized.month = data.month;
+
+        return BudgetService.update(idCheck.value, sanitized);
+    },
+
+    async delete(id, userId) {
+        const blocked = checkRate(userId, 'budgets.delete');
+        if (blocked) return { error: blocked.error.message };
+
+        const idCheck = validateUUID(id);
+        if (!idCheck.valid) return validationError(idCheck.error);
+
+        return BudgetService.delete(idCheck.value);
+    },
+};
+
+// ============================================
+// SECURE GOAL API
+// ============================================
+
+export const SecureGoalAPI = {
+    async getAll(userId) {
+        const blocked = checkRate(userId, 'goals.getAll', apiRateLimiter);
+        if (blocked) return { error: blocked.error.message };
+        return GoalService.getAll();
+    },
+
+    async create(data, userId) {
+        const blocked = checkRate(userId, 'goals.create');
+        if (blocked) return { error: blocked.error.message };
+
+        const validation = validateGoalData(data);
+        if (!validation.valid) return validationError('Invalid goal data', validation.errors);
+
+        return GoalService.create({ ...validation.data, userId });
+    },
+
+    async update(id, data, userId) {
+        const blocked = checkRate(userId, 'goals.update');
+        if (blocked) return { error: blocked.error.message };
+
+        const idCheck = validateUUID(id);
+        if (!idCheck.valid) return validationError(idCheck.error);
+
+        const sanitized = {};
+        if (data.name !== undefined) sanitized.name = sanitizeString(data.name).slice(0, 100);
+        if (data.targetAmount !== undefined) {
+            const num = parseFloat(data.targetAmount);
+            if (isNaN(num) || num <= 0) return validationError('Invalid target amount');
+            sanitized.targetAmount = Math.round(num * 100) / 100;
+        }
+        if (data.currentAmount !== undefined) {
+            const num = parseFloat(data.currentAmount);
+            if (isNaN(num) || num < 0) return validationError('Invalid current amount');
+            sanitized.currentAmount = Math.round(num * 100) / 100;
+        }
+        if (data.deadline !== undefined) sanitized.deadline = data.deadline;
+        if (data.category !== undefined) sanitized.category = sanitizeString(data.category).slice(0, 50);
+
+        return GoalService.update(idCheck.value, sanitized);
+    },
+
+    async delete(id, userId) {
+        const blocked = checkRate(userId, 'goals.delete');
+        if (blocked) return { error: blocked.error.message };
+
+        const idCheck = validateUUID(id);
+        if (!idCheck.valid) return validationError(idCheck.error);
+
+        return GoalService.delete(idCheck.value);
     },
 };
 
@@ -265,51 +247,222 @@ export const TransactionAPI = {
 // SECURE INVESTMENT API
 // ============================================
 
-export const InvestmentAPI = {
-    /**
-     * Add new investment
-     * @param {object} investmentData
-     * @returns {Promise<object>}
-     */
-    async create(investmentData) {
-        const validation = validateInvestmentData(investmentData);
-        if (!validation.valid) {
-            return {
-                success: false,
-                error: {
-                    code: 'VALIDATION_ERROR',
-                    message: 'Invalid investment data',
-                    details: validation.errors,
-                },
-            };
+export const SecureInvestmentAPI = {
+    async getAll(userId) {
+        const blocked = checkRate(userId, 'investments.getAll', apiRateLimiter);
+        if (blocked) return { error: blocked.error.message };
+        return InvestmentService.getAll();
+    },
+
+    async create(data, userId) {
+        const blocked = checkRate(userId, 'investments.create');
+        if (blocked) return { error: blocked.error.message };
+
+        const validation = validateInvestmentData(data);
+        if (!validation.valid) return validationError('Invalid investment data', validation.errors);
+
+        return InvestmentService.create({ ...validation.data, userId });
+    },
+
+    async update(id, data, userId) {
+        const blocked = checkRate(userId, 'investments.update');
+        if (blocked) return { error: blocked.error.message };
+
+        const idCheck = validateUUID(id);
+        if (!idCheck.valid) return validationError(idCheck.error);
+
+        const sanitized = {};
+        if (data.name || data.symbol || data.stockSymbol) {
+            sanitized.symbol = sanitizeString(data.symbol || data.name || data.stockSymbol).toUpperCase().slice(0, 10);
+        }
+        if (data.quantity !== undefined) {
+            const num = parseFloat(data.quantity);
+            if (isNaN(num) || num <= 0) return validationError('Invalid quantity');
+            sanitized.quantity = num;
+        }
+        if (data.buyPrice || data.purchasePrice) {
+            const num = parseFloat(data.buyPrice || data.purchasePrice);
+            if (isNaN(num) || num < 0) return validationError('Invalid purchase price');
+            sanitized.buyPrice = Math.round(num * 100) / 100;
+        }
+        if (data.currentValue || data.currentPrice) {
+            const num = parseFloat(data.currentValue || data.currentPrice);
+            if (isNaN(num) || num < 0) return validationError('Invalid current price');
+            sanitized.currentValue = Math.round(num * 100) / 100;
+        }
+        if (data.purchaseDate || data.date) sanitized.purchaseDate = data.purchaseDate || data.date;
+
+        return InvestmentService.update(idCheck.value, sanitized);
+    },
+
+    async delete(id, userId) {
+        const blocked = checkRate(userId, 'investments.delete');
+        if (blocked) return { error: blocked.error.message };
+
+        const idCheck = validateUUID(id);
+        if (!idCheck.valid) return validationError(idCheck.error);
+
+        return InvestmentService.delete(idCheck.value);
+    },
+};
+
+// ============================================
+// SECURE BILL API
+// ============================================
+
+export const SecureBillAPI = {
+    async getAll(userId) {
+        const blocked = checkRate(userId, 'bills.getAll', apiRateLimiter);
+        if (blocked) return { error: blocked.error.message };
+        return BillService.getAll();
+    },
+
+    async create(data, userId) {
+        const blocked = checkRate(userId, 'bills.create');
+        if (blocked) return { error: blocked.error.message };
+
+        const validation = validateBillData(data);
+        if (!validation.valid) return validationError('Invalid bill data', validation.errors);
+
+        return BillService.create({ ...validation.data, userId });
+    },
+
+    async update(id, data, userId) {
+        const blocked = checkRate(userId, 'bills.update');
+        if (blocked) return { error: blocked.error.message };
+
+        const idCheck = validateUUID(id);
+        if (!idCheck.valid) return validationError(idCheck.error);
+
+        const sanitized = {};
+        if (data.name !== undefined) sanitized.name = sanitizeString(data.name).slice(0, 100);
+        if (data.amount !== undefined) {
+            const num = parseFloat(data.amount);
+            if (isNaN(num) || num <= 0) return validationError('Invalid amount');
+            sanitized.amount = Math.round(num * 100) / 100;
+        }
+        if (data.dueDate !== undefined) sanitized.dueDate = data.dueDate;
+        if (data.category !== undefined) sanitized.category = sanitizeString(data.category).slice(0, 50);
+        if (data.isPaid !== undefined) sanitized.isPaid = Boolean(data.isPaid);
+        if (data.paidDate !== undefined) sanitized.paidDate = data.paidDate;
+        if (data.isRecurring !== undefined) sanitized.isRecurring = Boolean(data.isRecurring);
+        if (data.recurrence !== undefined) {
+            if (data.recurrence === null || ['weekly', 'monthly', 'yearly'].includes(data.recurrence)) {
+                sanitized.recurrence = data.recurrence;
+            }
         }
 
-        return secureFetch(`${config.api.baseUrl}/investments`, {
-            method: 'POST',
-            body: JSON.stringify(validation.data),
-        }, {
-            rateLimiter: mutationRateLimiter,
-        });
+        return BillService.update(idCheck.value, sanitized);
     },
 
-    /**
-     * Get all investments
-     * @returns {Promise<object>}
-     */
-    async getAll() {
-        return secureFetch(`${config.api.baseUrl}/investments`, {
-            method: 'GET',
-        });
+    async delete(id, userId) {
+        const blocked = checkRate(userId, 'bills.delete');
+        if (blocked) return { error: blocked.error.message };
+
+        const idCheck = validateUUID(id);
+        if (!idCheck.valid) return validationError(idCheck.error);
+
+        return BillService.delete(idCheck.value);
     },
 };
 
 // ============================================
-// EXPORT DEFAULT
+// SECURE CATEGORY API
 // ============================================
 
-export default {
-    auth: AuthAPI,
-    transactions: TransactionAPI,
-    investments: InvestmentAPI,
-    secureFetch,
+export const SecureCategoryAPI = {
+    async getAll(userId) {
+        const blocked = checkRate(userId, 'categories.getAll', apiRateLimiter);
+        if (blocked) return { error: blocked.error.message };
+        return CategoryService.getAll();
+    },
+
+    async create(type, data, userId) {
+        const blocked = checkRate(userId, 'categories.create');
+        if (blocked) return { error: blocked.error.message };
+
+        const validation = validateCategoryData(type, data);
+        if (!validation.valid) return validationError('Invalid category data', validation.errors);
+
+        return CategoryService.create(type, validation.data, userId);
+    },
+
+    async update(id, data, userId) {
+        const blocked = checkRate(userId, 'categories.update');
+        if (blocked) return { error: blocked.error.message };
+
+        const idCheck = validateUUID(id);
+        if (!idCheck.valid) return validationError(idCheck.error);
+
+        const sanitized = {};
+        if (data.name !== undefined) sanitized.name = sanitizeString(data.name).slice(0, 50);
+        if (data.icon !== undefined) sanitized.icon = sanitizeString(data.icon).slice(0, 10);
+        if (data.color !== undefined) {
+            const c = String(data.color).trim();
+            if (/^#[0-9a-fA-F]{3,8}$/.test(c) || /^[a-zA-Z]+$/.test(c)) sanitized.color = c;
+        }
+
+        return CategoryService.update(idCheck.value, sanitized);
+    },
+
+    async delete(id, userId) {
+        const blocked = checkRate(userId, 'categories.delete');
+        if (blocked) return { error: blocked.error.message };
+
+        const idCheck = validateUUID(id);
+        if (!idCheck.valid) return validationError(idCheck.error);
+
+        return CategoryService.delete(idCheck.value);
+    },
 };
+
+// ============================================
+// SECURE SETTINGS API (non-sensitive, no rate limit for reads)
+// ============================================
+
+export const SecureSettingsAPI = {
+    async get() {
+        return SettingsService.get();
+    },
+
+    async upsert(settings, userId) {
+        const blocked = checkRate(userId, 'settings.upsert');
+        if (blocked) return { error: blocked.error.message };
+
+        // Whitelist only allowed setting fields
+        const sanitized = {};
+        if (settings.currency !== undefined) {
+            const c = sanitizeString(settings.currency).slice(0, 5);
+            sanitized.currency = c || '$';
+        }
+        if (settings.dateFormat !== undefined) {
+            const valid = ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'];
+            sanitized.dateFormat = valid.includes(settings.dateFormat) ? settings.dateFormat : 'MM/DD/YYYY';
+        }
+        if (settings.notifications !== undefined) sanitized.notifications = Boolean(settings.notifications);
+        if (settings.theme !== undefined) {
+            sanitized.theme = ['light', 'dark'].includes(settings.theme) ? settings.theme : 'dark';
+        }
+        if (settings.language !== undefined) {
+            sanitized.language = sanitizeString(settings.language).slice(0, 5);
+        }
+
+        return SettingsService.upsert(sanitized, userId);
+    },
+};
+
+// ============================================
+// UNIFIED EXPORT — single import for FinanceContext
+// ============================================
+
+const SecureAPI = {
+    transactions: SecureTransactionAPI,
+    budgets: SecureBudgetAPI,
+    goals: SecureGoalAPI,
+    investments: SecureInvestmentAPI,
+    bills: SecureBillAPI,
+    categories: SecureCategoryAPI,
+    settings: SecureSettingsAPI,
+};
+
+export default SecureAPI;
