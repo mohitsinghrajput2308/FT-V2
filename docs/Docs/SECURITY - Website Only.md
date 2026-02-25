@@ -45,14 +45,6 @@ Run before every release. Automated via `node scripts/validate-security.js`.
 - [x] XSS detection and blocking on all text inputs
 - [x] `updated_at` auto-timestamps via PostgreSQL triggers
 
-### Connection & Asset Hardening (DONE ✅) — v4.1
-- [x] Enabled RLS and scoped policies for `investments` table
-- [x] Restricted `search_path` for all public functions to `public` (prevents schema injection)
-- [x] Secured `password_reset_log` RLS to prevent unauthorized reset history access
-- [x] Fixed Supabase connection reliability via DNS/Hosts optimization (Jio/DNS fix)
-- [x] Refactored large assets (videos) to `public/` folder for reliable serving on Vercel
-- [x] Hardened Content Security Policy (CSP) for secure asset loading
-
 ### Pre-Launch (TODO)
 - [ ] Supabase IP allowlisting enabled
 - [ ] Supabase Pro with regional deployment for data residency

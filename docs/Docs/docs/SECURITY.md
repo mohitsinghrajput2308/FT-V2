@@ -1,7 +1,7 @@
 # Security & Compliance Guide — FinTrack
 
-**Version**: 4.0  
-**Last Updated**: February 25, 2026  
+**Version**: 3.1  
+**Last Updated**: February 18, 2026  
 
 ---
 
@@ -33,27 +33,8 @@ Run before every release. Automated via `node scripts/validate-security.js`.
 - [x] 8 one-time backup recovery codes (hashed in DB)
 - [x] 2FA brute-force protection (5 fails → 30-min lock)
 
-### Security Hardening Phase (DONE ✅) — v4.0
-- [x] `secureApi.js` gateway for ALL financial CRUD (validation + rate limiting + sanitization)
-- [x] Server-side CHECK constraints on all tables (migration_003)
-- [x] Goals, bills, categories, user_settings tables with RLS (migration_002)
-- [x] Session timeout — 30-min auto-logout on inactivity (`AuthContext.jsx`)
-- [x] CSP + security headers via `vercel.json` (HSTS, X-Frame-Options, etc.)
-- [x] Automated security unit tests — 60/60 passing (`security.test.js`)
-- [x] localStorage limited to UI preferences only (no financial data)
-- [x] UUID validation on all record IDs
-- [x] XSS detection and blocking on all text inputs
-- [x] `updated_at` auto-timestamps via PostgreSQL triggers
-
-### Connection & Asset Hardening (DONE ✅) — v4.1
-- [x] Enabled RLS and scoped policies for `investments` table
-- [x] Restricted `search_path` for all public functions to `public` (prevents schema injection)
-- [x] Secured `password_reset_log` RLS to prevent unauthorized reset history access
-- [x] Fixed Supabase connection reliability via DNS/Hosts optimization (Jio/DNS fix)
-- [x] Refactored large assets (videos) to `public/` folder for reliable serving on Vercel
-- [x] Hardened Content Security Policy (CSP) for secure asset loading
-
 ### Pre-Launch (TODO)
+- [ ] EAS Secrets configured for production builds
 - [ ] Supabase IP allowlisting enabled
 - [ ] Supabase Pro with regional deployment for data residency
 - [ ] Penetration testing completed
@@ -105,10 +86,6 @@ Every table has RLS enabled. Policies ensure users can only access their own dat
 | transactions | Org-scoped (active) | Members+ | Own (managers+: any in org) | Own (admins+: any in org) |
 | budgets | Org-scoped | Members+ | Own (managers+: any in org) | Own (admins+: any in org) |
 | investments | Org-scoped | Members+ | Own (managers+: any in org) | Own (admins+: any in org) |
-| **goals** | Own only | Own only | Own only | Own only |
-| **bills** | Own only | Own only | Own only | Own only |
-| **categories** | Own only | Own only | Own only | Own only |
-| **user_settings** | Own only | Own only | Own only | — |
 | audit_logs | Org-scoped | Own only | ❌ Blocked | ❌ Blocked |
 | organizations | Own org | — (trigger) | Admins+ | — |
 | branding_settings | Own org | — (trigger) | Admins+ | — |
@@ -140,50 +117,26 @@ Audit logs are **immutable** — no user can UPDATE or DELETE them.
 
 ## 4. Client-Side Security
 
-### Security Gateway (`secureApi.js`)
-All financial CRUD operations are routed through `secureApi.js`, which enforces:
-- **Input validation** — amount ranges, string lengths, XSS detection, UUID format
-- **Rate limiting** — per-user, per-endpoint sliding window (via `rateLimit.js`)
-- **Data sanitization** — HTML entity encoding, null byte removal, field whitelisting
-- **Error handling** — structured error responses, no sensitive data in error messages
-
-```
-FinanceContext → secureApi.js → supabaseService.js → Supabase
-                 ├─ validate     ├─ field mapping
-                 ├─ sanitize     └─ CRUD operations
-                 └─ rate limit
-```
-
-Supported data types: transactions, budgets, goals, investments, bills, categories, settings.
-
-### Rate Limiting (`rateLimit.js`)
-| Endpoint Type | Max Requests | Window | Lockout |
-|---------------|-------------|--------|--------|
-| Auth (signIn/signUp) | 5 | 60s | 5 min |
-| API (CRUD) | 30 | 60s | — |
-| Mutations (create/update/delete) | 10 | 60s | — |
-
-### Input Validation (`security.js`)
-- Email: format check, max 254 chars, trimmed + lowercased
-- Password: min 8 chars, max 128 chars, must contain uppercase + lowercase + number
-- Amounts: min ₹0.01, max ₹999,999,999.99, rounded to 2 decimals
-- Descriptions: max 500 chars, XSS blacklist (`<script`, `javascript:`, `on*=`)
-- Categories: max 50 chars, alphanumeric + spaces only
-- Stock symbols: max 10 chars, uppercase letters only
-- UUIDs: strict v4 format validation
-- All text fields: null byte removal, HTML entity encoding
-
-### Session Timeout (`AuthContext.jsx`)
+### Rate Limiting (`useAuth.tsx`)
 | Parameter | Value |
 |-----------|-------|
-| Inactivity timeout | 30 minutes |
-| Tracked events | click, keypress, scroll, touchstart |
-| Action on timeout | Auto sign-out via `supabase.auth.signOut()` |
+| Max attempts per window | 5 |
+| Window duration | 60 seconds |
+| Lockout duration | 5 minutes |
+| Cooldown between attempts | 3 seconds |
+
+Applies to: `signIn`, `signUp`, `resetPassword`
+
+### Input Validation (`useAuth.tsx`)
+- Email: format check, max 254 chars, trimmed + lowercased
+- Password: min 8 chars, max 128 chars, must contain uppercase + lowercase + number
+- Username: max 50 chars, alphanumeric + `_` `-` space only
+- OTP code: exactly 6 digits, numeric only
+- Profile updates: whitelisted fields only (username, theme_preference)
 
 ### Secure Storage
-- **localStorage**: Used **only** for UI preferences (currency, theme, date format). **No financial data** is stored client-side.
-- **JWT tokens**: Managed entirely by Supabase Auth SDK (not manually stored).
-- **CSRF Protection**: Native to Supabase Auth.
+- **Mobile**: JWT tokens stored in `expo-secure-store` (encrypted keychain)
+- **Web**: `localStorage` (acceptable for anon key, not for service role key)
 
 ---
 
@@ -193,6 +146,7 @@ Supported data types: transactions, budgets, goals, investments, bills, categori
 Only authenticated accounts from trusted providers are accepted:
 - **Google** — primary sign-in method
 - **Microsoft (Azure)** — enterprise/B2B clients
+- **Apple** — required for iOS App Store
 - **GitHub** — developer-focused markets
 
 OAuth users are **auto-verified** (no OTP required).
@@ -330,25 +284,6 @@ Alternative: "Use backup code" → One-time code consumed
 
 ## 7. Validation
 
-### Security Unit Tests
-Run the 60-test security suite:
-```bash
-cd landing-page
-npx craco test --watchAll=false
-```
-
-Tests cover:
-- String sanitization (null bytes, HTML entities, XSS)
-- Email/password validation
-- Amount validation (boundaries, clamping, NaN)
-- Transaction/budget/goal/bill/investment/category validation
-- UUID validation (format, injection attempts)
-- XSS detection (`<script>`, `javascript:`, event handlers)
-- HTML escaping
-
-**All 60 tests must pass before release.**
-
-### Security Script
 Run before every release:
 ```bash
 node scripts/validate-security.js
@@ -364,8 +299,16 @@ This checks:
 - Security patch SQL has all required components
 - Rate limiting present in auth hook
 - Input validation present in auth hook
+- Multi-tenant migration SQL exists
+- RBAC types defined in database.ts
+- No India-specific content in landing page
+- No hardcoded Razorpay references
 - Auth hardening migration SQL exists (OTP + CAPTCHA)
+- OAuth provider support in auth hook
 - 2FA migration SQL exists (TOTP + backup codes)
+- 2FA support in auth hook
+
+**All 17 checks must pass before release.**
 
 ---
 

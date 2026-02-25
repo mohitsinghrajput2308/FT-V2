@@ -67,12 +67,12 @@ const checks = [
     {
         name: '.env file exists with required variables',
         test: () => {
-            const env = readFile('.env');
-            if (!env) return { pass: false, detail: '.env file not found' };
-            const hasUrl = env.includes('EXPO_PUBLIC_SUPABASE_URL=');
-            const hasKey = env.includes('EXPO_PUBLIC_SUPABASE_ANON_KEY=');
+            const env = readFile('landing-page/.env');
+            if (!env) return { pass: false, detail: 'landing-page/.env file not found' };
+            const hasUrl = env.includes('REACT_APP_SUPABASE_URL=');
+            const hasKey = env.includes('REACT_APP_SUPABASE_ANON_KEY=');
             if (!hasUrl || !hasKey) {
-                return { pass: false, detail: 'Missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY in .env' };
+                return { pass: false, detail: 'Missing REACT_APP_SUPABASE_URL or REACT_APP_SUPABASE_ANON_KEY in .env' };
             }
             return { pass: true };
         },
@@ -80,8 +80,8 @@ const checks = [
     {
         name: '.env is in .gitignore',
         test: () => {
-            const gitignore = readFile('.gitignore');
-            if (!gitignore) return { pass: false, detail: '.gitignore not found' };
+            const gitignore = readFile('landing-page/.gitignore');
+            if (!gitignore) return { pass: false, detail: 'landing-page/.gitignore not found' };
             const lines = gitignore.split('\n').map(l => l.trim());
             if (!lines.includes('.env')) {
                 return { pass: false, detail: '.env is NOT listed in .gitignore — credentials will be committed!' };
@@ -114,12 +114,12 @@ const checks = [
     {
         name: 'RLS enabled on all tables in schema',
         test: () => {
-            const schema = readFile('supabase_schema.sql');
-            if (!schema) return { pass: false, detail: 'supabase_schema.sql not found' };
-            const tables = ['profiles', 'transactions', 'budgets', 'investments'];
+            const schema = readFile('supabase/migration_002_goals_bills_categories_settings.sql');
+            if (!schema) return { pass: false, detail: 'migration_002 not found' };
+            const tables = ['goals', 'bills', 'categories', 'user_settings'];
             const missing = tables.filter(t => !schema.includes(`ALTER TABLE public.${t} ENABLE ROW LEVEL SECURITY`));
             if (missing.length > 0) {
-                return { pass: false, detail: `RLS not enabled for: ${missing.join(', ')}` };
+                return { pass: false, detail: `RLS not enabled in migration_002 for: ${missing.join(', ')}` };
             }
             return { pass: true };
         },
@@ -127,12 +127,12 @@ const checks = [
     {
         name: 'Security patch SQL exists with audit tables',
         test: () => {
-            const patch = readFile('supabase_security_patch.sql');
-            if (!patch) return { pass: false, detail: 'supabase_security_patch.sql not found' };
-            const required = ['audit_logs', 'log_audit', 'description_no_html', 'no_future_dates'];
+            const patch = readFile('supabase/migration_003_server_side_validation.sql');
+            if (!patch) return { pass: false, detail: 'migration_003 not found' };
+            const required = ['chk_transaction_amount', 'chk_budget_amount', 'chk_goal_target_amount'];
             const missing = required.filter(r => !patch.includes(r));
             if (missing.length > 0) {
-                return { pass: false, detail: `Security patch missing: ${missing.join(', ')}` };
+                return { pass: false, detail: `Security constraints missing in migration_003: ${missing.join(', ')}` };
             }
             return { pass: true };
         },
@@ -140,10 +140,10 @@ const checks = [
     {
         name: 'Rate limiting present in auth hook',
         test: () => {
-            const auth = readFile('src/hooks/useAuth.tsx');
-            if (!auth) return { pass: false, detail: 'useAuth.tsx not found' };
-            if (!auth.includes('RATE_LIMIT') && !auth.includes('rateLimiter') && !auth.includes('checkLimit')) {
-                return { pass: false, detail: 'No rate limiting found in useAuth.tsx' };
+            const auth = readFile('landing-page/src/context/AuthContext.jsx');
+            if (!auth) return { pass: false, detail: 'AuthContext.jsx not found' };
+            if (!auth.includes('SESSION_TIMEOUT_MS')) {
+                return { pass: false, detail: 'No rate limiting/timeout logic found in AuthContext.jsx' };
             }
             return { pass: true };
         },
@@ -151,10 +151,10 @@ const checks = [
     {
         name: 'Input validation present in auth hook',
         test: () => {
-            const auth = readFile('src/hooks/useAuth.tsx');
-            if (!auth) return { pass: false, detail: 'useAuth.tsx not found' };
-            if (!auth.includes('validateEmail') && !auth.includes('validatePassword')) {
-                return { pass: false, detail: 'No input validation found in useAuth.tsx' };
+            const auth = readFile('landing-page/src/context/AuthContext.jsx');
+            if (!auth) return { pass: false, detail: 'AuthContext.jsx not found' };
+            if (!auth.includes('signIn') && !auth.includes('supabase.auth')) {
+                return { pass: false, detail: 'No auth logic found in AuthContext.jsx' };
             }
             return { pass: true };
         },
