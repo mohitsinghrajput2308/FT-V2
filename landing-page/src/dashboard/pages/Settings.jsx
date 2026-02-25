@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useFinance } from '../context/FinanceContext';
 import { useNotification } from '../context/NotificationContext';
-import { exportAllData, importData, clearAllStorage, initializeWithSampleData } from '../utils/localStorage';
+import { clearAllStorage } from '../utils/localStorage';
 import { downloadFile } from '../utils/helpers';
 import Card from '../components/Common/Card';
 import Button from '../components/Common/Button';
@@ -12,9 +12,9 @@ import Select from '../components/Common/Select';
 import Modal from '../components/Common/Modal';
 
 const Settings = () => {
-    const { currentUser, updateProfile } = useAuth();
+    const { currentUser, updateProfile, logout } = useAuth();
     const { theme, setTheme } = useTheme();
-    const { settings, updateSettings } = useFinance();
+    const { settings, updateSettings, transactions, budgets, goals, investments, bills, categories } = useFinance();
     const { success, error, warning } = useNotification();
 
     const [loading, setLoading] = useState(false);
@@ -49,7 +49,7 @@ const Settings = () => {
         // Update theme
         setTheme(formData.theme);
 
-        // Update settings
+        // Update settings (syncs to Supabase via FinanceContext → SecureAPI)
         updateSettings({
             currency: formData.currency,
             dateFormat: formData.dateFormat,
@@ -63,45 +63,39 @@ const Settings = () => {
         success('Settings saved successfully!');
     };
 
+    // Export uses live Supabase data from FinanceContext (not localStorage)
     const handleExport = () => {
         try {
-            const data = exportAllData();
+            const data = {
+                transactions,
+                budgets,
+                goals,
+                investments,
+                bills,
+                categories,
+                settings,
+                exportedAt: new Date().toISOString(),
+                exportedBy: currentUser?.email || 'unknown',
+            };
             const json = JSON.stringify(data, null, 2);
-            downloadFile(json, `finance_backup_${new Date().toISOString().split('T')[0]}.json`, 'application/json');
+            downloadFile(json, `fintrack_backup_${new Date().toISOString().split('T')[0]}.json`, 'application/json');
             success('Data exported successfully!');
         } catch (err) {
             error('Failed to export data');
         }
     };
 
-    const handleImport = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const data = JSON.parse(event.target.result);
-                importData(data);
-                success('Data imported successfully! Refreshing...');
-                setTimeout(() => window.location.reload(), 1500);
-            } catch (err) {
-                error('Invalid file format');
-            }
-        };
-        reader.readAsText(file);
+    // Import is disabled in the Supabase-backed version — data is managed via the dashboard UI.
+    // A future version could support bulk import via a Supabase Edge Function.
+    const handleImport = () => {
+        warning('Import is not available in the current version. Please add data through the dashboard.');
     };
 
+    // Clear localStorage preferences only — Supabase data is unaffected
     const handleClearData = () => {
         clearAllStorage();
-        success('All data cleared! Redirecting...');
-        setTimeout(() => window.location.reload(), 1500);
-    };
-
-    const handleLoadSampleData = () => {
-        initializeWithSampleData(true);
-        success('Sample data loaded! Refreshing...');
-        setTimeout(() => window.location.reload(), 1500);
+        success('Local preferences cleared! Logging out...');
+        setTimeout(() => logout(), 1500);
     };
 
     const handleReset = () => {
@@ -206,46 +200,36 @@ const Settings = () => {
                         <Button onClick={handleExport} variant="secondary" icon={Download}>
                             Export Data (JSON)
                         </Button>
-                        <label className="btn btn-secondary cursor-pointer inline-flex items-center gap-2">
-                            <Upload className="w-4 h-4" />
+                        <Button onClick={handleImport} variant="secondary" icon={Upload}>
                             Import Data
-                            <input
-                                type="file"
-                                accept=".json"
-                                onChange={handleImport}
-                                className="hidden"
-                            />
-                        </label>
+                        </Button>
                     </div>
 
                     <div className="pt-4 border-t border-gray-200 dark:border-dark-300">
                         <div className="flex flex-wrap gap-3">
-                            <Button onClick={handleLoadSampleData} variant="secondary">
-                                Load Sample Data
-                            </Button>
                             <Button onClick={() => setConfirmModal(true)} variant="danger" icon={Trash2}>
-                                Clear All Data
+                                Clear Local Cache
                             </Button>
                         </div>
                         <p className="text-sm text-gray-500 mt-2">
-                            Warning: Clearing data will remove all your transactions, budgets, and settings.
+                            Clears locally cached preferences. Your Supabase data (transactions, budgets, etc.) is not affected.
                         </p>
                     </div>
                 </div>
             </Card>
 
             {/* Confirm Clear Modal */}
-            <Modal isOpen={confirmModal} onClose={() => setConfirmModal(false)} title="Clear All Data?" size="sm">
+            <Modal isOpen={confirmModal} onClose={() => setConfirmModal(false)} title="Clear Local Cache?" size="sm">
                 <div className="space-y-4">
                     <p className="text-gray-600 dark:text-gray-400">
-                        This action cannot be undone. All your data will be permanently deleted.
+                        This will clear your locally cached preferences (theme, currency). Your financial data in Supabase is safe and unaffected. You will be logged out.
                     </p>
                     <div className="flex gap-3">
                         <Button variant="secondary" onClick={() => setConfirmModal(false)} fullWidth>
                             Cancel
                         </Button>
                         <Button variant="danger" onClick={() => { handleClearData(); setConfirmModal(false); }} fullWidth>
-                            Clear All Data
+                            Clear & Log Out
                         </Button>
                     </div>
                 </div>

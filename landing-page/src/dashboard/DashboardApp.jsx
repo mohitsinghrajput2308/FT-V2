@@ -9,8 +9,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { NotificationProvider } from './context/NotificationContext';
 import { FinanceProvider } from './context/FinanceContext';
 import { ThemeProvider } from './context/ThemeContext';
-import { isAppInitialized, initializeWithSampleData } from './utils/localStorage';
-
 // Layout
 import Layout from './components/Layout/Layout';
 import ProtectedRoute from './components/Layout/ProtectedRoute';
@@ -33,10 +31,8 @@ import Settings from './pages/Settings';
 import Help from './pages/Help';
 
 const DashboardApp = () => {
-    // Initialize sample finance data if this is the first visit
-    if (!isAppInitialized()) {
-        initializeWithSampleData();
-    }
+    // All financial data is loaded from Supabase via FinanceContext.
+    // No localStorage seeding — Supabase is the single source of truth.
 
     return (
         <ThemeProvider>
