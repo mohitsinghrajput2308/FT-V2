@@ -15,6 +15,9 @@ export const AuthProvider = ({ children }) => {
     const [session, setSession] = useState(null);
     const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
+    // Mock local state for pro subscription (until Stripe is connected)
+    const [localIsPro, setLocalIsPro] = useState(false);
+
     const inactivityTimer = useRef(null);
 
     // ── Sign out (stable reference) ──
@@ -116,13 +119,20 @@ export const AuthProvider = ({ children }) => {
             dateFormat: 'MM/DD/YYYY',
             createdAt: user.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
             avatar: user.user_metadata?.avatar_url || null,
+            isPro: user.user_metadata?.is_pro || localIsPro, // Mapped to Supabase metadata or local toggle
         };
-    }, [user]);
+    }, [user, localIsPro]);
 
     // ── Dashboard-compatible aliases ──
     const logout = signOut;
-    const updateProfile = () => ({ success: true }); // Stub — Supabase handles this differently
-    const changePassword = () => ({ success: true }); // Stub — Supabase handles this differently
+    const updateProfile = () => ({ success: true }); // Stub
+    const changePassword = () => ({ success: true }); // Stub
+
+    // ── Mock Upgrade Action ──
+    const upgradeToPro = () => {
+        setLocalIsPro(true);
+        // In the future, this will redirect to Stripe Checkout
+    };
 
     return (
         <AuthContext.Provider value={{
@@ -140,6 +150,7 @@ export const AuthProvider = ({ children }) => {
             logout,
             updateProfile,
             changePassword,
+            upgradeToPro,
         }}>
             {children}
         </AuthContext.Provider>

@@ -8,14 +8,18 @@ import Button from '../components/Common/Button';
 import Input from '../components/Common/Input';
 import Select from '../components/Common/Select';
 import EmptyState from '../components/Common/EmptyState';
+import UpgradeModal from '../components/Common/UpgradeModal';
+import { useAuth } from '../../context/AuthContext';
 
 const Transactions = () => {
     const { transactions, currency, dateFormat } = useFinance();
+    const { currentUser, upgradeToPro } = useAuth();
     const [searchQuery, setSearchQuery] = useState('');
     const [filterType, setFilterType] = useState('');
     const [filterCategory, setFilterCategory] = useState('');
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
+    const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
     const filteredTransactions = useMemo(() => {
         let filtered = [...transactions];
@@ -53,10 +57,18 @@ const Transactions = () => {
     }));
 
     const handleExportCSV = () => {
+        if (!currentUser?.isPro) {
+            setIsUpgradeModalOpen(true);
+            return;
+        }
         exportTransactionsToCSV(filteredTransactions, currency);
     };
 
     const handleExportPDF = () => {
+        if (!currentUser?.isPro) {
+            setIsUpgradeModalOpen(true);
+            return;
+        }
         exportTransactionsToPDF(filteredTransactions, currency);
     };
 
@@ -220,6 +232,18 @@ const Transactions = () => {
             <p className="text-center text-sm text-gray-500 dark:text-gray-400">
                 Showing {filteredTransactions.length} of {transactions.length} transactions
             </p>
+
+            {/* Upgrade Modal */}
+            <UpgradeModal
+                isOpen={isUpgradeModalOpen}
+                onClose={() => setIsUpgradeModalOpen(false)}
+                onUpgrade={() => {
+                    upgradeToPro();
+                    setIsUpgradeModalOpen(false);
+                    // Provide a nice UX by automatically downloading after they "upgrade"
+                    exportTransactionsToCSV(filteredTransactions, currency);
+                }}
+            />
         </div>
     );
 };
