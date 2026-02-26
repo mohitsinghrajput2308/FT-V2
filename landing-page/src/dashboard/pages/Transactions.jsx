@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Search, Download, ArrowUpCircle, ArrowDownCircle, List } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency, formatDate, sortByDate, convertToCSV, downloadFile } from '../utils/helpers';
+import { exportTransactionsToCSV, exportTransactionsToPDF } from '../utils/exportService';
 import Card from '../components/Common/Card';
 import Button from '../components/Common/Button';
 import Input from '../components/Common/Input';
@@ -51,10 +52,12 @@ const Transactions = () => {
         label: c
     }));
 
-    const handleExport = () => {
-        const headers = ['date', 'type', 'name', 'category', 'amount', 'paymentMethod', 'description'];
-        const csv = convertToCSV(filteredTransactions, headers);
-        downloadFile(csv, `transactions_${new Date().toISOString().split('T')[0]}.csv`);
+    const handleExportCSV = () => {
+        exportTransactionsToCSV(filteredTransactions, currency);
+    };
+
+    const handleExportPDF = () => {
+        exportTransactionsToPDF(filteredTransactions, currency);
     };
 
     const totalIncome = filteredTransactions
@@ -72,9 +75,14 @@ const Transactions = () => {
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Transactions</h1>
                     <p className="text-gray-500 dark:text-gray-400">View all your transactions</p>
                 </div>
-                <Button onClick={handleExport} icon={Download} variant="secondary">
-                    Export CSV
-                </Button>
+                <div className="flex items-center gap-3">
+                    <Button onClick={handleExportCSV} icon={Download} variant="secondary">
+                        Export CSV
+                    </Button>
+                    <Button onClick={handleExportPDF} icon={Download} variant="primary">
+                        Export PDF
+                    </Button>
+                </div>
             </div>
 
             {/* Summary */}
