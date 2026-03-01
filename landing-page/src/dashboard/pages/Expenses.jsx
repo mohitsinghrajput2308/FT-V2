@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Plus, Edit2, Trash2, Search, ArrowDownCircle } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
-import { formatCurrency, formatDate, sortByDate } from '../utils/helpers';
+import { formatCurrency, formatDate, sortByDate, calculateNextOccurrence } from '../utils/helpers';
 import Card from '../components/Common/Card';
 import Button from '../components/Common/Button';
 import Input from '../components/Common/Input';
@@ -42,7 +42,9 @@ const Expenses = () => {
         category: '',
         date: new Date().toISOString().split('T')[0],
         paymentMethod: 'UPI',
-        description: ''
+        description: '',
+        is_recurring: false,
+        recurrence: 'monthly'
     });
     const [errors, setErrors] = useState({});
 
@@ -70,8 +72,11 @@ const Expenses = () => {
     const totalExpenses = expenseTransactions.reduce((sum, t) => sum + t.amount, 0);
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
         if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
     };
 
@@ -94,7 +99,10 @@ const Expenses = () => {
         const data = {
             ...formData,
             amount: parseFloat(formData.amount),
-            type: 'expense'
+            type: 'expense',
+            is_recurring: formData.is_recurring,
+            recurrence: formData.is_recurring ? formData.recurrence : null,
+            next_occurrence: formData.is_recurring ? calculateNextOccurrence(formData.date, formData.recurrence) : null
         };
 
         if (editingItem) {
@@ -304,6 +312,39 @@ const Expenses = () => {
                         onChange={handleChange}
                         error={errors.date}
                     />
+
+                    {/* Recurring Options */}
+                    <div className="flex items-center gap-2 pt-2 pb-1">
+                        <input
+                            type="checkbox"
+                            id="is_recurring"
+                            name="is_recurring"
+                            checked={formData.is_recurring}
+                            onChange={handleChange}
+                            className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-dark-300 focus:ring-2 dark:bg-dark-400 dark:border-dark-500"
+                        />
+                        <label htmlFor="is_recurring" className="text-sm font-medium text-gray-900 dark:text-gray-300">
+                            Repeat this transaction
+                        </label>
+                    </div>
+
+                    {formData.is_recurring && (
+                        <div className="pl-6 animate-fade-in">
+                            <Select
+                                label="Recurrence Interval"
+                                name="recurrence"
+                                options={[
+                                    { value: 'daily', label: 'Daily' },
+                                    { value: 'weekly', label: 'Weekly' },
+                                    { value: 'monthly', label: 'Monthly' },
+                                    { value: 'yearly', label: 'Yearly' }
+                                ]}
+                                value={formData.recurrence || 'monthly'}
+                                onChange={handleChange}
+                            />
+                        </div>
+                    )}
+
                     <div>
                         <label className="label">Notes (Optional)</label>
                         <textarea

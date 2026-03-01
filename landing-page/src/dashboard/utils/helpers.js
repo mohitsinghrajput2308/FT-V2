@@ -367,3 +367,33 @@ export const filterByDateRange = (transactions, startDate, endDate) => {
         return date >= startDate && date <= endDate;
     });
 };
+
+/**
+ * Calculate the next occurrence date based on frequency
+ * @param {string|Date} baseDate - Starting date
+ * @param {string} frequency - 'daily', 'weekly', 'monthly', 'yearly'
+ * @returns {string} - Date string in YYYY-MM-DD
+ */
+export const calculateNextOccurrence = (baseDate, frequency) => {
+    const date = new Date(baseDate);
+    if (isNaN(date.getTime())) return null;
+
+    switch (frequency) {
+        case 'daily':
+            date.setDate(date.getDate() + 1);
+            break;
+        case 'weekly':
+            date.setDate(date.getDate() + 7);
+            break;
+        case 'monthly':
+            date.setMonth(date.getMonth() + 1);
+            break;
+        case 'yearly':
+            date.setFullYear(date.getFullYear() + 1);
+            break;
+        default:
+            return null;
+    }
+
+    return date.toISOString().split('T')[0];
+};

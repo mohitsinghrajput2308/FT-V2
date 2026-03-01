@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Plus, Edit2, Trash2, Search, Filter, ArrowUpCircle } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
-import { formatCurrency, formatDate, sortByDate } from '../utils/helpers';
+import { formatCurrency, formatDate, sortByDate, calculateNextOccurrence } from '../utils/helpers';
 import Card from '../components/Common/Card';
 import Button from '../components/Common/Button';
 import Input from '../components/Common/Input';
@@ -31,7 +31,8 @@ const Income = () => {
         date: new Date().toISOString().split('T')[0],
         description: '',
         paymentMethod: 'Bank Transfer',
-        recurring: false
+        is_recurring: false,
+        recurrence: 'monthly'
     });
     const [errors, setErrors] = useState({});
 
@@ -82,7 +83,10 @@ const Income = () => {
         const data = {
             ...formData,
             amount: parseFloat(formData.amount),
-            type: 'income'
+            type: 'income',
+            is_recurring: formData.is_recurring,
+            recurrence: formData.is_recurring ? formData.recurrence : null,
+            next_occurrence: formData.is_recurring ? calculateNextOccurrence(formData.date, formData.recurrence) : null
         };
 
         if (editingItem) {
@@ -104,7 +108,8 @@ const Income = () => {
                 date: item.date,
                 description: item.description || '',
                 paymentMethod: item.paymentMethod || 'Bank Transfer',
-                recurring: item.recurring || false
+                is_recurring: item.is_recurring || false,
+                recurrence: item.recurrence || 'monthly'
             });
         } else {
             setEditingItem(null);
@@ -115,7 +120,8 @@ const Income = () => {
                 date: new Date().toISOString().split('T')[0],
                 description: '',
                 paymentMethod: 'Bank Transfer',
-                recurring: false
+                is_recurring: false,
+                recurrence: 'monthly'
             });
         }
         setErrors({});
@@ -132,7 +138,8 @@ const Income = () => {
             date: new Date().toISOString().split('T')[0],
             description: '',
             paymentMethod: 'Bank Transfer',
-            recurring: false
+            is_recurring: false,
+            recurrence: 'monthly'
         });
     };
 
@@ -297,19 +304,36 @@ const Income = () => {
                             onChange={handleChange}
                         />
                     </div>
-                    <div className="flex items-center gap-2">
+                    {/* Recurring Options */}
+                    <div className="flex items-center gap-2 pt-2 pb-1">
                         <input
                             type="checkbox"
-                            id="recurring"
-                            name="recurring"
-                            checked={formData.recurring}
+                            id="is_recurring"
+                            name="is_recurring"
+                            checked={formData.is_recurring}
                             onChange={handleChange}
-                            className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                            className="w-4 h-4 text-success-600 bg-gray-100 border-gray-300 rounded focus:ring-success-500 dark:focus:ring-success-600 dark:ring-offset-dark-300 focus:ring-2 dark:bg-dark-400 dark:border-dark-500"
                         />
-                        <label htmlFor="recurring" className="text-sm text-gray-700 dark:text-gray-300">
-                            This is a recurring income
+                        <label htmlFor="is_recurring" className="text-sm font-medium text-gray-900 dark:text-gray-300">
+                            Repeat this income
                         </label>
                     </div>
+
+                    {formData.is_recurring && (
+                        <div className="pl-6 animate-fade-in">
+                            <Select
+                                label="Recurrence Interval"
+                                name="recurrence"
+                                options={[
+                                    { value: 'weekly', label: 'Weekly' },
+                                    { value: 'monthly', label: 'Monthly' },
+                                    { value: 'yearly', label: 'Yearly' }
+                                ]}
+                                value={formData.recurrence || 'monthly'}
+                                onChange={handleChange}
+                            />
+                        </div>
+                    )}
                     <div className="flex gap-3 pt-4">
                         <Button type="button" variant="secondary" onClick={closeModal} fullWidth>
                             Cancel

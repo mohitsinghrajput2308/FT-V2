@@ -303,8 +303,28 @@ export function validateTransactionData(data) {
         }
     }
 
+    // Validate recurring fields
+    if (data.is_recurring !== undefined) {
+        sanitizedData.is_recurring = Boolean(data.is_recurring);
+        if (sanitizedData.is_recurring && data.recurrence) {
+            if (['daily', 'weekly', 'monthly', 'yearly'].includes(data.recurrence)) {
+                sanitizedData.recurrence = data.recurrence;
+            } else {
+                errors.recurrence = 'Invalid recurrence type';
+            }
+            if (data.next_occurrence) {
+                const nd = new Date(data.next_occurrence);
+                if (!isNaN(nd.getTime())) {
+                    sanitizedData.next_occurrence = nd.toISOString().split('T')[0];
+                } else {
+                    errors.next_occurrence = 'Invalid next occurrence date';
+                }
+            }
+        }
+    }
+
     // Reject unexpected fields (whitelist approach)
-    const allowedFields = ['amount', 'type', 'category', 'description', 'date'];
+    const allowedFields = ['amount', 'type', 'category', 'description', 'date', 'is_recurring', 'recurrence', 'next_occurrence'];
     Object.keys(data).forEach(key => {
         if (!allowedFields.includes(key)) {
             console.warn(`[SECURITY] Unexpected field rejected: ${key}`);
