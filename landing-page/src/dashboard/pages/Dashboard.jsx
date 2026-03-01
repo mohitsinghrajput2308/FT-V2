@@ -6,6 +6,7 @@ import RecentTransactions from '../components/Dashboard/RecentTransactions';
 import QuickActions from '../components/Dashboard/QuickActions';
 import BudgetOverview from '../components/Dashboard/BudgetOverview';
 import ExpensePieChart from '../components/Charts/ExpensePieChart';
+import OnboardingWizard from '../components/Onboarding/OnboardingWizard';
 
 const Dashboard = () => {
     const {
@@ -14,7 +15,8 @@ const Dashboard = () => {
         monthlyExpenses,
         totalBalance,
         totalSavings,
-        currency
+        currency,
+        settings
     } = useFinance();
 
     // Calculate expense data for pie chart
@@ -104,6 +106,11 @@ const Dashboard = () => {
 
             {/* Recent Transactions */}
             <RecentTransactions />
+
+            {/* Onboarding Overlay */}
+            {!settings?.onboarding_completed && (
+                <OnboardingWizard onComplete={() => window.location.reload()} />
+            )}
         </div>
     );
 };
