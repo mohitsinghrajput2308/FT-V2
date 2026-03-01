@@ -3297,6 +3297,77 @@ Use ONLY the technologies specified in TECH_STACK.md §3.
 
 ---
 
+---
+
+## Update Log: March 1, 2026
+
+### Changes Since Last Update (February 2026)
+
+| Area | Change |
+|------|--------|
+| Dashboard pages | 10 → **15 pages** (added Profile, Categories, Help, ApiDocs + Categories Supabase-backed) |
+| Data layer | localStorage → **Supabase-only** for all financial data via SecureAPI gateway |
+| Recurring transactions | Added `is_recurring`, `recurrence`, `next_occurrence` columns to `transactions` table |
+| Newsletter security | Replaced permissive `WITH CHECK (true)` INSERT policy with email-regex validated RLS |
+| Code splitting | All 17+ routes lazy-loaded with `React.lazy` + `Suspense` |
+| New contexts | `NotificationContext.jsx`, `ThemeContext.jsx` (dashboard-scoped) |
+| New utilities | `exportService.js` (CSV/PDF), `validators.js`, `helpers.js`, `localStorage.js`, `calculators.js` |
+| New components | `OnboardingWizard.jsx`, `AdBanner.jsx`, `UpgradeModal.jsx` |
+| SECURITY doc | Updated to v4.2; newsletter RLS fix added to checklist |
+| Migrations | Added migration_004 (investments RLS), migration_005 (security warnings), `supabase_remove_mfa.sql`, `supabase_forgot_password.sql`, `supabase_username_unique.sql` |
+
+### Architecture (Current)
+```
+Dashboard Component
+  → FinanceContext (state management)
+    → secureApi.js (validation + rate limiting + sanitization)
+      → supabaseService.js (field mapping + Supabase queries)
+        → Supabase (RLS-protected PostgreSQL)
+```
+
+### Dashboard Routes (Current — 15 pages)
+| Route | Page |
+|-------|------|
+| `/dashboard` | Dashboard overview |
+| `/dashboard/profile` | User profile & settings |
+| `/dashboard/income` | Income management |
+| `/dashboard/expenses` | Expense tracking |
+| `/dashboard/budgets` | Budget management |
+| `/dashboard/goals` | Financial goals |
+| `/dashboard/transactions` | All transactions |
+| `/dashboard/reports` | Reports & analytics |
+| `/dashboard/investments` | Investment portfolio |
+| `/dashboard/bills` | Bill reminders |
+| `/dashboard/calculators` | EMI/SIP/Compound calculators |
+| `/dashboard/categories` | Custom categories |
+| `/dashboard/settings` | App settings |
+| `/dashboard/help` | In-app help |
+| `/dashboard/api-docs` | API documentation (Swagger) |
+
+---
+
 *This guide was generated based on the actual FinTrack codebase analysis including: `App.tsx`, `RootNavigator.tsx`, `useAuth.tsx`, `useTheme.tsx`, `theme.ts`, `supabase.ts`, `database.ts`, `supabase_schema.sql`, `package.json` (mobile app), and `App.js`, `Navbar.jsx`, `HeroSection.jsx`, `FeaturesSection.jsx`, `Showcase3DSection.jsx`, `HowItWorksSection.jsx`, `PricingSection.jsx`, `FAQSection.jsx`, `CTASection.jsx`, `Footer.jsx`, `useTheme.js`, `useCurrency.js`, `App.css`, `index.css`, `tailwind.config.js`, `package.json` (landing page).*
+
+---
+
+## Update Log
+
+### March 2, 2026
+
+**Security Hardening Round 2 (Phase 4)**
+
+1. **CSP `script-src` hardened** — Removed `'unsafe-inline'` from `script-src` in `vercel.json`. CRA production build outputs only external `.js` bundles, never inline scripts. `style-src 'unsafe-inline'` retained (required by Tailwind/Radix/Framer Motion). Commit: `8b15006`.
+
+2. **`updateProfile()` implemented** — `AuthContext.jsx` now writes to `profiles` table in Supabase (`full_name`, `avatar_url`, `updated_at`). Was previously a stub returning `{success: true}` without any database call.
+
+3. **`changePassword()` implemented** — `AuthContext.jsx` now calls `supabase.auth.updateUser({ password: newPassword })`. Was previously a stub.
+
+4. **Full RLS audit completed** — All 11 production tables verified via Supabase Management API. Every SELECT/UPDATE/DELETE policy uses `(auth.uid() = user_id)`. Every INSERT uses `WITH CHECK (auth.uid() = user_id)`. No always-true or permissive policies remain.
+
+5. **`.env.example` clarified** — `REACT_APP_SUPABASE_PUBLISHABLE_KEY` comment updated to clearly indicate it is reserved for future Stripe publishable key integration.
+
+6. **Future Roadmap added to PRD.md** — 22-item prioritized roadmap across 4 tiers covering: Stripe payments, feature gating, server-side rate limiting, CSV/PDF export, GA4, email automation, PWA, tests, CI/CD, bank linking, and Pro-plan upgrades. Cross-referenced with Growth Advisory and Valuation Report.
+
+**Remaining known limitation:** Leaked Password Protection (HaveIBeenPwned) requires Supabase Pro plan — no action possible on free tier.
 
 

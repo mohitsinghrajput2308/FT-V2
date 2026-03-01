@@ -205,7 +205,9 @@ Created FinTrack landing page inspired by reference design's 3D animation style,
 ## Current Status
 ✅ **Frontend Landing Page Complete** — All 10 sections with 3D animations, responsive design, cinematic video backgrounds.
 ✅ **16 Standalone Pages** — Privacy, Terms, Cookies, GDPR, About, Careers, Press, Contact, Blog, Help, API Docs, Community, Security, Roadmap, Changelog, FAQ.
-✅ **Dashboard Fully Implemented** — `/dashboard` with 10 nested pages: Dashboard, Transactions, Income, Expenses, Budgets, Goals, Investments, Reports, Bills, Calculators, Settings. Full localStorage-based data layer via `FinanceContext`. All pages use dynamic currency and date format from user settings.
+✅ **Dashboard Fully Implemented** — `/dashboard` with 15 nested pages: Dashboard, Profile, Income, Expenses, Budgets, Goals, Transactions, Reports, Investments, Bills, Calculators, Categories, Settings, Help, ApiDocs. **Supabase is the single source of truth** — all financial data fetched via `SecureAPI → supabaseService → Supabase` (RLS-protected). No financial data stored in localStorage. All pages use dynamic currency and date format from user settings.
+✅ **Recurring Transactions** — `transactions` table extended with `is_recurring`, `recurrence` (`daily/weekly/monthly/yearly`), and `next_occurrence` columns (migration `20250226_add_recurring_transactions.sql`).
+✅ **Newsletter Security** — `newsletter_subscribers` Supabase table with email-format-validated RLS INSERT policy (regex + max 254 chars + known `source` allowlist). Anonymous SELECT replaced with authenticated-scoped SELECT.
 ✅ **Dynamic Currency System** — Default USD (`$`), user-selectable (USD/EUR/GBP/INR/JPY/CAD/AUD/SGD) in Settings. Selected currency propagates to all pages, charts, and calculators in real time. Stale INR/DD-MM-YYYY localStorage values auto-migrated to USD/MM-DD-YYYY on load.
 ✅ **Trial / Refund Policy** — 14-day free trial (cancel anytime, no charge); all payments non-refundable.
 
@@ -213,7 +215,22 @@ Created FinTrack landing page inspired by reference design's 3D animation style,
 | Route | Component |
 |---|---|
 | `/` | Landing Page (10 sections) |
-| `/dashboard/*` | Dashboard (nested) |
+| `/dashboard/*` | DashboardApp (entry point) |
+| `/dashboard` | Dashboard (overview) |
+| `/dashboard/profile` | Profile |
+| `/dashboard/income` | Income |
+| `/dashboard/expenses` | Expenses |
+| `/dashboard/budgets` | Budgets |
+| `/dashboard/goals` | Goals |
+| `/dashboard/transactions` | Transactions |
+| `/dashboard/reports` | Reports |
+| `/dashboard/investments` | Investments |
+| `/dashboard/bills` | Bills |
+| `/dashboard/calculators` | Calculators |
+| `/dashboard/categories` | Categories |
+| `/dashboard/settings` | Settings |
+| `/dashboard/help` | Help |
+| `/dashboard/api-docs` | ApiDocs |
 | `/privacy` | PrivacyPolicy |
 | `/terms` | TermsOfService |
 | `/cookies` | CookiePolicy |
@@ -237,7 +254,7 @@ Created FinTrack landing page inspired by reference design's 3D animation style,
 
 ### P1 - Future Enhancements
 1. **Contact Form Integration**
-   - Newsletter subscription functionality (backend API)
+   - ~~Newsletter subscription functionality (backend API)~~ — ✅ Done: `newsletter_subscribers` table in Supabase with email-regex RLS policy
    - Email capture with CRM (Mailchimp, SendGrid)
 
 2. **Analytics Integration**
@@ -246,7 +263,7 @@ Created FinTrack landing page inspired by reference design's 3D animation style,
 
 3. **Performance Optimization**
    - Image lazy loading
-   - Code splitting per route
+   - ~~Code splitting per route~~ — ✅ Done: `React.lazy` + `Suspense` on all 17+ top-level routes
    - Bundle size optimization
 
 ### P2 - Nice to Have
@@ -306,8 +323,8 @@ Created FinTrack landing page inspired by reference design's 3D animation style,
 
 ---
 
-**Last Updated:** February 2026
-**Status:** Landing Page + Dashboard Suite Complete ✅ — 10 sections, 16 pages, full dashboard (10 pages), dynamic currency system.
+**Last Updated:** March 1, 2026
+**Status:** Landing Page + Dashboard Suite Complete ✅ — 10 sections, 16 pages, full dashboard (15 pages), Supabase data layer, recurring transactions, code-splitting, newsletter RLS fix.
 
 ---
 
@@ -412,3 +429,141 @@ The dashboard was upgraded from a scaffolded route to a fully operational financ
 ---
 
 **Status:** Phase 2 Complete — Advanced 3D Effects & Animations ✅
+
+---
+
+## Update: March 1, 2026 — Supabase Backend, Recurring Transactions & Security Hardening
+
+### What Changed
+
+#### 1. Data Layer Migration (localStorage → Supabase)
+All financial data (transactions, budgets, goals, investments, bills, categories) is now fetched exclusively from Supabase via a secure API gateway. localStorage is reserved for non-sensitive UI preferences (currency, date format) only.
+
+| Area | Old | New |
+|------|-----|-----|
+| Financial data storage | localStorage via FinanceContext | Supabase (RLS-protected PostgreSQL) |
+| Data fetch | On mount from localStorage | `Promise.allSettled` via `SecureAPI` |
+| Fallback | localStorage seed data | Empty arrays (no fake data) |
+| Sync status | N/A | `idle / syncing / synced / offline` indicator |
+
+#### 2. Dashboard Expanded to 15 Pages
+Added 5 new pages to the dashboard (previously 10):
+- **Profile** — user info, avatar, account settings
+- **Categories** — custom income/expense category management
+- **Help** — in-app help center
+- **ApiDocs** — developer API documentation (Swagger UI)
+- (Settings, Help, ApiDocs are protected routes; Categories integrated with FinanceContext/Supabase)
+
+#### 3. Recurring Transactions
+The `transactions` table now supports recurring entries:
+
+| Column | Type | Values |
+|--------|------|--------|
+| `is_recurring` | BOOLEAN | `true / false` (default `false`) |
+| `recurrence` | TEXT CHECK | `daily / weekly / monthly / yearly` |
+| `next_occurrence` | DATE | Next scheduled date |
+
+Migration file: `landing-page/supabase/migrations/20250226_add_recurring_transactions.sql`
+
+#### 4. Newsletter RLS Security Fix
+Replaced the overly permissive `WITH CHECK (true)` INSERT policy on `public.newsletter_subscribers` with a restrictive policy that validates:
+- Email format (RFC 5321 regex)
+- Email length ≤ 254 chars
+- `source` must be one of: `footer`, `hero`, `cta`, `blog`
+
+Also replaced open `Allow anon select` with `Allow authenticated select own row` (scoped to `email = auth.email()`).
+
+Migration file: `landing-page/supabase/migrations/20260301_fix_newsletter_rls_policy.sql`
+
+#### 5. Code Splitting
+All 17+ top-level routes are now lazy-loaded via `React.lazy` + `Suspense` with a centralized spinner fallback, reducing initial JS bundle size.
+
+#### 6. New Dashboard Infrastructure
+
+**New Contexts (dashboard-scoped):**
+- `NotificationContext.jsx` — toast notification queue
+- `ThemeContext.jsx` — dashboard-level dark/light mode
+
+**New Components:**
+- `OnboardingWizard.jsx` — first-run setup flow
+- `AdBanner.jsx` — in-app upgrade prompt banner
+- `UpgradeModal.jsx` — Pro plan upgrade dialog
+
+**New Utilities:**
+- `exportService.js` — CSV & PDF export (jsPDF + PapaParse)
+- `validators.js` — form-level validation schemas
+- `config.js` — feature flags and environment config
+
+**Security stack** (unchanged): `secureApi.js → supabaseService.js → Supabase`
+
+---
+
+**Status:** Phase 3 Complete — Supabase Backend + Security Hardening + Recurring Transactions ✅
+
+---
+
+### Phase 4 Updates — March 2, 2026
+
+#### 1. CSP Hardening
+- Removed `'unsafe-inline'` from `script-src` in `vercel.json` — CRA production build never uses inline scripts. `style-src 'unsafe-inline'` retained (needed by Tailwind/Radix/Framer Motion). Commit: `8b15006`.
+
+#### 2. Auth Functions Implemented
+- `updateProfile()` in `AuthContext.jsx` — now writes to `profiles` table in Supabase (`full_name`, `avatar_url`, `updated_at`). Previously was a stub.
+- `changePassword()` in `AuthContext.jsx` — now calls `supabase.auth.updateUser({ password })`. Previously was a stub.
+
+#### 3. Full RLS Audit
+- All 11 tables verified via Supabase Management API. Every policy confirmed to use `auth.uid() = user_id` correctly (or `auth.uid() = id` for profiles). No always-true policies remain.
+- 1 remaining Security Advisor warning: **Leaked Password Protection** — requires Supabase Pro plan (HaveIBeenPwned API). Not fixable on free tier.
+
+#### 4. Stripe Key Preparation
+- `REACT_APP_SUPABASE_PUBLISHABLE_KEY` in `.env.example` clarified via comment — reserved for future Stripe publishable key (`pk_live_...`) when payment integration is built.
+
+**Status:** Phase 4 Complete — Security Hardening Round 2 ✅
+
+---
+
+## Future Roadmap
+
+Prioritized by impact. Items marked 🔴 are highest value before any public launch or sale.
+
+### 🔴 Tier 1 — Revenue & Critical
+
+| # | Feature | Effort | Why It Matters |
+|---|---------|--------|----------------|
+| 1 | **Stripe Payment Integration** | 2–3 days | Connects Pro ($9.99/mo) + Business ($29.99/mo) tiers. Even $100 MRR transforms this from a code asset into a SaaS business. Use Stripe Checkout + webhook to update `profiles.is_pro` in Supabase. |
+| 2 | **Feature Gating (Free vs Pro)** | 1 day | Free users: 50 transactions/month. Pro: unlimited. Gate export, recurring transactions, API docs behind Pro using `localIsPro` (already wired). |
+| 3 | **Server-Side Rate Limiting** | 2–3 days | Move rate limiting from client-side `Map()` (resets on refresh) to Supabase Edge Functions. Requires **Supabase Pro plan**. Current client-side limiting is UX-only, not security enforcement. |
+| 4 | **Leaked Password Protection** | 0 dev time | Enable in Supabase Auth settings. Requires **Supabase Pro plan**. Checks passwords against HaveIBeenPwned on signup/change. |
+
+### 🟡 Tier 2 — User Value & Retention
+
+| # | Feature | Effort | Why It Matters |
+|---|---------|--------|----------------|
+| 5 | **CSV / PDF Export** | 1 day | #1 most-requested feature in finance apps. `jsPDF` + `PapaParse` already in `package.json`. Gate full history behind Pro — free users get last 30 days only. |
+| 6 | **Weekly Email Summary** | 1–2 days | Automated re-engagement: "You spent $X this week, saved $Y". Use Supabase `pg_cron` + Resend/SendGrid free tier. |
+| 7 | **Google Analytics 4** | 2 hours | Add GA4 script to `index.html`. Track: page views, button clicks, signup conversions. Required to show engagement data to any potential buyer or investor. |
+| 8 | **Working Newsletter Backend** | 3–4 hours | Footer subscribe form currently stores to `newsletter_subscribers` table (RLS is fixed). Wire up a confirmation email via Resend/SendGrid. |
+| 9 | **First-Time Onboarding Flow** | 4–6 hours | `OnboardingWizard.jsx` already exists. Wire it to fire on first login: pick currency → add first transaction → set first budget. Reduces new-user drop-off. |
+| 10 | **PWA Support** | 2–3 hours | Add `manifest.json` with icons + register a service worker. Users can "Add to Home Screen" on mobile. No app store submission needed. |
+
+### 🟢 Tier 3 — Launch & Growth
+
+| # | Feature | Effort | Why It Matters |
+|---|---------|--------|----------------|
+| 11 | **Automated Tests (Jest + Playwright)** | 2–3 days | 10–15 Jest unit tests for `FinanceContext` CRUD + 3–5 Playwright E2E tests for signup → add transaction → view dashboard. Signals code quality to buyers/investors. |
+| 12 | **GitHub Actions CI/CD** | 1 day | Auto-run tests + lint on every push. Auto-deploy to Vercel on merge to `main`. |
+| 13 | **Crisp Live Chat Widget** | 30 min | Single `<script>` tag in `index.html`. Free tier: 2 agents, unlimited conversations. Makes the product feel supported. |
+| 14 | **Fix Social Proof Numbers** | 30 min | Landing page claims "100K+ Active Users" and "$500M+ Money Tracked" with zero real users. Replace with "Built for 100K+ users" or remove until real data exists. |
+| 15 | **Mobile App — Google Play Publish** | 1 week | React Native/Expo app already in development. Publish to Google Play. Adds ~$2,000–$5,000 to valuation and opens a new user acquisition channel. |
+| 16 | **Multi-currency Live FX Rates** | 2–3 days | Integrate a free FX API (ExchangeRate-API free tier) to auto-convert transaction amounts. Currently currency is a display-only setting. |
+| 17 | **Bank Account Linking (Plaid/Finicity)** | 1–2 weeks | Auto-import transactions from real bank accounts. This is the single biggest technical moat in the fintech space. Requires Plaid API keys (~$500/mo at scale but free in development). |
+
+### 🔵 Tier 4 — Pro Plan Upgrades (After Supabase Pro)
+
+| # | Feature | Notes |
+|---|---------|-------|
+| 18 | Server-side rate limiting via Edge Functions | Replaces `rateLimit.js` Map() |
+| 19 | Leaked password protection (HaveIBeenPwned) | Enable in Supabase Auth settings |
+| 20 | Regional data residency | Supabase Pro → choose data region for GDPR compliance |
+| 21 | IP allowlisting | Restrict DB access to Vercel egress IPs only |
+| 22 | Supabase `pg_cron` for recurring transactions | Auto-create scheduled transactions server-side |
