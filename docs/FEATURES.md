@@ -100,15 +100,15 @@ Privacy Policy, Terms of Service, Cookie Policy, GDPR Compliance, About Us, Care
 
 ## 🟡 Tier 2 — User Value & Retention
 
-| # | Feature | Effort | Why |
-|---|---------|--------|-----|
-| 5 | **CSV / PDF Export (activate)** | 1 day | `exportService.js` + `jsPDF` + `PapaParse` are already in the codebase. Just wire the export buttons and gate full history behind Pro (free = last 30 days). |
-| 6 | **Weekly Email Summary** | 1–2 days | Automated email: "You spent $X this week, saved $Y, top category: Z." Use Supabase `pg_cron` + Resend or SendGrid free tier (100 emails/day free). |
-| 7 | **Google Analytics 4** | 2 hours | Add GA4 script to `index.html`. Track page views, CTA clicks, signup conversions. Required to show any engagement data to investors or buyers. `REACT_APP_GA_MEASUREMENT_ID` is already in `.env.example`. |
-| 8 | **Newsletter Confirmation Email** | 3–4 hours | RLS + DB storage is done. Wire up a confirmation email via Resend/SendGrid when a user subscribes from the footer. |
-| 9 | **Onboarding Flow (first-time users)** | 4–6 hours | `OnboardingWizard.jsx` already exists in the codebase. Wire it to trigger on first login: pick currency → add first transaction → set first budget. Reduces new-user drop-off. |
-| 10 | **PWA Support** | 2–3 hours | Add `manifest.json` with icons + register a service worker. Users can "Add to Home Screen" on mobile without app store submission. |
-| 11 | **Contact Form Backend** | 2–3 hours | `/contact` page exists but the form has no backend. Wire to an email service (Resend/SendGrid) or Supabase table. |
+| # | Feature | Status | Remaining Work |
+|---|---------|--------|----------------|
+| 5 | **CSV / PDF Export** | ✅ **Done** | `exportService.js` imported and used in `Transactions.jsx`. Export buttons are wired. Consider gating full history behind Pro (free = last 30 days). |
+| 6 | **Weekly Email Summary** | ❌ Not done | Needs Supabase `pg_cron` + Resend/SendGrid. Automated email: "You spent $X this week, saved $Y." Effort: 1–2 days. Requires **Supabase Pro** for pg_cron. |
+| 7 | **Google Analytics 4** | ✅ **Done** | GA4 script already in `public/index.html` using `window.__GA_ID__`. Just set `REACT_APP_GA_MEASUREMENT_ID` env var in Vercel dashboard — that's it. |
+| 8 | **Newsletter Confirmation Email** | ❌ Not done | RLS + DB storage is working. Needs a confirmation email via Resend/SendGrid when user subscribes. Effort: 3–4 hours. |
+| 9 | **Onboarding Flow** | ✅ **Done** | `OnboardingWizard` imported and rendered in `Dashboard.jsx` with condition `{!settings?.onboarding_completed}`. Fully wired. |
+| 10 | **PWA Support** | ⚠️ Half done | `manifest.json` exists with icons, `display: standalone`, correct theme. App is installable. **Missing:** service worker (offline support). Register one in `src/index.js` to complete. |
+| 11 | **Contact Form Backend** | ❌ Not done | `/contact` page and form exist. No submission logic. Wire to Resend/SendGrid or a `contact_submissions` Supabase table. Effort: 2–3 hours. |
 
 ---
 
@@ -149,10 +149,11 @@ Privacy Policy, Terms of Service, Cookie Policy, GDPR Compliance, About Us, Care
 | **No automated tests** | `package.json` has `"test": "craco test"` but no test files exist. |
 | **No CI/CD pipeline** | No GitHub Actions — deploys are triggered manually by pushing to `main`. |
 | **No app store presence** | Mobile app not published to Google Play or App Store yet. |
-| **Export not active** | `exportService.js`, `jsPDF`, `PapaParse` are all in the codebase but export buttons are not wired to them yet. |
+| **GA4 env var not set** | GA4 script is in `index.html` but `REACT_APP_GA_MEASUREMENT_ID` needs to be added as an env var in Vercel dashboard. |
+| **PWA service worker missing** | `manifest.json` is complete (app is installable) but no service worker registered — no offline support yet. |
 | **Newsletter email not sent** | Subscribers are stored in DB (RLS fixed) but no confirmation email is triggered. |
 | **Contact form has no backend** | Form exists on `/contact` page but submissions are not sent anywhere. |
-| **OAuth providers not configured** | Google, Microsoft, Apple, GitHub OAuth configured in code but OAuth credentials need to be entered in Supabase Dashboard. |
-| **CAPTCHA keys not set** | Cloudflare Turnstile CAPTCHA is coded but site key needs to be configured in Supabase Auth settings. |
+| **OAuth providers not configured** | Google, Microsoft, Apple, GitHub OAuth coded but credentials need to be entered in Supabase Dashboard. |
+| **CAPTCHA keys not set** | Cloudflare Turnstile coded but site key needs to be configured in Supabase Auth settings. |
 | **Email service not set up** | OTP emails require SendGrid/Resend credentials in Supabase Auth email settings. |
 | **Client-side rate limiting only** | Rate limiting resets on page refresh. Real enforcement requires Supabase Pro + Edge Functions. |
