@@ -3,6 +3,10 @@
 # dependencies
 node_modules/
 
+# media
+Contents/
+landing-page/public/videos/
+
 # Expo
 .expo/
 dist/
