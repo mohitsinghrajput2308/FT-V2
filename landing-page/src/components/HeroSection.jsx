@@ -209,7 +209,7 @@ export const HeroSection = () => {
 
             <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl animate-slide-up animation-delay-200">
               Track expenses, create budgets, and achieve your financial goals with AI-powered insights.
-              Join 100,000+ users who transformed their financial future.
+              Built to scale and designed to help 100,000+ users transform their financial future.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-slide-up animation-delay-400">
@@ -230,11 +230,11 @@ export const HeroSection = () => {
             <div className="grid grid-cols-3 gap-6 mt-12 animate-fade-in animation-delay-600">
               <div className="text-center lg:text-left">
                 <div className="text-3xl font-bold text-gray-900 dark:text-white">100K+</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Active Users</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">User Capacity</div>
               </div>
               <div className="text-center lg:text-left">
                 <div className="text-3xl font-bold text-gray-900 dark:text-white">$500M+</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Money Tracked</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Volume Capacity</div>
               </div>
               <div className="text-center lg:text-left">
                 <div className="text-3xl font-bold text-gray-900 dark:text-white">4.9/5</div>

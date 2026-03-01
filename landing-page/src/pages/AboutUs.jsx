@@ -6,8 +6,8 @@ import { Link } from 'react-router-dom';
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] } }) };
 
 const stats = [
-  { value: '100K+', label: 'Active Users', icon: Users },
-  { value: '$500M+', label: 'Money Tracked', icon: TrendingUp },
+  { value: '100K+', label: 'User Capacity', icon: Users },
+  { value: '$500M+', label: 'Volume Capacity', icon: TrendingUp },
   { value: '50+', label: 'Countries', icon: Globe },
   { value: '99.9%', label: 'Uptime', icon: Zap },
 ];
