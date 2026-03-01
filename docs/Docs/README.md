@@ -33,6 +33,6 @@ node scripts/validate-security.js
 
 - **landing-page/** — Full web app (CRA + React): landing + dashboard + auth
 - **supabase/** — Database migrations (schema, security patches, migration_002, migration_003)
-- **docs/** — SECURITY.md (v4.1), TROUBLESHOOTING.md, PRD, FOLDER_STRUCTURE, test_result
+- **docs/** — SECURITY.md (v4.2), TROUBLESHOOTING.md, PRD, FOLDER_STRUCTURE, test_result
 - **scripts/** — Security validation scripts
 - **vercel.json** — Deployment config with security headers

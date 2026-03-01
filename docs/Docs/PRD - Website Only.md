@@ -1,4 +1,4 @@
-# FinanceFlow - 3D Animation Landing Page
+# FinTrack - 3D Animation Landing Page + Full Dashboard
 ## Product Requirements Document
 
 ---
@@ -15,7 +15,7 @@ CREATE A 3D ANIMATION LANDING PAGE DESIGN FOR A FINANCE TRACKING APP. FOR REFERE
 - Hero section with immersive environment
 
 **Adapted Solution:**
-Created FinanceFlow landing page inspired by reference design's 3D animation style, but adapted for finance tracking app with professional blue/teal color scheme.
+Created FinTrack landing page inspired by reference design's 3D animation style, but adapted for finance tracking app with professional blue/teal color scheme.
 
 ---
 
@@ -62,7 +62,7 @@ Created FinanceFlow landing page inspired by reference design's 3D animation sty
 
 ## What's Been Implemented ✅
 
-### Date: December 2026
+### Date: March 2026
 
 #### Frontend Components Created:
 1. **Navbar.jsx**
@@ -260,9 +260,9 @@ Landing page is static and doesn't require backend for now.
 
 ---
 
-**Last Updated:** December 2026
+**Last Updated:** March 2026
 - **Platform**: Website (Full Responsive Web Application)
-**Status:** Phase 1 Complete - Static Landing Page with 3D Animations ✅
+**Status:** Phase 3 Complete — Landing Page + Full Dashboard + Supabase Backend ✅
 
 ---
 
@@ -348,3 +348,19 @@ Landing page is static and doesn't require backend for now.
 ---
 
 **Status:** Phase 2 Complete - Advanced 3D Effects & Animations ✅
+
+---
+
+## Update: March 2026 — Supabase Backend, 15-Page Dashboard & Security Hardening
+
+| Area | Change |
+|------|--------|
+| App name | FinanceFlow → **FinTrack** |
+| Dashboard | 10 pages (localStorage) → **15 pages** (Supabase-backed) |
+| Data source | localStorage → **Supabase RLS-protected PostgreSQL** |
+| Recurring transactions | Added `is_recurring`, `recurrence`, `next_occurrence` columns |
+| Newsletter RLS | Fixed `WITH CHECK (true)` → email-regex + source allowlist |
+| Code splitting | `React.lazy` + `Suspense` on all 17+ routes |
+| Security | SECURITY.md v4.0 → v4.2 |
+
+**Status:** Phase 3 Complete — Full Supabase-backed Dashboard + Security Hardening ✅

@@ -3180,6 +3180,55 @@ Use ONLY the technologies specified in TECH_STACK.md §3.
 
 ---
 
+---
+
+## Update Log: March 1, 2026
+
+### Changes Since Last Update (February 2026)
+
+| Area | Change |
+|------|--------|
+| Dashboard pages | 10 → **15 pages** (added Profile, Categories, Help, ApiDocs + Categories Supabase-backed) |
+| Data layer | localStorage → **Supabase-only** for all financial data via SecureAPI gateway |
+| Recurring transactions | Added `is_recurring`, `recurrence`, `next_occurrence` columns to `transactions` table |
+| Newsletter security | Replaced permissive `WITH CHECK (true)` INSERT policy with email-regex validated RLS |
+| Code splitting | All 17+ routes lazy-loaded with `React.lazy` + `Suspense` |
+| New contexts | `NotificationContext.jsx`, `ThemeContext.jsx` (dashboard-scoped) |
+| New utilities | `exportService.js` (CSV/PDF), `validators.js`, `helpers.js`, `localStorage.js`, `calculators.js` |
+| New components | `OnboardingWizard.jsx`, `AdBanner.jsx`, `UpgradeModal.jsx` |
+| SECURITY doc | Updated to v4.2; newsletter RLS fix added to checklist |
+| Migrations | Added migration_004 (investments RLS), migration_005 (security warnings), `supabase_remove_mfa.sql`, `supabase_forgot_password.sql`, `supabase_username_unique.sql` |
+
+### Architecture (Current)
+```
+Dashboard Component
+  → FinanceContext (state management)
+    → secureApi.js (validation + rate limiting + sanitization)
+      → supabaseService.js (field mapping + Supabase queries)
+        → Supabase (RLS-protected PostgreSQL)
+```
+
+### Dashboard Routes (Current — 15 pages)
+| Route | Page |
+|-------|------|
+| `/dashboard` | Dashboard overview |
+| `/dashboard/profile` | User profile & settings |
+| `/dashboard/income` | Income management |
+| `/dashboard/expenses` | Expense tracking |
+| `/dashboard/budgets` | Budget management |
+| `/dashboard/goals` | Financial goals |
+| `/dashboard/transactions` | All transactions |
+| `/dashboard/reports` | Reports & analytics |
+| `/dashboard/investments` | Investment portfolio |
+| `/dashboard/bills` | Bill reminders |
+| `/dashboard/calculators` | EMI/SIP/Compound calculators |
+| `/dashboard/categories` | Custom categories |
+| `/dashboard/settings` | App settings |
+| `/dashboard/help` | In-app help |
+| `/dashboard/api-docs` | API documentation (Swagger) |
+
+---
+
 *This guide was generated based on the actual FinTrack codebase analysis including: `App.tsx`, `RootNavigator.tsx`, `useAuth.tsx`, `useTheme.tsx`, `theme.ts`, `supabase.ts`, `database.ts`, `supabase_schema.sql`, `package.json` (mobile app), and `App.js`, `Navbar.jsx`, `HeroSection.jsx`, `FeaturesSection.jsx`, `Showcase3DSection.jsx`, `HowItWorksSection.jsx`, `PricingSection.jsx`, `FAQSection.jsx`, `CTASection.jsx`, `Footer.jsx`, `useTheme.js`, `useCurrency.js`, `App.css`, `index.css`, `tailwind.config.js`, `package.json` (landing page).*
 
 

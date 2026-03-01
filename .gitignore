@@ -57,3 +57,8 @@ test_result.md
 __pycache__/
 *.pyc
 .emergent/
+
+# Supabase CLI temp files
+supabase/.temp/
+landing-page/supabase/.temp/
+

@@ -1,7 +1,7 @@
 # Security & Compliance Guide — FinTrack
 
-**Version**: 4.0  
-**Last Updated**: February 25, 2026  
+**Version**: 4.2  
+**Last Updated**: March 1, 2026  
 
 ---
 
@@ -38,12 +38,18 @@ Run before every release. Automated via `node scripts/validate-security.js`.
 - [x] Server-side CHECK constraints on all tables (migration_003)
 - [x] Goals, bills, categories, user_settings tables with RLS (migration_002)
 - [x] Session timeout — 30-min auto-logout on inactivity (`AuthContext.jsx`)
-- [x] CSP + security headers via `vercel.json` (HSTS, X-Frame-Options, etc.)
+- [x] CSP + security headers via `vercel.json` (HSTS, X-Frame-Options, etc.) — includes `media-src` for Supabase Storage CDN
 - [x] Automated security unit tests — 60/60 passing (`security.test.js`)
 - [x] localStorage limited to UI preferences only (no financial data)
 - [x] UUID validation on all record IDs
 - [x] XSS detection and blocking on all text inputs
 - [x] `updated_at` auto-timestamps via PostgreSQL triggers
+
+### Newsletter Security Fix (DONE ✅) — v4.2 (March 1, 2026)
+- [x] Replaced `newsletter_subscribers` permissive `WITH CHECK (true)` INSERT policy with email-format-validated policy
+- [x] New policy enforces: RFC email regex, max 254 chars, `source` IN (`footer`, `hero`, `cta`, `blog`) allowlist
+- [x] Replaced open `Allow anon select` with `Allow authenticated select own row` (scoped to `email = auth.email()`)
+- [x] Resolves Supabase Security Advisor: "RLS Policy Always True" warning on `public.newsletter_subscribers`
 
 ### Pre-Launch (TODO)
 - [ ] Supabase IP allowlisting enabled
@@ -107,6 +113,8 @@ Every table has RLS enabled. Policies ensure users can only access their own dat
 | invitations | Admins+ (own org) | Admins+ | Admins+ | — |
 | email_verifications | Own only | Own only | Own only | — |
 | captcha_verifications | ❌ Service-role only | ❌ Service-role only | ❌ | ❌ |
+| **newsletter_subscribers** | Authenticated (own row) | Anon (valid email + known source) | ❌ | ❌ |
+| **newsletter_subscribers** | Authenticated (own row) | Anon (valid email + known source) | ❌ | ❌ |
 
 ### Input Validation (DB-level)
 All text fields have length limits and pattern matching:
@@ -158,7 +166,7 @@ Supported data types: transactions, budgets, goals, investments, bills, categori
 ### Input Validation (`security.js`)
 - Email: format check, max 254 chars, trimmed + lowercased
 - Password: min 8 chars, max 128 chars, must contain uppercase + lowercase + number
-- Amounts: min ₹0.01, max ₹999,999,999.99, rounded to 2 decimals
+- Amounts: min $0.01, max $999,999,999.99, rounded to 2 decimals
 - Descriptions: max 500 chars, XSS blacklist (`<script`, `javascript:`, `on*=`)
 - Categories: max 50 chars, alphanumeric + spaces only
 - Stock symbols: max 10 chars, uppercase letters only

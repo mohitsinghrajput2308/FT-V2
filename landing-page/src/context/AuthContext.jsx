@@ -125,8 +125,39 @@ export const AuthProvider = ({ children }) => {
 
     // ── Dashboard-compatible aliases ──
     const logout = signOut;
-    const updateProfile = () => ({ success: true }); // Stub
-    const changePassword = () => ({ success: true }); // Stub
+
+    const updateProfile = async ({ full_name, avatar_url } = {}) => {
+        try {
+            const updates = {};
+            if (full_name !== undefined) updates.full_name = full_name;
+            if (avatar_url !== undefined) updates.avatar_url = avatar_url;
+
+            // Update Supabase auth metadata
+            const { error: metaError } = await supabase.auth.updateUser({ data: updates });
+            if (metaError) return { success: false, error: metaError.message };
+
+            // Sync to profiles table
+            const { error: profileError } = await supabase
+                .from('profiles')
+                .update({ ...updates, updated_at: new Date().toISOString() })
+                .eq('id', user.id);
+            if (profileError) return { success: false, error: profileError.message };
+
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    };
+
+    const changePassword = async (newPassword) => {
+        try {
+            const { error } = await supabase.auth.updateUser({ password: newPassword });
+            if (error) return { success: false, error: error.message };
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    };
 
     // ── Mock Upgrade Action ──
     const upgradeToPro = () => {

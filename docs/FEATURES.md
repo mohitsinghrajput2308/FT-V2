@@ -1,6 +1,6 @@
 # FinTrack — Features Overview
 
-**Last Updated:** March 2, 2026
+**Last Updated:** March 3, 2026
 
 ---
 
@@ -63,7 +63,7 @@ Privacy Policy, Terms of Service, Cookie Policy, GDPR Compliance, About Us, Care
 ---
 
 ### Backend & Security
-- **Supabase PostgreSQL** — 11 tables: profiles, transactions, budgets, goals, investments, bills, categories, user_settings, newsletter_subscribers, password_reset_log, audit_logs
+- **Supabase PostgreSQL** — 12 tables: profiles, transactions, budgets, goals, investments, bills, categories, user_settings, newsletter_subscribers, contact_submissions, password_reset_log, audit_logs
 - **Row Level Security (RLS)** — every table locked to `auth.uid() = user_id`. Verified March 2, 2026 via API audit.
 - **secureApi.js** — validation + rate limiting + sanitization gateway on all CRUD
 - **rateLimit.js** — client-side rate limiting (auth: 5/15min, mutations: 30/min)
@@ -105,10 +105,10 @@ Privacy Policy, Terms of Service, Cookie Policy, GDPR Compliance, About Us, Care
 | 5 | **CSV / PDF Export** | ✅ **Done** | `exportService.js` imported and used in `Transactions.jsx`. Export buttons are wired. Consider gating full history behind Pro (free = last 30 days). |
 | 6 | **Weekly Email Summary** | ❌ Not done | Needs Supabase `pg_cron` + Resend/SendGrid. Automated email: "You spent $X this week, saved $Y." Effort: 1–2 days. Requires **Supabase Pro** for pg_cron. |
 | 7 | **Google Analytics 4** | ✅ **Done** | GA4 script already in `public/index.html` using `window.__GA_ID__`. Just set `REACT_APP_GA_MEASUREMENT_ID` env var in Vercel dashboard — that's it. |
-| 8 | **Newsletter Confirmation Email** | ❌ Not done | RLS + DB storage is working. Needs a confirmation email via Resend/SendGrid when user subscribes. Effort: 3–4 hours. |
+| 8 | **Newsletter Confirmation Email** | ✅ **Done** | Edge Function `send-newsletter-welcome` deployed. pg_net trigger fires on every `newsletter_subscribers` INSERT and sends a branded HTML welcome email via Resend (falls back to SendGrid). Set `RESEND_API_KEY` + `FROM_EMAIL` in Supabase Edge Function env vars to activate. |
 | 9 | **Onboarding Flow** | ✅ **Done** | `OnboardingWizard` imported and rendered in `Dashboard.jsx` with condition `{!settings?.onboarding_completed}`. Fully wired. |
-| 10 | **PWA Support** | ⚠️ Half done | `manifest.json` exists with icons, `display: standalone`, correct theme. App is installable. **Missing:** service worker (offline support). Register one in `src/index.js` to complete. |
-| 11 | **Contact Form Backend** | ❌ Not done | `/contact` page and form exist. No submission logic. Wire to Resend/SendGrid or a `contact_submissions` Supabase table. Effort: 2–3 hours. |
+| 10 | **PWA Support** | ✅ **Done** | `manifest.json` complete, `public/service-worker.js` created (cache-first for assets, network-first for navigation), registered in `src/index.js` for production builds. App is installable and offline-capable. |
+| 11 | **Contact Form Backend** | ✅ **Done** | `contact_submissions` table created in Supabase with RLS (anon INSERT allowed, admin read-only). `Contact.jsx` wired with async submit handler, loading spinner, and error feedback. |
 
 ---
 
@@ -150,9 +150,7 @@ Privacy Policy, Terms of Service, Cookie Policy, GDPR Compliance, About Us, Care
 | **No CI/CD pipeline** | No GitHub Actions — deploys are triggered manually by pushing to `main`. |
 | **No app store presence** | Mobile app not published to Google Play or App Store yet. |
 | **GA4 env var not set** | GA4 script is in `index.html` but `REACT_APP_GA_MEASUREMENT_ID` needs to be added as an env var in Vercel dashboard. |
-| **PWA service worker missing** | `manifest.json` is complete (app is installable) but no service worker registered — no offline support yet. |
-| **Newsletter email not sent** | Subscribers are stored in DB (RLS fixed) but no confirmation email is triggered. |
-| **Contact form has no backend** | Form exists on `/contact` page but submissions are not sent anywhere. |
+| **Email service env vars needed** | Newsletter welcome email Edge Function deployed but needs `RESEND_API_KEY` + `FROM_EMAIL` set in Supabase → Project Settings → Edge Functions → Environment Variables. |
 | **OAuth providers not configured** | Google, Microsoft, Apple, GitHub OAuth coded but credentials need to be entered in Supabase Dashboard. |
 | **CAPTCHA keys not set** | Cloudflare Turnstile coded but site key needs to be configured in Supabase Auth settings. |
 | **Email service not set up** | OTP emails require SendGrid/Resend credentials in Supabase Auth email settings. |

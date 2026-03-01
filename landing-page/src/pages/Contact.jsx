@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Send, MapPin, Phone, MessageSquare, ArrowLeft, Sparkles, Clock } from 'lucide-react';
+import { Mail, Send, MapPin, Phone, MessageSquare, ArrowLeft, Sparkles, Clock, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
 
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] } }) };
 
@@ -20,6 +21,30 @@ const offices = [
 const Contact = () => {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+
+  const handleSubmit = async () => {
+    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) return;
+    setLoading(true);
+    setSubmitError('');
+    try {
+      const { error } = await supabase
+        .from('contact_submissions')
+        .insert({
+          name: form.name.trim(),
+          email: form.email.trim().toLowerCase(),
+          subject: form.subject.trim() || null,
+          message: form.message.trim(),
+        });
+      if (error) throw error;
+      setSubmitted(true);
+    } catch (err) {
+      setSubmitError('Failed to send message. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#050505] text-white overflow-hidden">
@@ -112,10 +137,14 @@ const Contact = () => {
                     <textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} rows={5}
                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-teal-500/50 focus:outline-none transition-colors resize-none" placeholder="Tell us more..." />
                   </div>
-                  <button onClick={() => setSubmitted(true)}
-                    disabled={!form.name || !form.email || !form.message}
+                  {submitError && (
+                    <p className="text-red-400 text-sm text-center">{submitError}</p>
+                  )}
+                  <button onClick={handleSubmit}
+                    disabled={loading || !form.name || !form.email || !form.message}
                     className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold py-3.5 rounded-xl hover:shadow-xl hover:shadow-teal-500/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                    <Send className="w-4 h-4" /> Send Message
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    {loading ? 'Sending…' : 'Send Message'}
                   </button>
                 </div>
               )}
