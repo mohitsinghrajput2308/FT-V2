@@ -29,6 +29,7 @@ import Calculators from './pages/Calculators';
 import Categories from './pages/Categories';
 import Settings from './pages/Settings';
 import Help from './pages/Help';
+import ApiDocs from './pages/ApiDocs/ApiDocs';
 
 const DashboardApp = () => {
     // All financial data is loaded from Supabase via FinanceContext.
@@ -56,6 +57,7 @@ const DashboardApp = () => {
                                     <Route path="categories" element={<Categories />} />
                                     <Route path="settings" element={<Settings />} />
                                     <Route path="help" element={<Help />} />
+                                    <Route path="api-docs" element={<ApiDocs />} />
                                     <Route path="*" element={<Navigate to="/dashboard" replace />} />
                                 </Routes>
                             </Layout>
