@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, Sun, Moon, Bell, User, LogOut, Settings, ChevronDown } from 'lucide-react';
+import { Menu, Sun, Moon, Bell, User, LogOut, Settings, ChevronDown, Cloud, CloudOff, RefreshCw } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useFinance } from '../../context/FinanceContext';
@@ -8,7 +8,7 @@ import { useFinance } from '../../context/FinanceContext';
 const Navbar = ({ onMenuClick }) => {
     const { theme, toggleTheme } = useTheme();
     const { currentUser, logout } = useAuth();
-    const { pendingBillsCount } = useFinance();
+    const { pendingBillsCount, syncStatus } = useFinance();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
@@ -47,6 +47,22 @@ const Navbar = ({ onMenuClick }) => {
 
             {/* Right side */}
             <div className="flex items-center gap-2">
+                {/* Sync Status Indicator */}
+                <div
+                    className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-gray-200 dark:border-dark-300 bg-gray-50 dark:bg-dark-300 text-xs font-medium mr-1"
+                    title="Your data is securely synced with Supabase across all your devices"
+                >
+                    {syncStatus === 'syncing' && (
+                        <><RefreshCw className="w-3 h-3 text-primary-500 animate-spin" /> <span className="text-gray-600 dark:text-gray-300">Syncing</span></>
+                    )}
+                    {syncStatus === 'synced' && (
+                        <><Cloud className="w-3.5 h-3.5 text-success-500" /> <span className="text-gray-600 dark:text-gray-300">Synced ✓</span></>
+                    )}
+                    {(syncStatus === 'offline' || syncStatus === 'idle') && (
+                        <><CloudOff className="w-3.5 h-3.5 text-gray-400" /> <span className="text-gray-600 dark:text-gray-300">Offline</span></>
+                    )}
+                </div>
+
                 {/* Theme Toggle */}
                 <button
                     onClick={toggleTheme}
