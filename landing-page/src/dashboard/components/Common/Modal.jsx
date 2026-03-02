@@ -32,7 +32,7 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
         `}
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-dark-300">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-dark-400">
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h2>
                     <button
                         onClick={onClose}

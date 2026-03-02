@@ -148,14 +148,24 @@ a[href*="emergent.sh"] {
 }
 
 @layer components {
+  /* Universal card — used by SummaryCard and inline "card" classes */
+  .card {
+    @apply bg-white dark:bg-dark-200 rounded-xl shadow-md;
+    @apply border border-gray-200 dark:border-dark-400;
+    @apply transition-all duration-300;
+  }
+  .card:hover {
+    @apply shadow-lg dark:shadow-dark-400/30;
+  }
+
   /* Dashboard card styles */
   .dash-card {
-    @apply bg-white dark:bg-dark-200 rounded-xl shadow-lg;
-    @apply border border-gray-100 dark:border-dark-300;
+    @apply bg-white dark:bg-dark-200 rounded-xl shadow-md;
+    @apply border border-gray-200 dark:border-dark-400;
     @apply transition-all duration-300;
   }
   .dash-card:hover {
-    @apply shadow-xl;
+    @apply shadow-lg;
   }
 
   /* Dashboard buttons */

@@ -29,7 +29,7 @@ const Navbar = ({ onMenuClick }) => {
     };
 
     return (
-        <nav className="h-16 bg-white dark:bg-dark-200 border-b border-gray-200 dark:border-dark-300 px-4 flex items-center justify-between sticky top-0 z-30">
+        <nav className="h-16 bg-white dark:bg-dark-200 border-b border-gray-200 dark:border-dark-400 px-4 flex items-center justify-between sticky top-0 z-30">
             {/* Left side */}
             <div className="flex items-center gap-4">
                 <button

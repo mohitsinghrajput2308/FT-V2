@@ -114,7 +114,7 @@ const OnboardingWizard = ({ onComplete }) => {
             <div className="bg-white dark:bg-dark-200 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
 
                 {/* Header elements with Progress */}
-                <div className="p-6 pb-2 border-b border-gray-100 dark:border-dark-300 relative">
+                <div className="p-6 pb-2 border-b border-gray-100 dark:border-dark-400 relative">
                     <button
                         onClick={handleSkip}
                         className="absolute right-4 top-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
@@ -277,7 +277,7 @@ const OnboardingWizard = ({ onComplete }) => {
                 </div>
 
                 {/* Footer Controls */}
-                <div className="p-6 border-t border-gray-100 dark:border-dark-300 bg-gray-50 dark:bg-dark-300/30 flex justify-between items-center rounded-b-2xl">
+                <div className="p-6 border-t border-gray-100 dark:border-dark-400 bg-gray-50 dark:bg-dark-300/30 flex justify-between items-center rounded-b-2xl">
                     <button
                         onClick={prevStep}
                         className={`text-sm font-medium px-4 py-2 ${currentStep === 0 ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}

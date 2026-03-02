@@ -40,7 +40,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
             <aside
                 className={`
           fixed top-0 left-0 z-50 h-full
-          bg-white dark:bg-dark-200 border-r border-gray-200 dark:border-dark-300
+          bg-white dark:bg-dark-200 border-r border-gray-200 dark:border-dark-400
           transition-all duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0 lg:static lg:z-0
@@ -49,7 +49,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
         `}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-dark-300">
+                <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-dark-400">
                     {!isCollapsed && (
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-success-500 rounded-lg flex items-center justify-center">
