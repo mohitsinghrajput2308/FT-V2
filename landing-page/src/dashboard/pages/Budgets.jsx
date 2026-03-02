@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { Plus, Edit2, Trash2, Wallet, RefreshCw } from 'lucide-react';
+﻿import { useState, useMemo } from 'react';
+import { Plus, Edit2, Trash2, Wallet, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
-import { formatCurrency, calculatePercentage, getBudgetColor, getCurrentMonth } from '../utils/helpers';
+import { formatCurrency, calculatePercentage, getCurrentMonth } from '../utils/helpers';
 import Card from '../components/Common/Card';
 import Button from '../components/Common/Button';
 import Input from '../components/Common/Input';
@@ -10,7 +10,7 @@ import Modal from '../components/Common/Modal';
 import ProgressBar from '../components/Common/ProgressBar';
 import EmptyState from '../components/Common/EmptyState';
 
-const categories = [
+const defaultCategories = [
     { value: 'Food', label: 'Food' },
     { value: 'Transport', label: 'Transport' },
     { value: 'Entertainment', label: 'Entertainment' },
@@ -21,36 +21,73 @@ const categories = [
     { value: 'Other', label: 'Other' }
 ];
 
+// Format "YYYY-MM" â†’ "March 2026"
+const formatMonthLabel = (ym) => {
+    const [y, m] = ym.split('-');
+    return new Date(parseInt(y), parseInt(m) - 1, 1)
+        .toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+};
+
+// Step a "YYYY-MM" string forward or backward by delta months
+const shiftMonth = (ym, delta) => {
+    const [y, m] = ym.split('-').map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+
 const Budgets = () => {
     const { budgets, addBudget, updateBudget, deleteBudget, transactions, currency } = useFinance();
+
+    // â”€â”€ Viewed month (defaults to current) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    const todayMonth = getCurrentMonth();
+    const [viewMonth, setViewMonth] = useState(todayMonth);
+    const isCurrentMonth = viewMonth === todayMonth;
+
     const [modalOpen, setModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [formData, setFormData] = useState({
         category: '',
+        customCategory: '',
         limit: ''
     });
     const [errors, setErrors] = useState({});
 
-    const currentMonth = getCurrentMonth();
+    // â”€â”€ Delete confirmation (inline, no window.confirm) â”€â”€â”€â”€â”€â”€
+    const [deletingId, setDeletingId] = useState(null);
 
-    // Calculate actual spending per category for current month
+    // â”€â”€ Filter budgets and spending to the viewed month â”€â”€â”€â”€â”€â”€
+    const monthBudgets = budgets.filter(b => b.month === viewMonth);
+
     const monthlyExpenses = transactions.filter(
-        t => t.type === 'expense' && t.date.startsWith(currentMonth)
+        t => t.type === 'expense' && t.date?.startsWith(viewMonth)
     );
 
     const spendingByCategory = monthlyExpenses.reduce((acc, t) => {
-        acc[t.category] = (acc[t.category] || 0) + t.amount;
+        const key = (t.category || '').toLowerCase();
+        acc[key] = (acc[key] || 0) + t.amount;
         return acc;
     }, {});
 
-    // Merge budgets with actual spending
-    const budgetsWithSpending = budgets.map(b => ({
+    const budgetsWithSpending = monthBudgets.map(b => ({
         ...b,
-        spent: spendingByCategory[b.category] || 0
+        spent: spendingByCategory[(b.category || '').toLowerCase()] || 0
     }));
 
-    const totalBudget = budgets.reduce((sum, b) => sum + b.limit, 0);
-    const totalSpent = Object.values(spendingByCategory).reduce((sum, v) => sum + v, 0);
+    const totalBudget = monthBudgets.reduce((sum, b) => sum + (b.amount || 0), 0);
+    const totalSpent = budgetsWithSpending.reduce((sum, b) => sum + b.spent, 0);
+
+    const categories = useMemo(() => {
+        const uniqueCats = new Set(defaultCategories.map(c => c.value));
+        transactions.filter(t => t.type === 'expense').forEach(t => {
+            if (t.category) uniqueCats.add(t.category);
+        });
+        budgets.forEach(b => { if (b.category) uniqueCats.add(b.category); });
+        const catsArray = Array.from(uniqueCats)
+            .filter(c => c !== 'Other')
+            .sort()
+            .map(c => ({ value: c, label: c }));
+        return [...catsArray, { value: 'Other', label: 'Other' }];
+    }, [transactions, budgets]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -63,13 +100,22 @@ const Budgets = () => {
         if (!formData.category.trim()) {
             newErrors.category = 'Please select a category';
         }
+        if (formData.category === 'Other' && !formData.customCategory?.trim()) {
+            newErrors.customCategory = 'Please specify the category';
+        }
         const limitValue = parseFloat(formData.limit);
         if (!formData.limit || isNaN(limitValue) || limitValue <= 0) {
             newErrors.limit = 'Budget limit must be greater than 0';
         }
-        // Check if category already has a budget (except when editing same budget)
-        if (!editingItem && formData.category && budgets.some(b => b.category === formData.category)) {
-            newErrors.category = `Budget for "${formData.category}" already exists`;
+        const finalCategory = formData.category === 'Other' && formData.customCategory?.trim()
+            ? formData.customCategory.trim()
+            : formData.category;
+
+        if (finalCategory && monthBudgets.some(b =>
+            b.category.toLowerCase() === finalCategory.toLowerCase() &&
+            (!editingItem || b.id !== editingItem.id)
+        )) {
+            newErrors.category = `Budget for "${finalCategory}" already exists this month`;
         }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -80,9 +126,11 @@ const Budgets = () => {
         if (!validate()) return;
 
         const data = {
-            category: formData.category,
-            limit: parseFloat(formData.limit),
-            month: currentMonth
+            category: formData.category === 'Other' && formData.customCategory?.trim()
+                ? formData.customCategory.trim()
+                : formData.category,
+            amount: parseFloat(formData.limit),
+            month: viewMonth   // â† use the currently viewed month
         };
 
         if (editingItem) {
@@ -95,14 +143,16 @@ const Budgets = () => {
 
     const openModal = (item = null) => {
         if (item) {
+            const isCustomCategory = !defaultCategories.some(c => c.value === item.category);
             setEditingItem(item);
             setFormData({
-                category: item.category,
-                limit: item.limit.toString()
+                category: isCustomCategory ? 'Other' : item.category,
+                customCategory: isCustomCategory ? item.category : '',
+                limit: item.amount ? item.amount.toString() : ''
             });
         } else {
             setEditingItem(null);
-            setFormData({ category: '', limit: '' });
+            setFormData({ category: '', customCategory: '', limit: '' });
         }
         setErrors({});
         setModalOpen(true);
@@ -113,9 +163,12 @@ const Budgets = () => {
         setEditingItem(null);
     };
 
-    const handleDelete = (id) => {
-        if (window.confirm('Are you sure you want to delete this budget?')) {
-            deleteBudget(id);
+    const confirmDelete = (id) => setDeletingId(id);
+    const cancelDelete = () => setDeletingId(null);
+    const handleDelete = () => {
+        if (deletingId) {
+            deleteBudget(deletingId);
+            setDeletingId(null);
         }
     };
 
@@ -128,6 +181,7 @@ const Budgets = () => {
 
     return (
         <div className="space-y-6">
+            {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Budgets</h1>
@@ -136,6 +190,35 @@ const Budgets = () => {
                 <Button onClick={() => openModal()} icon={Plus}>
                     Add Budget
                 </Button>
+            </div>
+
+            {/* Month navigator */}
+            <div className="flex items-center justify-between bg-white dark:bg-dark-100 border border-gray-200 dark:border-dark-400 rounded-xl px-4 py-3">
+                <button
+                    onClick={() => setViewMonth(shiftMonth(viewMonth, -1))}
+                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-300 text-gray-500 dark:text-gray-400 transition-colors"
+                    title="Previous month"
+                >
+                    <ChevronLeft className="w-5 h-5" />
+                </button>
+                <div className="text-center">
+                    <p className="font-semibold text-gray-900 dark:text-white">{formatMonthLabel(viewMonth)}</p>
+                    {!isCurrentMonth && (
+                        <button
+                            onClick={() => setViewMonth(todayMonth)}
+                            className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
+                        >
+                            Back to current month
+                        </button>
+                    )}
+                </div>
+                <button
+                    onClick={() => setViewMonth(shiftMonth(viewMonth, 1))}
+                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-300 text-gray-500 dark:text-gray-400 transition-colors"
+                    title="Next month"
+                >
+                    <ChevronRight className="w-5 h-5" />
+                </button>
             </div>
 
             {/* Summary Cards */}
@@ -177,44 +260,70 @@ const Budgets = () => {
             {budgetsWithSpending.length === 0 ? (
                 <EmptyState
                     icon={Wallet}
-                    title="No budgets set"
-                    description="Create budgets to track your spending by category."
-                    action={() => openModal()}
+                    title={`No budgets for ${formatMonthLabel(viewMonth)}`}
+                    description={isCurrentMonth
+                        ? "Create budgets to track your spending by category."
+                        : "No budgets were set for this month."}
+                    action={isCurrentMonth ? () => openModal() : undefined}
                     actionLabel="Create Budget"
                 />
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {budgetsWithSpending.map((budget) => {
-                        const percentage = calculatePercentage(budget.spent, budget.limit);
-                        const remaining = budget.limit - budget.spent;
+                    {budgetsWithSpending.map((budget, idx) => {
+                        const percentage = calculatePercentage(budget.spent, budget.amount);
+                        const remaining = budget.amount - budget.spent;
+                        const isDeleting = deletingId === budget.id;
 
                         return (
                             <Card key={budget.id}>
                                 <div className="flex items-start justify-between mb-3">
                                     <div>
-                                        <h3 className="font-semibold text-gray-900 dark:text-white">
+                                        <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                            <span className="text-sm text-gray-500 font-medium">#{idx + 1}</span>
                                             {budget.category}
                                         </h3>
                                         {getStatusBadge(percentage)}
                                     </div>
                                     <div className="flex gap-1">
-                                        <button
-                                            onClick={() => openModal(budget)}
-                                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-300 text-gray-500"
-                                        >
-                                            <Edit2 className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(budget.id)}
-                                            className="p-1.5 rounded-lg hover:bg-danger-50 dark:hover:bg-danger-900/20 text-danger-500"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        {!isDeleting ? (
+                                            <>
+                                                <button
+                                                    onClick={() => openModal(budget)}
+                                                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-300 text-gray-500"
+                                                    title="Edit budget"
+                                                >
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => confirmDelete(budget.id)}
+                                                    className="p-1.5 rounded-lg hover:bg-danger-50 dark:hover:bg-danger-900/20 text-danger-500"
+                                                    title="Delete budget"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">Delete?</span>
+                                                <button
+                                                    onClick={handleDelete}
+                                                    className="px-2 py-1 text-xs font-semibold bg-danger-600 hover:bg-danger-700 text-white rounded-md"
+                                                >
+                                                    Yes
+                                                </button>
+                                                <button
+                                                    onClick={cancelDelete}
+                                                    className="px-2 py-1 text-xs font-semibold bg-gray-200 dark:bg-dark-300 text-gray-700 dark:text-gray-300 rounded-md"
+                                                >
+                                                    No
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
                                 <div className="mb-2">
-                                    <ProgressBar value={budget.spent} max={budget.limit} color="auto" />
+                                    <ProgressBar value={budget.spent} max={budget.amount} color="auto" />
                                 </div>
 
                                 <div className="flex justify-between text-sm">
@@ -222,7 +331,7 @@ const Budgets = () => {
                                         Spent: {formatCurrency(budget.spent, currency)}
                                     </span>
                                     <span className="text-gray-500 dark:text-gray-400">
-                                        Limit: {formatCurrency(budget.limit, currency)}
+                                        Limit: {formatCurrency(budget.amount, currency)}
                                     </span>
                                 </div>
 
@@ -239,7 +348,7 @@ const Budgets = () => {
             )}
 
             {/* Add/Edit Modal */}
-            <Modal isOpen={modalOpen} onClose={closeModal} title={editingItem ? 'Edit Budget' : 'Add Budget'}>
+            <Modal isOpen={modalOpen} onClose={closeModal} title={editingItem ? 'Edit Budget' : `Add Budget â€” ${formatMonthLabel(viewMonth)}`}>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <Select
@@ -251,10 +360,20 @@ const Budgets = () => {
                             error={errors.category}
                             disabled={!!editingItem}
                         />
-                        {errors.category && (
-                            <p className="mt-1 text-sm text-danger-600 dark:text-danger-400">{errors.category}</p>
-                        )}
                     </div>
+                    {formData.category === 'Other' && (
+                        <div>
+                            <Input
+                                label="Please Specify"
+                                name="customCategory"
+                                placeholder="e.g. Pet Care"
+                                value={formData.customCategory}
+                                onChange={handleChange}
+                                error={errors.customCategory}
+                                disabled={!!editingItem}
+                            />
+                        </div>
+                    )}
                     <div>
                         <Input
                             label="Budget Limit"
@@ -267,9 +386,6 @@ const Budgets = () => {
                             onChange={handleChange}
                             error={errors.limit}
                         />
-                        {errors.limit && (
-                            <p className="mt-1 text-sm text-danger-600 dark:text-danger-400">{errors.limit}</p>
-                        )}
                     </div>
                     <div className="flex gap-3 pt-4">
                         <Button type="button" variant="secondary" onClick={closeModal} fullWidth>
