@@ -14,9 +14,9 @@ const assets = [
 
 const stats = [
   { value: '2024', label: 'Founded' },
-  { value: '500K+', label: 'Active Users' },
-  { value: '$2.5B+', label: 'Tracked' },
-  { value: '50+', label: 'Countries' },
+  { value: '500K+', label: 'User Capacity' },
+  { value: '$2.5B+', label: 'Volume Capacity' },
+  { value: '50+', label: 'Countries Supported' },
 ];
 
 const PressKit = () => (

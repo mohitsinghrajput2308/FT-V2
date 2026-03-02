@@ -1,6 +1,6 @@
 # FinTrack — Features Overview
 
-**Last Updated:** March 3, 2026
+**Last Updated:** March 2, 2026
 
 ---
 
@@ -82,6 +82,9 @@ Privacy Policy, Terms of Service, Cookie Policy, GDPR Compliance, About Us, Care
 - **Recharts** for all dashboard charts
 - **React Router v7** with code-splitting (`React.lazy` + `Suspense`) on all 17+ routes
 - **Vercel** deployment — auto-deploy on push to `main`
+- **GitHub Actions CI** (`.github/workflows/ci.yml`) — runs 86 tests + build on every push/PR
+- **Jest** — 86 tests: 60 unit (`security.test.js`) + 26 integration (`integration.test.js`)
+- **Crisp Live Chat** — widget live on all pages (ID: `6a2c2df9`)
 - **jsPDF + PapaParse** — export service built (`exportService.js`), gating not yet connected
 - **Supabase JS v2.97** client
 
@@ -114,12 +117,12 @@ Privacy Policy, Terms of Service, Cookie Policy, GDPR Compliance, About Us, Care
 
 ## 🟢 Tier 3 — Launch & Growth
 
-| # | Feature | Effort | Why |
-|---|---------|--------|-----|
-| 12 | **Automated Tests** | 2–3 days | 10–15 Jest unit tests for `FinanceContext` CRUD + 3–5 Playwright E2E tests (signup → add transaction → view dashboard). Signals code quality to buyers/investors. |
-| 13 | **GitHub Actions CI/CD** | 1 day | Auto-run tests + lint on every push. Auto-deploy to Vercel on merge to `main`. |
-| 14 | **Crisp Live Chat Widget** | 30 min | Single `<script>` tag in `index.html`. Free tier: 2 agents, unlimited conversations. Makes the product feel professionally supported. |
-| 15 | **Fix Social Proof Numbers** | 30 min | Landing page currently claims "100K+ Active Users" and "$500M+ Money Tracked" with zero real users. Replace with "Built for 100K+ users" or remove until real data exists. |
+| # | Feature | Status | Notes |
+|---|---------|--------|-------|
+| 12 | **Automated Tests** | ✅ **Done** | 86 tests across 2 files: `security.test.js` (60 unit tests — sanitization, validators, XSS) + `integration.test.js` (26 tests — SecureAPI wiring, localStorage isolation, boundary values). Run: `npm test -- --watchAll=false`. |
+| 13 | **GitHub Actions CI/CD** | ✅ **Done** | `.github/workflows/ci.yml` created. Runs all tests + build on every push/PR to `main`. Uses `npm ci`, `--passWithNoTests` flag, and passes Supabase env vars from GitHub Secrets. |
+| 14 | **Crisp Live Chat Widget** | ✅ **Done** | Script already live in `public/index.html` with website ID `6a2c2df9-c0ae-46de-aa11-64155b1a0300`. Chat widget appears on all pages. |
+| 15 | **Fix Social Proof Numbers** | ✅ **Done** | `HeroSection.jsx`, `AboutUs.jsx`, and `PressKit.jsx` all updated to use "User Capacity" / "Volume Capacity" labels instead of "Active Users" / "Money Tracked" — honest framing for pre-launch. |
 | 16 | **Mobile App — Google Play Publish** | 1 week | React Native/Expo app is in development. Publish to Google Play Store to open a new user acquisition channel. |
 | 17 | **Multi-Currency Live FX Rates** | 2–3 days | Integrate a free FX API (ExchangeRate-API free tier) to auto-convert transaction amounts at real-time rates. Currently currency is a display-only setting with hardcoded symbols. |
 | 18 | **Bank Account Linking (Plaid)** | 1–2 weeks | Auto-import transactions from real bank accounts. Biggest technical moat in fintech. Plaid API is free in development mode. |
@@ -145,13 +148,10 @@ Privacy Policy, Terms of Service, Cookie Policy, GDPR Compliance, About Us, Care
 | Gap | Details |
 |-----|---------|
 | **Stripe not connected** | Pricing page shows 3 tiers but clicking "Get Started" doesn't charge anyone. `localIsPro` is a mock state. |
-| **No real users or analytics** | No Google Analytics installed. No signup data. Social proof numbers on landing page are placeholders. |
-| **No automated tests** | `package.json` has `"test": "craco test"` but no test files exist. |
-| **No CI/CD pipeline** | No GitHub Actions — deploys are triggered manually by pushing to `main`. |
+| **No real users yet** | Zero signups / revenue. Social proof stats use "Capacity" framing (honest for pre-launch). Remove or replace with real numbers once users sign up. |
+| **GA4 env var not set** | GA4 script is live in `public/index.html` but `REACT_APP_GA_MEASUREMENT_ID` must be added as an env var in the Vercel dashboard to start collecting data. |
+| **Email service env vars not set** | Three separate services need credentials before emails will send: (1) OTP/auth emails → Resend or SendGrid in Supabase Auth settings; (2) newsletter welcome email → `RESEND_API_KEY` + `FROM_EMAIL` in Supabase Edge Function env vars; same key covers both if using Resend. |
+| **OAuth providers not configured** | Google, Microsoft, Apple, GitHub OAuth is coded but client IDs/secrets must be entered in Supabase Dashboard → Auth → Providers. |
+| **CAPTCHA keys not set** | Cloudflare Turnstile site key must be configured in Supabase Auth settings to activate bot protection. |
 | **No app store presence** | Mobile app not published to Google Play or App Store yet. |
-| **GA4 env var not set** | GA4 script is in `index.html` but `REACT_APP_GA_MEASUREMENT_ID` needs to be added as an env var in Vercel dashboard. |
-| **Email service env vars needed** | Newsletter welcome email Edge Function deployed but needs `RESEND_API_KEY` + `FROM_EMAIL` set in Supabase → Project Settings → Edge Functions → Environment Variables. |
-| **OAuth providers not configured** | Google, Microsoft, Apple, GitHub OAuth coded but credentials need to be entered in Supabase Dashboard. |
-| **CAPTCHA keys not set** | Cloudflare Turnstile coded but site key needs to be configured in Supabase Auth settings. |
-| **Email service not set up** | OTP emails require SendGrid/Resend credentials in Supabase Auth email settings. |
 | **Client-side rate limiting only** | Rate limiting resets on page refresh. Real enforcement requires Supabase Pro + Edge Functions. |
