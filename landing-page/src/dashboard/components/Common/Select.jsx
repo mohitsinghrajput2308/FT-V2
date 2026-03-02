@@ -32,7 +32,7 @@ const Select = forwardRef(({
           `}
                     {...props}
                 >
-                    <option value="" className="text-gray-400">{placeholder}</option>
+                    <option value="" disabled hidden className="text-gray-400">{placeholder}</option>
                     {options.map((option) => (
                         <option
                             key={option.value}

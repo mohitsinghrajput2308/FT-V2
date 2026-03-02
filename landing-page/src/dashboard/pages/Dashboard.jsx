@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Wallet, TrendingUp, TrendingDown, PiggyBank } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency, groupByCategory, getShortMonthName } from '../utils/helpers';
@@ -9,6 +10,7 @@ import ExpensePieChart from '../components/Charts/ExpensePieChart';
 import OnboardingWizard from '../components/Onboarding/OnboardingWizard';
 
 const Dashboard = () => {
+    const [wizardDone, setWizardDone] = useState(false);
     const {
         transactions,
         monthlyIncome,
@@ -108,8 +110,8 @@ const Dashboard = () => {
             <RecentTransactions />
 
             {/* Onboarding Overlay */}
-            {!settings?.onboarding_completed && (
-                <OnboardingWizard onComplete={() => window.location.reload()} />
+            {!wizardDone && !settings?.onboarding_completed && (
+                <OnboardingWizard onComplete={() => setWizardDone(true)} />
             )}
         </div>
     );

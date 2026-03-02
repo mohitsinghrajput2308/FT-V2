@@ -1,19 +1,31 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { DollarSign, PlusCircle, Target, CheckCircle2, X } from 'lucide-react';
+import { PlusCircle, Target, CheckCircle2, X, Sun, Moon, Monitor } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
+import { useTheme } from '../../context/ThemeContext';
 import Button from '../Common/Button';
 import Input from '../Common/Input';
 import Select from '../Common/Select';
 
 const steps = [
-    { id: 'welcome', title: 'Welcome to FinTrack', icon: DollarSign },
-    { id: 'transaction', title: 'First Transaction', icon: PlusCircle },
-    { id: 'budget', title: 'Set a Budget', icon: Target },
+    { id: 'welcome',     title: 'Welcome to FinTrack', icon: CheckCircle2 },
+    { id: 'transaction', title: 'First Transaction',    icon: PlusCircle },
+    { id: 'budget',      title: 'Set a Budget',         icon: Target },
+];
+
+// Fallback categories for brand-new users who have no DB categories yet
+const DEFAULT_EXPENSE_CATS = ['Food & Dining', 'Transport', 'Shopping', 'Housing', 'Health', 'Entertainment', 'Utilities', 'Other'];
+const DEFAULT_INCOME_CATS  = ['Salary', 'Freelance', 'Investment', 'Business', 'Gift', 'Other'];
+
+const THEME_OPTIONS = [
+    { value: 'light',  label: 'Light',  Icon: Sun },
+    { value: 'dark',   label: 'Dark',   Icon: Moon },
+    { value: 'system', label: 'System', Icon: Monitor },
 ];
 
 const OnboardingWizard = ({ onComplete }) => {
     const { updateSettings, addTransaction, addBudget, settings, categories } = useFinance();
+    const { theme, setTheme } = useTheme();
     const [currentStep, setCurrentStep] = useState(0);
     const [direction, setDirection] = useState(1); // 1 = forward, -1 = backward
 
@@ -30,10 +42,13 @@ const OnboardingWizard = ({ onComplete }) => {
     const [budCategory, setBudCategory] = useState('');
     const [budLimit, setBudLimit] = useState('');
 
-    // Available categories
-    const expenseCategories = categories.expense.map(c => ({ value: c.name, label: c.name }));
-    const incomeCategories = categories.income.map(c => ({ value: c.name, label: c.name }));
+    // Available categories — fall back to built-in defaults for new users
+    const expenseCategories = (categories.expense.length > 0 ? categories.expense.map(c => ({ value: c.name, label: c.name })) : DEFAULT_EXPENSE_CATS.map(c => ({ value: c, label: c })));
+    const incomeCategories  = (categories.income.length  > 0 ? categories.income.map(c  => ({ value: c.name, label: c.name })) : DEFAULT_INCOME_CATS.map(c  => ({ value: c, label: c })));
     const displayCategories = txType === 'expense' ? expenseCategories : incomeCategories;
+
+    // Dynamic currency prefix component for Input icons
+    const CurrencyPrefix = () => <span className="text-sm font-semibold leading-none">{currency}</span>;
 
     const nextStep = () => {
         setDirection(1);
@@ -143,7 +158,7 @@ const OnboardingWizard = ({ onComplete }) => {
                             transition={{ duration: 0.3, ease: 'easeInOut' }}
                             className="space-y-6"
                         >
-                            {/* Step 1: Welcome & Currency */}
+                            {/* Step 1: Welcome, Currency & Theme */}
                             {currentStep === 0 && (
                                 <div className="text-center space-y-6 pt-4">
                                     <div>
@@ -151,22 +166,49 @@ const OnboardingWizard = ({ onComplete }) => {
                                             Let's get your dashboard ready.
                                         </h2>
                                         <p className="text-gray-500 dark:text-gray-400">
-                                            To start, pick the primary currency you use.
+                                            Pick your currency and preferred look.
                                         </p>
                                     </div>
+
+                                    {/* Currency */}
                                     <div className="max-w-xs mx-auto text-left">
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Base Currency</label>
                                         <Select
                                             value={currency}
                                             onChange={(e) => setCurrency(e.target.value)}
                                             options={[
-                                                { value: '$', label: 'USD ($)' },
-                                                { value: '€', label: 'EUR (€)' },
-                                                { value: '£', label: 'GBP (£)' },
-                                                { value: '₹', label: 'INR (₹)' },
-                                                { value: '¥', label: 'JPY (¥)' }
+                                                { value: '$',  label: 'USD ($)' },
+                                                { value: '€',  label: 'EUR (€)' },
+                                                { value: '£',  label: 'GBP (£)' },
+                                                { value: '₹',  label: 'INR (₹)' },
+                                                { value: '¥',  label: 'JPY (¥)' },
+                                                { value: 'A$', label: 'AUD (A$)' },
+                                                { value: 'C$', label: 'CAD (C$)' },
+                                                { value: 'CHF',label: 'CHF (CHF)' },
                                             ]}
                                         />
+                                    </div>
+
+                                    {/* Theme */}
+                                    <div className="max-w-xs mx-auto text-left">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">App Theme</label>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {THEME_OPTIONS.map(({ value, label, Icon }) => (
+                                                <button
+                                                    key={value}
+                                                    type="button"
+                                                    onClick={() => setTheme(value)}
+                                                    className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 transition-all duration-200
+                                                        ${theme === value
+                                                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+                                                            : 'border-gray-200 dark:border-dark-400 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-dark-300'
+                                                        }`}
+                                                >
+                                                    <Icon className="w-5 h-5" />
+                                                    <span className="text-xs font-medium">{label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -182,14 +224,14 @@ const OnboardingWizard = ({ onComplete }) => {
                                         <Select
                                             options={[{ value: 'expense', label: 'Expense' }, { value: 'income', label: 'Income' }]}
                                             value={txType}
-                                            onChange={(e) => setTxType(e.target.value)}
+                                            onChange={(e) => { setTxType(e.target.value); setTxCategory(''); }}
                                         />
                                         <Input
                                             type="number"
                                             placeholder="Amount"
                                             value={txAmount}
                                             onChange={(e) => setTxAmount(e.target.value)}
-                                            icon={DollarSign}
+                                            icon={CurrencyPrefix}
                                         />
                                     </div>
                                     <Select
@@ -225,7 +267,7 @@ const OnboardingWizard = ({ onComplete }) => {
                                             placeholder="Monthly Limit"
                                             value={budLimit}
                                             onChange={(e) => setBudLimit(e.target.value)}
-                                            icon={DollarSign}
+                                            icon={CurrencyPrefix}
                                         />
                                     </div>
                                 </div>
