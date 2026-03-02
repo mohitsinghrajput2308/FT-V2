@@ -203,20 +203,21 @@ const Income = () => {
                     actionLabel="Add Income"
                 />
             ) : (
-                <div className="table-container">
-                    <table className="table">
-                        <thead>
-                            <tr>
-                                <th>Source</th>
-                                <th>Category</th>
-                                <th>Date</th>
-                                <th>Amount</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {incomeTransactions.map((item) => (
-                                <tr key={item.id}>
+                <Card padding={false} hover={false}>
+                    <div className="table-container">
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    <th>Source</th>
+                                    <th>Category</th>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {incomeTransactions.map((item) => (
+                                    <tr key={item.id}>
                                     <td>
                                         <div>
                                             <p className="font-medium text-gray-900 dark:text-white">{item.name}</p>
@@ -254,7 +255,8 @@ const Income = () => {
                             ))}
                         </tbody>
                     </table>
-                </div>
+                    </div>
+                </Card>
             )}
 
             {/* Add/Edit Modal */}

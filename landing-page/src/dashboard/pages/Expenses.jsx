@@ -216,21 +216,22 @@ const Expenses = () => {
                     actionLabel="Add Expense"
                 />
             ) : (
-                <div className="table-container">
-                    <table className="table">
-                        <thead>
-                            <tr>
-                                <th>Description</th>
-                                <th>Category</th>
-                                <th>Payment</th>
-                                <th>Date</th>
-                                <th>Amount</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {expenseTransactions.map((item) => (
-                                <tr key={item.id}>
+                <Card padding={false} hover={false}>
+                    <div className="table-container">
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th>Category</th>
+                                    <th>Payment</th>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {expenseTransactions.map((item) => (
+                                    <tr key={item.id}>
                                     <td>
                                         <p className="font-medium text-gray-900 dark:text-white">{item.name}</p>
                                     </td>
@@ -264,7 +265,8 @@ const Expenses = () => {
                             ))}
                         </tbody>
                     </table>
-                </div>
+                    </div>
+                </Card>
             )}
 
             {/* Add/Edit Modal */}
