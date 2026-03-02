@@ -15,25 +15,56 @@ import { supabase } from '../../lib/supabase';
 // Frontend uses camelCase, Supabase uses snake_case.
 // These functions translate between the two.
 
-const toSupabaseTransaction = (t) => ({
-    user_id:          t.userId,
-    type:             t.type,
-    amount:           Number(t.amount),
-    category:         t.category,
-    description:      t.description || '',
-    transaction_date: t.date || new Date().toISOString().split('T')[0],
-});
+const toSupabaseTransaction = (t) => {
+    const meta = {
+        name: t.name || t.category || 'Transaction',
+        notes: t.description || '',
+        paymentMethod: t.paymentMethod || 'Cash',
+    };
 
-const fromSupabaseTransaction = (row) => ({
-    id:          row.id,
-    userId:      row.user_id,
-    type:        row.type,
-    amount:      Number(row.amount),
-    category:    row.category,
-    description: row.description || '',
-    date:        row.transaction_date,
-    createdAt:   row.created_at,
-});
+    return {
+        user_id: t.userId,
+        type: t.type,
+        amount: Number(t.amount),
+        category: t.category,
+        description: JSON.stringify(meta),
+        transaction_date: t.date || new Date().toISOString().split('T')[0],
+    };
+};
+
+const fromSupabaseTransaction = (row) => {
+    let name = row.category || 'Transaction';
+    let description = '';
+    let paymentMethod = 'Cash';
+
+    try {
+        if (row.description && row.description.startsWith('{')) {
+            const parsed = JSON.parse(row.description);
+            name = parsed.name || name;
+            description = parsed.notes || '';
+            paymentMethod = parsed.paymentMethod || 'Cash';
+        } else {
+            name = row.category || 'Transaction';
+            description = row.description || '';
+        }
+    } catch {
+        name = row.category || 'Transaction';
+        description = row.description || '';
+    }
+
+    return {
+        id: row.id,
+        userId: row.user_id,
+        type: row.type,
+        name: name,
+        amount: Number(row.amount),
+        category: row.category,
+        paymentMethod: paymentMethod,
+        description: description,
+        date: row.transaction_date,
+        createdAt: row.created_at,
+    };
+};
 
 const toSupabaseBudget = (b) => {
     // Frontend sends month as "YYYY-MM", Supabase stores month/year as ints
@@ -48,93 +79,94 @@ const toSupabaseBudget = (b) => {
         year = b.year || now.getFullYear();
     }
     return {
-        user_id:  b.userId,
+        user_id: b.userId,
         category: b.category,
-        amount:   Number(b.amount),
+        amount: Number(b.amount),
+        spent_amount: Number(b.spent || 0),
         month,
         year,
     };
 };
 
 const fromSupabaseBudget = (row) => ({
-    id:        row.id,
-    userId:    row.user_id,
-    category:  row.category,
-    amount:    Number(row.amount),
-    spent:     0, // Computed client-side from transactions
-    month:     `${row.year}-${String(row.month).padStart(2, '0')}`,
+    id: row.id,
+    userId: row.user_id,
+    category: row.category,
+    amount: Number(row.amount),
+    spent: Number(row.spent_amount || 0),
+    month: `${row.year}-${String(row.month).padStart(2, '0')}`,
     createdAt: row.created_at,
 });
 
 const toSupabaseGoal = (g) => ({
-    user_id:        g.userId,
-    name:           g.name,
-    target_amount:  Number(g.targetAmount),
+    user_id: g.userId,
+    name: g.name,
+    target_amount: Number(g.targetAmount),
     current_amount: Number(g.currentAmount || 0),
-    deadline:       g.deadline || null,
-    category:       g.category || null,
+    deadline: g.deadline || null,
+    category: g.category || null,
 });
 
 const fromSupabaseGoal = (row) => ({
-    id:            row.id,
-    userId:        row.user_id,
-    name:          row.name,
-    targetAmount:  Number(row.target_amount),
+    id: row.id,
+    userId: row.user_id,
+    name: row.name,
+    targetAmount: Number(row.target_amount),
     currentAmount: Number(row.current_amount),
-    deadline:      row.deadline,
-    category:      row.category,
-    createdAt:     row.created_at,
+    deadline: row.deadline,
+    category: row.category,
+    createdAt: row.created_at,
 });
 
 const toSupabaseInvestment = (i) => ({
-    user_id:        i.userId,
-    stock_symbol:   i.symbol || i.name || i.stockSymbol || '',
-    quantity:       Number(i.quantity),
+    user_id: i.userId,
+    stock_symbol: i.symbol || i.name || i.stockSymbol || '',
+    quantity: Number(i.quantity),
     purchase_price: Number(i.buyPrice || i.purchasePrice || 0),
-    current_price:  Number(i.currentValue || i.currentPrice || 0),
-    purchase_date:  i.purchaseDate || i.date || new Date().toISOString().split('T')[0],
+    current_price: Number(i.currentValue || i.currentPrice || 0),
+    purchase_date: i.purchaseDate || i.date || new Date().toISOString().split('T')[0],
 });
 
 const fromSupabaseInvestment = (row) => ({
-    id:            row.id,
-    userId:        row.user_id,
-    name:          row.stock_symbol,
-    symbol:        row.stock_symbol,
-    stockSymbol:   row.stock_symbol,
-    quantity:      Number(row.quantity),
-    buyPrice:      Number(row.purchase_price),
+    id: row.id,
+    userId: row.user_id,
+    name: row.stock_symbol,
+    symbol: row.stock_symbol,
+    stockSymbol: row.stock_symbol,
+    quantity: Number(row.quantity),
+    buyPrice: Number(row.purchase_price),
     purchasePrice: Number(row.purchase_price),
-    currentValue:  Number(row.current_price || row.purchase_price),
-    currentPrice:  Number(row.current_price || row.purchase_price),
-    purchaseDate:  row.purchase_date,
-    date:          row.purchase_date,
-    createdAt:     row.created_at,
+    currentValue: Number(row.current_price || row.purchase_price),
+    currentPrice: Number(row.current_price || row.purchase_price),
+    purchaseDate: row.purchase_date,
+    date: row.purchase_date,
+    createdAt: row.created_at,
 });
 
 const toSupabaseBill = (b) => ({
-    user_id:      b.userId,
-    name:         b.name,
-    amount:       Number(b.amount),
-    due_date:     b.dueDate,
-    category:     b.category || null,
-    is_paid:      b.isPaid || false,
-    paid_date:    b.paidDate || null,
+    user_id: b.userId,
+    name: b.name,
+    amount: Number(b.amount),
+    due_date: b.dueDate,
+    category: b.category || null,
+    is_paid: b.isPaid || false,
+    paid_date: b.paidDate || null,
     is_recurring: b.isRecurring || false,
-    recurrence:   b.recurrence || null,
+    recurrence: b.recurrence || null,
 });
 
 const fromSupabaseBill = (row) => ({
-    id:          row.id,
-    userId:      row.user_id,
-    name:        row.name,
-    amount:      Number(row.amount),
-    dueDate:     row.due_date,
-    category:    row.category,
-    isPaid:      row.is_paid,
-    paidDate:    row.paid_date,
+    id: row.id,
+    userId: row.user_id,
+    name: row.name,
+    amount: Number(row.amount),
+    dueDate: row.due_date,
+    category: row.category,
+    isPaid: row.is_paid,
+    paidDate: row.paid_date,
     isRecurring: row.is_recurring,
-    recurrence:  row.recurrence,
-    createdAt:   row.created_at,
+    recurrence: row.recurrence,
+    createdAt: row.created_at,
 });
 
 
@@ -178,8 +210,17 @@ export const TransactionService = {
             if (updates.type !== undefined) payload.type = updates.type;
             if (updates.amount !== undefined) payload.amount = Number(updates.amount);
             if (updates.category !== undefined) payload.category = updates.category;
-            if (updates.description !== undefined) payload.description = updates.description;
             if (updates.date !== undefined) payload.transaction_date = updates.date;
+
+            // Handle composite JSON field if any of the meta fields are being updated
+            if (updates.name !== undefined || updates.description !== undefined || updates.paymentMethod !== undefined) {
+                const meta = {
+                    name: updates.name || updates.category || 'Transaction',
+                    notes: updates.description || '',
+                    paymentMethod: updates.paymentMethod || 'Cash',
+                };
+                payload.description = JSON.stringify(meta);
+            }
 
             const { data, error } = await supabase
                 .from('transactions')
@@ -521,11 +562,11 @@ export const SettingsService = {
             if (!data) return { data: { currency: '$', dateFormat: 'MM/DD/YYYY' } };
             return {
                 data: {
-                    currency:    data.currency || '$',
-                    dateFormat:  data.date_format || 'MM/DD/YYYY',
+                    currency: data.currency || '$',
+                    dateFormat: data.date_format || 'MM/DD/YYYY',
                     notifications: data.notifications_enabled,
-                    theme:       data.theme,
-                    language:    data.language,
+                    theme: data.theme,
+                    language: data.language,
                 }
             };
         } catch (err) { return handleError('get settings', err); }
@@ -548,11 +589,11 @@ export const SettingsService = {
             if (error) return handleError('upsert settings', error);
             return {
                 data: {
-                    currency:    data.currency,
-                    dateFormat:  data.date_format,
+                    currency: data.currency,
+                    dateFormat: data.date_format,
                     notifications: data.notifications_enabled,
-                    theme:       data.theme,
-                    language:    data.language,
+                    theme: data.theme,
+                    language: data.language,
                 }
             };
         } catch (err) { return handleError('upsert settings', err); }
