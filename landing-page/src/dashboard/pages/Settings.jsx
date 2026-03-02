@@ -43,8 +43,15 @@ const Settings = () => {
         }).catch(() => {});
     }, [formData.currency]);
 
+    // Keep the dropdown in sync if the theme is changed from the Navbar toggle
+    useEffect(() => {
+        setFormData(prev => ({ ...prev, theme }));
+    }, [theme]);
+
     const handleChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
+        // Apply theme instantly — no need to wait for Save
+        if (field === 'theme') setTheme(value);
     };
 
     const handleNotificationChange = (field, value) => {
@@ -163,8 +170,9 @@ const Settings = () => {
                         value={formData.theme}
                         onChange={(e) => handleChange('theme', e.target.value)}
                         options={[
-                            { value: 'light', label: 'Light Mode' },
-                            { value: 'dark', label: 'Dark Mode' }
+                            { value: 'light',  label: '☀️  Light Mode' },
+                            { value: 'dark',   label: '🌙  Dark Mode' },
+                            { value: 'system', label: '🖥️  System Default' }
                         ]}
                     />
                 </div>
