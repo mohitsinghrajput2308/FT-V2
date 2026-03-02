@@ -11,6 +11,7 @@ import Card from '../components/Common/Card';
 import Button from '../components/Common/Button';
 import Select from '../components/Common/Select';
 import Modal from '../components/Common/Modal';
+import PlaidLinkButton from '../components/PlaidLink/PlaidLinkButton';
 
 const Settings = () => {
     const { currentUser, updateProfile, logout } = useAuth();
@@ -21,13 +22,7 @@ const Settings = () => {
     const [loading, setLoading] = useState(false);
     const [confirmModal, setConfirmModal] = useState(false);
     const [liveRate, setLiveRate] = useState(null);
-
-    useEffect(() => {
-        fetchFxRates().then(rates => {
-            const code = SYMBOL_TO_CODE[formData.currency] ?? 'USD';
-            setLiveRate(rates?.[code] ?? null);
-        }).catch(() => {});
-    }, [formData.currency]);
+    const [linkedBank, setLinkedBank] = useState(null);
 
     const [formData, setFormData] = useState({
         currency: settings.currency || '$',
@@ -40,6 +35,13 @@ const Settings = () => {
             budgetAlerts: settings.notifications?.budgetAlerts ?? true
         }
     });
+
+    useEffect(() => {
+        fetchFxRates().then(rates => {
+            const code = SYMBOL_TO_CODE[formData.currency] ?? 'USD';
+            setLiveRate(rates?.[code] ?? null);
+        }).catch(() => {});
+    }, [formData.currency]);
 
     const handleChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -201,6 +203,28 @@ const Settings = () => {
                         Reset to Defaults
                     </Button>
                 </div>
+            </Card>
+
+            {/* Connected Accounts (Plaid) */}
+            <Card>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Connected Bank Accounts</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    Link your bank account to automatically import transactions.
+                </p>
+                {linkedBank ? (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                        <span className="text-green-600 dark:text-green-400 text-xl">🏦</span>
+                        <div>
+                            <p className="font-semibold text-green-700 dark:text-green-300">{linkedBank}</p>
+                            <p className="text-xs text-green-600 dark:text-green-400">Account linked successfully</p>
+                        </div>
+                    </div>
+                ) : (
+                    <PlaidLinkButton
+                        onSuccess={(result) => setLinkedBank(result?.institution ?? 'Your Bank')}
+                        onError={(msg) => error(typeof msg === 'string' ? msg : 'Bank linking failed')}
+                    />
+                )}
             </Card>
 
             {/* Data Management */}
