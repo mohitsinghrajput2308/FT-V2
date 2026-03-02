@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Save, RefreshCw, Download, Upload, Trash2 } from 'lucide-react';
+import { SUPPORTED_CURRENCIES, SYMBOL_TO_CODE, fetchFxRates } from '../utils/fxService';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useFinance } from '../context/FinanceContext';
@@ -19,6 +20,14 @@ const Settings = () => {
 
     const [loading, setLoading] = useState(false);
     const [confirmModal, setConfirmModal] = useState(false);
+    const [liveRate, setLiveRate] = useState(null);
+
+    useEffect(() => {
+        fetchFxRates().then(rates => {
+            const code = SYMBOL_TO_CODE[formData.currency] ?? 'USD';
+            setLiveRate(rates?.[code] ?? null);
+        }).catch(() => {});
+    }, [formData.currency]);
 
     const [formData, setFormData] = useState({
         currency: settings.currency || '$',
@@ -124,17 +133,19 @@ const Settings = () => {
             <Card>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Preferences</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Select
-                        label="Currency"
-                        value={formData.currency}
-                        onChange={(e) => handleChange('currency', e.target.value)}
-                        options={[
-                            { value: '$', label: '$ US Dollar (USD)' },
-                            { value: '€', label: '€ Euro (EUR)' },
-                            { value: '£', label: '£ British Pound (GBP)' },
-                            { value: '₹', label: '₹ Indian Rupee (INR)' }
-                        ]}
-                    />
+                    <div>
+                        <Select
+                            label="Currency"
+                            value={formData.currency}
+                            onChange={(e) => handleChange('currency', e.target.value)}
+                            options={SUPPORTED_CURRENCIES.map(c => ({ value: c.symbol, label: c.label }))}
+                        />
+                        {liveRate !== null && formData.currency !== '$' && (
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                Live rate: 1 USD = {liveRate.toFixed(4)} {SYMBOL_TO_CODE[formData.currency]}
+                            </p>
+                        )}
+                    </div>
                     <Select
                         label="Date Format"
                         value={formData.dateFormat}

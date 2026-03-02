@@ -1,11 +1,17 @@
 import React, { useEffect, useRef } from 'react';
 import { ArrowRight, Sparkles, Shield, TrendingUp, Zap, ChevronRight, DollarSign } from 'lucide-react';
 import { useAuthModal } from '../context/AuthContext';
+import { getVariant, getAbCopy, trackAbEvent, EXPERIMENTS } from '../utils/abTest';
 
 export const CTASection = () => {
   const { openRegister } = useAuthModal();
   const sectionRef = useRef(null);
   const [mousePos, setMousePos] = React.useState({ x: 0, y: 0 });
+  const ctaVariant = getVariant(EXPERIMENTS.CTA_BUTTON);
+  const ctaLabel = getAbCopy(EXPERIMENTS.CTA_BUTTON, {
+    A: 'Get Started Free',
+    B: 'Start Tracking Free',
+  });
 
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -21,6 +27,10 @@ export const CTASection = () => {
     if (section) section.addEventListener('mousemove', handleMouseMove);
     return () => { if (section) section.removeEventListener('mousemove', handleMouseMove); };
   }, []);
+
+  useEffect(() => {
+    trackAbEvent(EXPERIMENTS.CTA_BUTTON, ctaVariant, 'impression');
+  }, [ctaVariant]);
 
   const features = [
     { icon: Shield, label: 'Bank-grade security' },
@@ -108,7 +118,7 @@ export const CTASection = () => {
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14">
           <button
-            onClick={openRegister}
+            onClick={() => { trackAbEvent(EXPERIMENTS.CTA_BUTTON, ctaVariant, 'click'); openRegister(); }}
             className="group flex items-center gap-3 px-8 py-4 rounded-2xl text-base font-bold shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-orange-900/40"
             style={{
               background: 'linear-gradient(135deg, #D97706, #EA580C)',
@@ -116,7 +126,7 @@ export const CTASection = () => {
               boxShadow: '0 8px 32px rgba(234,88,12,0.35)',
             }}
           >
-            Get Started Free
+            {ctaLabel}
             <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
           </button>
 

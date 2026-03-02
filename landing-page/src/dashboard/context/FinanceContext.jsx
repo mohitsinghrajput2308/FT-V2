@@ -16,6 +16,7 @@
  */
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { fetchFxRates, convertCurrency as fxConvert, SYMBOL_TO_CODE } from '../utils/fxService';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from './NotificationContext';
 import { getFromStorage, saveToStorage, STORAGE_KEYS } from '../utils/localStorage';
@@ -48,6 +49,8 @@ export const FinanceProvider = ({ children }) => {
     const [settings, setSettings] = useState({ currency: '$', dateFormat: 'MM/DD/YYYY' });
     const [loading, setLoading] = useState(true);
     const [syncStatus, setSyncStatus] = useState('idle'); // 'idle' | 'syncing' | 'synced' | 'offline'
+    const [fxRates, setFxRates] = useState(null);
+    const [fxRatesLoading, setFxRatesLoading] = useState(false);
 
     const userId = currentUser?.id;
     const hasFetched = useRef(false);
@@ -122,6 +125,30 @@ export const FinanceProvider = ({ children }) => {
     }, [userId]);
 
     useEffect(() => { hasFetched.current = false; }, [userId]);
+
+    // ── Fetch live FX rates (updates whenever currency setting changes) ──
+    useEffect(() => {
+        let cancelled = false;
+        const loadRates = async () => {
+            setFxRatesLoading(true);
+            try {
+                const rates = await fetchFxRates();
+                if (!cancelled) setFxRates(rates);
+            } catch { /* falls back to static rates inside fxService */ }
+            finally { if (!cancelled) setFxRatesLoading(false); }
+        };
+        loadRates();
+        return () => { cancelled = true; };
+    }, [settings.currency]);
+
+    const convertCurrency = useCallback((amount, fromSymbol, toSymbol) =>
+        fxConvert(
+            amount,
+            SYMBOL_TO_CODE[fromSymbol] ?? 'USD',
+            SYMBOL_TO_CODE[toSymbol]   ?? 'USD',
+            fxRates
+        ),
+    [fxRates]);
 
     // ── Filter data by current user ──
     const userTransactions = transactions.filter(t => !t.userId || t.userId === userId);
@@ -348,6 +375,9 @@ export const FinanceProvider = ({ children }) => {
         totalSavings, totalInvestmentValue, pendingBillsCount,
         currency: settings.currency || '$',
         dateFormat: settings.dateFormat || 'MM/DD/YYYY',
+        fxRates,
+        fxRatesLoading,
+        convertCurrency,
     };
 
     return (
