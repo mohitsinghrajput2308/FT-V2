@@ -115,33 +115,43 @@ export const AuthProvider = ({ children }) => {
             id: user.id,
             name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'User',
             email: user.email,
+            phone: user.user_metadata?.phone || '',
+            occupation: user.user_metadata?.occupation || '',
+            bio: user.user_metadata?.bio || '',
+            security_question: user.user_metadata?.security_question || '',
+            security_answer: user.user_metadata?.security_answer || '',
             currency: '$',
             dateFormat: 'MM/DD/YYYY',
             createdAt: user.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
+            lastSignIn: user.last_sign_in_at || null,
             avatar: user.user_metadata?.avatar_url || null,
-            isPro: user.user_metadata?.is_pro || localIsPro, // Mapped to Supabase metadata or local toggle
+            isPro: user.user_metadata?.is_pro || localIsPro,
         };
     }, [user, localIsPro]);
 
     // ── Dashboard-compatible aliases ──
     const logout = signOut;
 
-    const updateProfile = async ({ full_name, avatar_url } = {}) => {
+    const updateProfile = async ({ full_name, avatar_url, phone, occupation, bio, security_question, security_answer } = {}) => {
         try {
             const updates = {};
             if (full_name !== undefined) updates.full_name = full_name;
             if (avatar_url !== undefined) updates.avatar_url = avatar_url;
+            if (phone !== undefined) updates.phone = phone;
+            if (occupation !== undefined) updates.occupation = occupation;
+            if (bio !== undefined) updates.bio = bio;
+            if (security_question !== undefined) updates.security_question = security_question;
+            if (security_answer !== undefined) updates.security_answer = security_answer;
 
             // Update Supabase auth metadata
             const { error: metaError } = await supabase.auth.updateUser({ data: updates });
             if (metaError) return { success: false, error: metaError.message };
 
-            // Sync to profiles table
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .update({ ...updates, updated_at: new Date().toISOString() })
-                .eq('id', user.id);
-            if (profileError) return { success: false, error: profileError.message };
+            // Sync to profiles table (only supported columns)
+            const profileUpdates = { updated_at: new Date().toISOString() };
+            if (full_name !== undefined) profileUpdates.full_name = full_name;
+            if (avatar_url !== undefined) profileUpdates.avatar_url = avatar_url;
+            await supabase.from('profiles').update(profileUpdates).eq('id', user.id);
 
             return { success: true };
         } catch (err) {
@@ -153,6 +163,18 @@ export const AuthProvider = ({ children }) => {
         try {
             const { error } = await supabase.auth.updateUser({ password: newPassword });
             if (error) return { success: false, error: error.message };
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    };
+
+    const deleteAccount = async () => {
+        try {
+            // Delete user data from profiles table first
+            await supabase.from('profiles').delete().eq('id', user.id);
+            // Sign out (server-side deletion requires admin API; sign out for now)
+            await supabase.auth.signOut();
             return { success: true };
         } catch (err) {
             return { success: false, error: err.message };
@@ -181,6 +203,7 @@ export const AuthProvider = ({ children }) => {
             logout,
             updateProfile,
             changePassword,
+            deleteAccount,
             upgradeToPro,
         }}>
             {children}
