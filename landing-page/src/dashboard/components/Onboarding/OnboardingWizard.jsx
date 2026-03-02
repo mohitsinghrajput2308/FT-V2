@@ -36,10 +36,12 @@ const OnboardingWizard = ({ onComplete }) => {
     const [txAmount, setTxAmount] = useState('');
     const [txType, setTxType] = useState('expense');
     const [txCategory, setTxCategory] = useState('');
+    const [txCustomCategory, setTxCustomCategory] = useState('');
     const [txName, setTxName] = useState('');
 
     // Step 3 State
     const [budCategory, setBudCategory] = useState('');
+    const [budCustomCategory, setBudCustomCategory] = useState('');
     const [budLimit, setBudLimit] = useState('');
 
     // Available categories — fall back to built-in defaults for new users
@@ -69,24 +71,28 @@ const OnboardingWizard = ({ onComplete }) => {
         // Save step 1 (always save currency)
         await updateSettings({ currency, onboarding_completed: true });
 
+        // Resolve "Other" to the custom label the user typed
+        const resolvedTxCategory  = txCategory  === 'Other' ? (txCustomCategory.trim()  || 'Other') : txCategory;
+        const resolvedBudCategory = budCategory === 'Other' ? (budCustomCategory.trim() || 'Other') : budCategory;
+
         // Save step 2 (if filled)
-        if (txAmount && txCategory && txName) {
+        if (txAmount && resolvedTxCategory && txName) {
             await addTransaction({
                 amount: parseFloat(txAmount),
                 type: txType,
-                category: txCategory,
+                category: resolvedTxCategory,
                 name: txName,
                 date: new Date().toISOString().split('T')[0]
             });
         }
 
         // Save step 3 (if filled)
-        if (budCategory && budLimit) {
+        if (resolvedBudCategory && budLimit) {
             await addBudget({
-                category: budCategory,
+                category: resolvedBudCategory,
                 limit: parseFloat(budLimit),
                 spent: 0,
-                color: '#3b82f6' // Default tailwind blue
+                color: '#3b82f6'
             });
         }
 
@@ -238,8 +244,16 @@ const OnboardingWizard = ({ onComplete }) => {
                                         placeholder="Select Category"
                                         options={displayCategories}
                                         value={txCategory}
-                                        onChange={(e) => setTxCategory(e.target.value)}
+                                        onChange={(e) => { setTxCategory(e.target.value); setTxCustomCategory(''); }}
                                     />
+                                    {txCategory === 'Other' && (
+                                        <Input
+                                            placeholder="Please specify (e.g. Hobby, Pet care…)"
+                                            value={txCustomCategory}
+                                            onChange={(e) => setTxCustomCategory(e.target.value)}
+                                            autoFocus
+                                        />
+                                    )}
                                     <Input
                                         placeholder="Description (e.g. Grocery store, Salary)"
                                         value={txName}
@@ -260,8 +274,16 @@ const OnboardingWizard = ({ onComplete }) => {
                                             placeholder="Select Category to Budget"
                                             options={expenseCategories}
                                             value={budCategory}
-                                            onChange={(e) => setBudCategory(e.target.value)}
+                                            onChange={(e) => { setBudCategory(e.target.value); setBudCustomCategory(''); }}
                                         />
+                                        {budCategory === 'Other' && (
+                                            <Input
+                                                placeholder="Please specify (e.g. Hobby, Pet care…)"
+                                                value={budCustomCategory}
+                                                onChange={(e) => setBudCustomCategory(e.target.value)}
+                                                autoFocus
+                                            />
+                                        )}
                                         <Input
                                             type="number"
                                             placeholder="Monthly Limit"
