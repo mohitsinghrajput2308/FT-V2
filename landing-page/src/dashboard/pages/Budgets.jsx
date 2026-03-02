@@ -60,13 +60,16 @@ const Budgets = () => {
 
     const validate = () => {
         const newErrors = {};
-        if (!formData.category) newErrors.category = 'Category is required';
-        if (!formData.limit || parseFloat(formData.limit) <= 0) {
-            newErrors.limit = 'Valid budget limit is required';
+        if (!formData.category.trim()) {
+            newErrors.category = 'Please select a category';
         }
-        // Check if category already has a budget
-        if (!editingItem && budgets.some(b => b.category === formData.category)) {
-            newErrors.category = 'Budget for this category already exists';
+        const limitValue = parseFloat(formData.limit);
+        if (!formData.limit || isNaN(limitValue) || limitValue <= 0) {
+            newErrors.limit = 'Budget limit must be greater than 0';
+        }
+        // Check if category already has a budget (except when editing same budget)
+        if (!editingItem && formData.category && budgets.some(b => b.category === formData.category)) {
+            newErrors.category = `Budget for "${formData.category}" already exists`;
         }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -238,24 +241,36 @@ const Budgets = () => {
             {/* Add/Edit Modal */}
             <Modal isOpen={modalOpen} onClose={closeModal} title={editingItem ? 'Edit Budget' : 'Add Budget'}>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <Select
-                        label="Category"
-                        name="category"
-                        options={categories}
-                        value={formData.category}
-                        onChange={handleChange}
-                        error={errors.category}
-                        disabled={!!editingItem}
-                    />
-                    <Input
-                        label="Budget Limit"
-                        name="limit"
-                        type="number"
-                        placeholder="Enter budget limit"
-                        value={formData.limit}
-                        onChange={handleChange}
-                        error={errors.limit}
-                    />
+                    <div>
+                        <Select
+                            label="Category"
+                            name="category"
+                            options={categories}
+                            value={formData.category}
+                            onChange={handleChange}
+                            error={errors.category}
+                            disabled={!!editingItem}
+                        />
+                        {errors.category && (
+                            <p className="mt-1 text-sm text-danger-600 dark:text-danger-400">{errors.category}</p>
+                        )}
+                    </div>
+                    <div>
+                        <Input
+                            label="Budget Limit"
+                            name="limit"
+                            type="number"
+                            placeholder="0.00"
+                            min="0.01"
+                            step="0.01"
+                            value={formData.limit}
+                            onChange={handleChange}
+                            error={errors.limit}
+                        />
+                        {errors.limit && (
+                            <p className="mt-1 text-sm text-danger-600 dark:text-danger-400">{errors.limit}</p>
+                        )}
+                    </div>
                     <div className="flex gap-3 pt-4">
                         <Button type="button" variant="secondary" onClick={closeModal} fullWidth>
                             Cancel
