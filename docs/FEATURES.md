@@ -154,5 +154,5 @@ Privacy Policy, Terms of Service, Cookie Policy, GDPR Compliance, About Us, Care
 | **OAuth providers not configured** | Google, Microsoft, Apple, GitHub OAuth is coded but client IDs/secrets must be entered in Supabase Dashboard → Auth → Providers. |
 | **CAPTCHA keys not set** | Cloudflare Turnstile site key must be configured in Supabase Auth settings to activate bot protection. |
 | **No app store presence** | Expo scaffold is ready (`mobile-app/`). To publish: install EAS CLI (`npm install -g eas-cli`), run `eas build --profile production`, then `eas submit --platform android`. Requires Google Play developer account + `google-service-account.json`. |
-| **Plaid API keys not set** | `PlaidLinkButton` and both Edge Functions are deployed but won't work until `PLAID_CLIENT_ID`, `PLAID_SECRET`, and `PLAID_ENV` are set in Supabase Dashboard → Edge Functions → Secrets. |
+| **Plaid sandbox active** | `PLAID_CLIENT_ID`, `PLAID_SECRET`, and `PLAID_ENV=sandbox` are live in Supabase Edge Function secrets. Bank linking works in sandbox — test with username `user_good` / password `pass_good` inside Plaid Link. To go live: apply for Plaid Production access at dashboard.plaid.com and swap `PLAID_ENV` to `production`. |
 | **Client-side rate limiting only** | Rate limiting resets on page refresh. Real enforcement requires Supabase Pro + Edge Functions. |
