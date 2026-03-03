@@ -4,6 +4,7 @@ import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { AuthModal } from '../components/AuthModal';
 import { useAuthModal } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
 import { Mail, Send, MapPin, Phone, MessageSquare, Sparkles, Clock, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
