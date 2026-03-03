@@ -1,7 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Lock, Eye, Server, FileText, Globe, Sparkles, ArrowLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Navbar } from '../components/Navbar';
+import { Footer } from '../components/Footer';
+import { AuthModal } from '../components/AuthModal';
+import { useAuthModal } from '../context/AuthContext';
+import { Shield, Lock, Eye, Server, FileText, Globe, Sparkles } from 'lucide-react';
 
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] } }) };
 const float = { animate: { y: [0, -15, 0], transition: { duration: 6, repeat: Infinity, ease: 'easeInOut' } } };
@@ -19,8 +22,11 @@ const colorMap = { blue: 'from-blue-500 to-blue-600', emerald: 'from-emerald-500
 const bgMap = { blue: 'bg-blue-500/10 border-blue-500/20', emerald: 'bg-emerald-500/10 border-emerald-500/20', purple: 'bg-purple-500/10 border-purple-500/20', amber: 'bg-amber-500/10 border-amber-500/20', pink: 'bg-pink-500/10 border-pink-500/20', cyan: 'bg-cyan-500/10 border-cyan-500/20' };
 const textMap = { blue: 'text-blue-400', emerald: 'text-emerald-400', purple: 'text-purple-400', amber: 'text-amber-400', pink: 'text-pink-400', cyan: 'text-cyan-400' };
 
-const PrivacyPolicy = () => (
+const PrivacyPolicy = () => {
+  const { modalState, closeModal } = useAuthModal();
+  return (
   <div className="min-h-screen bg-[#050505] text-white overflow-hidden">
+      <Navbar />
     {/* Animated background orbs */}
     <div className="fixed inset-0 z-0">
       <motion.div {...float} className="absolute top-20 left-10 w-[500px] h-[500px] bg-blue-600/8 rounded-full blur-[120px]" />
@@ -32,16 +38,8 @@ const PrivacyPolicy = () => (
     <div className="fixed inset-0 z-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
 
     <div className="relative z-10">
-      {/* Back button */}
-      <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="fixed top-8 left-8 z-50">
-        <Link to="/" className="flex items-center gap-2 text-gray-400 hover:text-white transition-all group bg-white/5 border border-white/10 rounded-full px-4 py-2 backdrop-blur-xl hover:bg-white/10">
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="text-sm font-semibold">Back</span>
-        </Link>
-      </motion.div>
-
-      {/* Hero */}
-      <section className="pt-32 pb-16 px-6">
+{/* Hero */}
+      <section className="pt-40 pb-16 px-6">
         <div className="max-w-5xl mx-auto text-center">
           <motion.div initial={{ scale: 0, rotate: -180 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 200, damping: 20 }} className="inline-flex mb-8">
             <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-[28px] flex items-center justify-center shadow-2xl shadow-blue-500/30 transform rotate-12 hover:rotate-0 transition-transform duration-500">
@@ -98,8 +96,11 @@ const PrivacyPolicy = () => (
           </Link>
         </motion.div>
       </section>
+      <Footer />
+      <AuthModal isOpen={modalState.isOpen} onClose={closeModal} initialView={modalState.view} />
     </div>
   </div>
 );
+};
 
 export default PrivacyPolicy;

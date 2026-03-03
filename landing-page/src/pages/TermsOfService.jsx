@@ -1,7 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Scale, CreditCard, UserCheck, AlertTriangle, Ban, RefreshCw, Mail, Sparkles, ArrowLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Navbar } from '../components/Navbar';
+import { Footer } from '../components/Footer';
+import { AuthModal } from '../components/AuthModal';
+import { useAuthModal } from '../context/AuthContext';
+import { FileText, Scale, CreditCard, UserCheck, AlertTriangle, Ban, RefreshCw, Mail, Sparkles } from 'lucide-react';
 
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.08, duration: 0.6, ease: [0.22, 1, 0.36, 1] } }) };
 
@@ -20,8 +23,11 @@ const colorMap = { blue: 'from-blue-500 to-blue-600', emerald: 'from-emerald-500
 const bgMap = { blue: 'bg-blue-500/10 border-blue-500/20', emerald: 'bg-emerald-500/10 border-emerald-500/20', purple: 'bg-purple-500/10 border-purple-500/20', amber: 'bg-amber-500/10 border-amber-500/20', red: 'bg-red-500/10 border-red-500/20', pink: 'bg-pink-500/10 border-pink-500/20', cyan: 'bg-cyan-500/10 border-cyan-500/20', indigo: 'bg-indigo-500/10 border-indigo-500/20' };
 const textMap = { blue: 'text-blue-400', emerald: 'text-emerald-400', purple: 'text-purple-400', amber: 'text-amber-400', red: 'text-red-400', pink: 'text-pink-400', cyan: 'text-cyan-400', indigo: 'text-indigo-400' };
 
-const TermsOfService = () => (
+const TermsOfService = () => {
+  const { modalState, closeModal } = useAuthModal();
+  return (
   <div className="min-h-screen bg-[#050505] text-white overflow-hidden">
+      <Navbar />
     <div className="fixed inset-0 z-0">
       <motion.div animate={{ y: [0, -20, 0] }} transition={{ duration: 7, repeat: Infinity }} className="absolute top-10 right-20 w-[500px] h-[500px] bg-emerald-600/8 rounded-full blur-[120px]" />
       <motion.div animate={{ y: [0, 15, 0] }} transition={{ duration: 9, repeat: Infinity }} className="absolute bottom-10 left-10 w-[400px] h-[400px] bg-blue-600/8 rounded-full blur-[100px]" />
@@ -35,7 +41,7 @@ const TermsOfService = () => (
         </Link>
       </motion.div>
 
-      <section className="pt-32 pb-16 px-6">
+      <section className="pt-40 pb-16 px-6">
         <div className="max-w-5xl mx-auto text-center">
           <motion.div initial={{ scale: 0, rotate: 180 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 200, damping: 20 }} className="inline-flex mb-8">
             <div className="w-24 h-24 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-[28px] flex items-center justify-center shadow-2xl shadow-emerald-500/30 transform -rotate-12 hover:rotate-0 transition-transform duration-500">
@@ -81,8 +87,11 @@ const TermsOfService = () => (
           <Link to="/" className="inline-flex px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-full transition-all hover:scale-105 shadow-lg shadow-emerald-500/20">Back to Home</Link>
         </motion.div>
       </section>
+      <Footer />
+      <AuthModal isOpen={modalState.isOpen} onClose={closeModal} initialView={modalState.view} />
     </div>
   </div>
 );
+};
 
 export default TermsOfService;

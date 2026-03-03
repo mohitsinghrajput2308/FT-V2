@@ -1,7 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Newspaper, Download, ArrowLeft, Sparkles, Image, Palette, FileText, Video } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Navbar } from '../components/Navbar';
+import { Footer } from '../components/Footer';
+import { AuthModal } from '../components/AuthModal';
+import { useAuthModal } from '../context/AuthContext';
+import { Newspaper, Download, Sparkles, Image, Palette, FileText, Video } from 'lucide-react';
 
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] } }) };
 
@@ -19,8 +22,11 @@ const stats = [
   { value: '50+', label: 'Countries Supported' },
 ];
 
-const PressKit = () => (
+const PressKit = () => {
+  const { modalState, closeModal } = useAuthModal();
+  return (
   <div className="min-h-screen bg-[#050505] text-white overflow-hidden">
+      <Navbar />
     <div className="fixed inset-0 z-0">
       <motion.div animate={{ y: [0, -25, 0] }} transition={{ duration: 8, repeat: Infinity }} className="absolute top-20 left-1/3 w-[500px] h-[500px] bg-orange-600/8 rounded-full blur-[120px]" />
       <motion.div animate={{ y: [0, 20, 0] }} transition={{ duration: 10, repeat: Infinity }} className="absolute bottom-20 right-1/3 w-[400px] h-[400px] bg-amber-600/8 rounded-full blur-[100px]" />
@@ -34,7 +40,7 @@ const PressKit = () => (
         </Link>
       </motion.div>
 
-      <section className="pt-32 pb-16 px-6">
+      <section className="pt-40 pb-16 px-6">
         <div className="max-w-5xl mx-auto text-center">
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200 }} className="inline-flex mb-8">
             <div className="w-24 h-24 bg-gradient-to-br from-orange-500 to-amber-600 rounded-[28px] flex items-center justify-center shadow-2xl shadow-orange-500/30 hover:rotate-12 transition-transform duration-500">
@@ -121,8 +127,11 @@ const PressKit = () => (
           </motion.div>
         </div>
       </section>
+      <Footer />
+      <AuthModal isOpen={modalState.isOpen} onClose={closeModal} initialView={modalState.view} />
     </div>
   </div>
 );
+};
 
 export default PressKit;

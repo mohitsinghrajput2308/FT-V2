@@ -1,7 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Users, ArrowLeft, Sparkles, MessageCircle, Github, ExternalLink, Heart, Trophy, Star } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Navbar } from '../components/Navbar';
+import { Footer } from '../components/Footer';
+import { AuthModal } from '../components/AuthModal';
+import { useAuthModal } from '../context/AuthContext';
+import { Users, Sparkles, MessageCircle, Github, ExternalLink, Heart, Trophy, Star } from 'lucide-react';
 
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] } }) };
 
@@ -27,8 +30,11 @@ const events = [
   { title: 'Finance Literacy Workshop', date: 'Every Wednesday, 2PM EST', desc: 'Free weekly workshops on budgeting, investing, and financial planning.' },
 ];
 
-const Community = () => (
+const Community = () => {
+  const { modalState, closeModal } = useAuthModal();
+  return (
   <div className="min-h-screen bg-[#050505] text-white overflow-hidden">
+      <Navbar />
     <div className="fixed inset-0 z-0">
       <motion.div animate={{ y: [0, -20, 0] }} transition={{ duration: 8, repeat: Infinity }} className="absolute top-10 left-1/4 w-[500px] h-[500px] bg-pink-600/8 rounded-full blur-[120px]" />
       <motion.div animate={{ y: [0, 15, 0] }} transition={{ duration: 10, repeat: Infinity }} className="absolute bottom-20 right-1/4 w-[400px] h-[400px] bg-purple-600/8 rounded-full blur-[100px]" />
@@ -42,7 +48,7 @@ const Community = () => (
         </Link>
       </motion.div>
 
-      <section className="pt-32 pb-16 px-6">
+      <section className="pt-40 pb-16 px-6">
         <div className="max-w-5xl mx-auto text-center">
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200 }} className="inline-flex mb-8">
             <div className="w-24 h-24 bg-gradient-to-br from-pink-500 to-purple-600 rounded-[28px] flex items-center justify-center shadow-2xl shadow-pink-500/30 hover:-rotate-12 transition-transform duration-500">
@@ -125,8 +131,11 @@ const Community = () => (
           </div>
         </div>
       </section>
+      <Footer />
+      <AuthModal isOpen={modalState.isOpen} onClose={closeModal} initialView={modalState.view} />
     </div>
   </div>
 );
+};
 
 export default Community;

@@ -1,7 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Cookie, Settings, BarChart3, Shield, ToggleRight, Sparkles, ArrowLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Navbar } from '../components/Navbar';
+import { Footer } from '../components/Footer';
+import { AuthModal } from '../components/AuthModal';
+import { useAuthModal } from '../context/AuthContext';
+import { Cookie, Settings, BarChart3, Shield, ToggleRight, Sparkles } from 'lucide-react';
 
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] } }) };
 
@@ -15,8 +18,11 @@ const cookies = [
 const bgMap = { emerald: 'bg-emerald-500/10 border-emerald-500/20', blue: 'bg-blue-500/10 border-blue-500/20', purple: 'bg-purple-500/10 border-purple-500/20', gray: 'bg-gray-500/10 border-gray-500/20' };
 const textMap = { emerald: 'text-emerald-400', blue: 'text-blue-400', purple: 'text-purple-400', gray: 'text-gray-400' };
 
-const CookiePolicy = () => (
+const CookiePolicy = () => {
+  const { modalState, closeModal } = useAuthModal();
+  return (
   <div className="min-h-screen bg-[#050505] text-white overflow-hidden">
+      <Navbar />
     <div className="fixed inset-0 z-0">
       <motion.div animate={{ y: [0, -15, 0] }} transition={{ duration: 6, repeat: Infinity }} className="absolute top-20 right-20 w-[450px] h-[450px] bg-amber-600/8 rounded-full blur-[120px]" />
       <motion.div animate={{ y: [0, 20, 0] }} transition={{ duration: 8, repeat: Infinity }} className="absolute bottom-20 left-20 w-[350px] h-[350px] bg-purple-600/8 rounded-full blur-[100px]" />
@@ -30,7 +36,7 @@ const CookiePolicy = () => (
         </Link>
       </motion.div>
 
-      <section className="pt-32 pb-16 px-6">
+      <section className="pt-40 pb-16 px-6">
         <div className="max-w-5xl mx-auto text-center">
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200 }} className="inline-flex mb-8">
             <div className="w-24 h-24 bg-gradient-to-br from-amber-500 to-orange-600 rounded-[28px] flex items-center justify-center shadow-2xl shadow-amber-500/30 hover:rotate-12 transition-transform duration-500">
@@ -84,8 +90,11 @@ const CookiePolicy = () => (
           <Link to="/" className="inline-flex px-8 py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-full transition-all hover:scale-105 shadow-lg shadow-amber-500/20">Back to Home</Link>
         </motion.div>
       </section>
+      <Footer />
+      <AuthModal isOpen={modalState.isOpen} onClose={closeModal} initialView={modalState.view} />
     </div>
   </div>
 );
+};
 
 export default CookiePolicy;

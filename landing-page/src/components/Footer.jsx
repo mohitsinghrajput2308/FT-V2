@@ -55,7 +55,7 @@ export const Footer = () => {
   const footerLinks = {
     Product: [
       { name: 'Features', href: '#features' },
-      { name: 'Pricing', href: '#pricing' },
+      { name: 'Pricing', to: '/pricing' },
       { name: 'Security', to: '/security' },
       { name: 'Roadmap', to: '/roadmap' },
       { name: 'Changelog', to: '/changelog' }
