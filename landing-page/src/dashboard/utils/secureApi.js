@@ -111,6 +111,12 @@ export const SecureTransactionAPI = {
         if (data.category !== undefined) {
             sanitized.category = sanitizeString(data.category).slice(0, 50);
         }
+        if (data.name !== undefined) {
+            sanitized.name = sanitizeString(data.name).slice(0, 100);
+        }
+        if (data.paymentMethod !== undefined) {
+            sanitized.paymentMethod = sanitizeString(data.paymentMethod).slice(0, 50);
+        }
         if (data.description !== undefined) {
             sanitized.description = sanitizeString(data.description).slice(0, 500);
         }
@@ -171,6 +177,10 @@ export const SecureBudgetAPI = {
             sanitized.amount = Math.round(num * 100) / 100;
         }
         if (data.month !== undefined) sanitized.month = data.month;
+        if (data.spent !== undefined) {
+            const num = parseFloat(data.spent);
+            if (!isNaN(num) && num >= 0) sanitized.spent = Math.round(num * 100) / 100;
+        }
 
         return BudgetService.update(idCheck.value, sanitized);
     },
@@ -228,6 +238,11 @@ export const SecureGoalAPI = {
         }
         if (data.deadline !== undefined) sanitized.deadline = data.deadline;
         if (data.category !== undefined) sanitized.category = sanitizeString(data.category).slice(0, 50);
+        if (data.priority !== undefined) {
+            const allowed = ['High', 'Medium', 'Low'];
+            sanitized.priority = allowed.includes(data.priority) ? data.priority : 'Medium';
+        }
+        if (data.description !== undefined) sanitized.description = sanitizeString(data.description).slice(0, 500);
 
         return GoalService.update(idCheck.value, sanitized);
     },
@@ -445,6 +460,10 @@ export const SecureSettingsAPI = {
         }
         if (settings.language !== undefined) {
             sanitized.language = sanitizeString(settings.language).slice(0, 5);
+        }
+        if (settings.totalBudget !== undefined) {
+            const num = parseFloat(settings.totalBudget);
+            if (!isNaN(num) && num >= 0) sanitized.totalBudget = Math.round(num * 100) / 100;
         }
 
         return SettingsService.upsert(sanitized, userId);
