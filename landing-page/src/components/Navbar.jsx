@@ -7,7 +7,7 @@ import { useAuthModal } from '../context/AuthContext';
 import logo from '../assets/logo.png';
 
 export const Navbar = () => {
-  const { openLogin, openRegister, user, isLoadingAuth, logout } = useAuthModal();
+  const { openLogin, openRegister } = useAuthModal();
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -92,39 +92,19 @@ export const Navbar = () => {
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
             <ThemeToggle />
-            {!isLoadingAuth && user ? (
-              <>
-                <Button
-                  variant="ghost"
-                  className="text-gray-300 hover:text-white hover:bg-white/10"
-                  onClick={() => navigate('/dashboard')}
-                >
-                  Dashboard
-                </Button>
-                <Button
-                  className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black px-6 font-bold shadow-md shadow-amber-500/20 transition-all duration-300 transform hover:scale-105"
-                  onClick={() => navigate('/dashboard')}
-                >
-                  Go to App
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  variant="ghost"
-                  className="text-gray-300 hover:text-white hover:bg-white/10"
-                  onClick={openLogin}
-                >
-                  Log In
-                </Button>
-                <Button
-                  className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white px-6 shadow-md shadow-blue-600/20 transition-all duration-300 transform hover:scale-105"
-                  onClick={openRegister}
-                >
-                  Get Started Free
-                </Button>
-              </>
-            )}
+            <Button
+              variant="ghost"
+              className="text-gray-300 hover:text-white hover:bg-white/10"
+              onClick={openLogin}
+            >
+              Log In
+            </Button>
+            <Button
+              className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white px-6 shadow-md shadow-blue-600/20 transition-all duration-300 transform hover:scale-105"
+              onClick={openRegister}
+            >
+              Get Started Free
+            </Button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -163,39 +143,19 @@ export const Navbar = () => {
                 <ThemeToggle />
               </div>
               <div className="grid grid-cols-2 gap-4 pt-2">
-                {!isLoadingAuth && user ? (
-                  <>
-                    <Button
-                      variant="outline"
-                      className="border-white/10 text-gray-300 hover:bg-white/5"
-                      onClick={() => { navigate('/dashboard'); setIsMobileMenuOpen(false); }}
-                    >
-                      Dashboard
-                    </Button>
-                    <Button
-                      className="bg-gradient-to-r from-amber-500 to-orange-500 text-black font-bold"
-                      onClick={() => { logout(); setIsMobileMenuOpen(false); }}
-                    >
-                      Log Out
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      variant="outline"
-                      className="border-white/10 text-gray-300 hover:bg-white/5"
-                      onClick={() => { openLogin(); setIsMobileMenuOpen(false); }}
-                    >
-                      Log In
-                    </Button>
-                    <Button
-                      className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white"
-                      onClick={() => { openRegister(); setIsMobileMenuOpen(false); }}
-                    >
-                      Sign Up
-                    </Button>
-                  </>
-                )}
+                <Button
+                  variant="outline"
+                  className="border-white/10 text-gray-300 hover:bg-white/5"
+                  onClick={() => { openLogin(); setIsMobileMenuOpen(false); }}
+                >
+                  Log In
+                </Button>
+                <Button
+                  className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white"
+                  onClick={() => { openRegister(); setIsMobileMenuOpen(false); }}
+                >
+                  Sign Up
+                </Button>
               </div>
             </div>
           </div>
