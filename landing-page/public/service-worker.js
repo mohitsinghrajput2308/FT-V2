@@ -3,7 +3,7 @@
    Version bump the CACHE_NAME to force a full refresh on deploy.
 */
 
-const CACHE_NAME = 'fintrack-v1';
+const CACHE_NAME = 'fintrack-v3';
 
 const PRECACHE_URLS = [
   '/',
@@ -40,6 +40,13 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   if (url.hostname.includes('supabase.co')) return;
   if (url.hostname.includes('supabase.in')) return;
+  if (url.hostname.includes('paddle.com')) return;
+  if (url.hostname.includes('crisp.chat')) return;
+  if (url.hostname.includes('googletagmanager.com')) return;
+  if (url.hostname.includes('google-analytics.com')) return;
+  if (url.hostname.includes('exchangerate-api.com')) return;
+  if (url.hostname.includes('fonts.googleapis.com')) return;
+  if (url.hostname.includes('fonts.gstatic.com')) return;
 
   // Network-first for HTML navigations (always get fresh shell)
   if (request.mode === 'navigate') {
