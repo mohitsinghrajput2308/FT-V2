@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import {
     User, Mail, Phone, Briefcase, Camera, Save, Shield,
     Eye, EyeOff, Check, Trash2, Info, Clock, Key,
-    FileText, AlertTriangle, ChevronDown
+    FileText, AlertTriangle, ChevronDown, Zap, Star, Building2, ExternalLink
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import Card from '../components/Common/Card';
@@ -562,6 +562,121 @@ const Profile = () => {
                     </div>
                 </div>
             </Card>
+
+            {/* ── Pricing & Plan ── */}
+            <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
+                    <Star className="w-5 h-5 text-amber-500" />
+                    Your Plan &amp; Pricing
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    You are currently on the <span className={`font-semibold ${currentUser?.isPro ? 'text-amber-500' : 'text-gray-700 dark:text-gray-300'}`}>{currentUser?.isPro ? '⭐ Pro' : 'Free'}</span> plan.
+                    {!currentUser?.isPro && ' Upgrade to unlock exports, AI insights, and more.'}
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Free */}
+                    <div className={`relative rounded-2xl border-2 p-5 flex flex-col gap-4 ${
+                        !currentUser?.isPro
+                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/10'
+                            : 'border-gray-200 dark:border-dark-400 bg-white dark:bg-dark-100'
+                    }`}>
+                        {!currentUser?.isPro && (
+                            <span className="absolute -top-3 left-4 text-[11px] font-black bg-primary-500 text-white px-3 py-0.5 rounded-full uppercase tracking-widest">
+                                Current Plan
+                            </span>
+                        )}
+                        <div>
+                            <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Free</p>
+                            <p className="text-3xl font-black text-gray-900 dark:text-white">$0<span className="text-base font-normal text-gray-400">/mo</span></p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Great for getting started</p>
+                        </div>
+                        <ul className="space-y-2 flex-1">
+                            {['Track up to 3 accounts', 'Basic expense categorization', 'Monthly reports', 'Email support'].map(f => (
+                                <li key={f} className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-400">
+                                    <Check className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" />{f}
+                                </li>
+                            ))}
+                        </ul>
+                        <div className="text-xs text-center text-gray-400 dark:text-gray-500 py-1.5 border border-gray-200 dark:border-dark-400 rounded-lg">
+                            {currentUser?.isPro ? 'Downgrade' : 'Current Plan'}
+                        </div>
+                    </div>
+
+                    {/* Pro */}
+                    <div className={`relative rounded-2xl border-2 p-5 flex flex-col gap-4 ${
+                        currentUser?.isPro
+                            ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/10 shadow-lg shadow-amber-500/10'
+                            : 'border-amber-400/50 bg-white dark:bg-dark-100 hover:border-amber-500 transition-colors'
+                    }`}>
+                        {currentUser?.isPro && (
+                            <span className="absolute -top-3 left-4 text-[11px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-black px-3 py-0.5 rounded-full uppercase tracking-widest">
+                                Current Plan
+                            </span>
+                        )}
+                        <div className="absolute -top-3 right-4">
+                            <span className="text-[11px] font-black bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 border border-amber-300 dark:border-amber-700 px-2 py-0.5 rounded-full">
+                                Most Popular
+                            </span>
+                        </div>
+                        <div>
+                            <p className="text-xs font-black text-amber-500 uppercase tracking-widest mb-1">Pro</p>
+                            <p className="text-3xl font-black text-gray-900 dark:text-white">$9.99<span className="text-base font-normal text-gray-400">/mo</span></p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">For individuals serious about finances</p>
+                        </div>
+                        <ul className="space-y-2 flex-1">
+                            {['Unlimited accounts', 'AI-powered insights', 'CSV &amp; PDF export', 'Custom budgets &amp; goals', 'Priority support &amp; live chat', 'Multi-currency support'].map(f => (
+                                <li key={f} className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-300">
+                                    <Check className="w-3.5 h-3.5 text-amber-500 mt-0.5 flex-shrink-0" /><span dangerouslySetInnerHTML={{ __html: f }} />
+                                </li>
+                            ))}
+                        </ul>
+                        {!currentUser?.isPro ? (
+                            <a
+                                href="/pricing"
+                                className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black text-sm font-black transition-all shadow-md shadow-amber-500/20"
+                            >
+                                <Zap className="w-4 h-4" />
+                                Upgrade to Pro
+                            </a>
+                        ) : (
+                            <div className="text-xs text-center text-amber-600 dark:text-amber-400 font-semibold py-1.5 border border-amber-300 dark:border-amber-700 rounded-lg bg-amber-50 dark:bg-amber-900/20">
+                                ✓ Active Plan
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Business */}
+                    <div className="relative rounded-2xl border-2 border-blue-400/40 bg-white dark:bg-dark-100 p-5 flex flex-col gap-4 hover:border-blue-500 transition-colors">
+                        <div>
+                            <p className="text-xs font-black text-blue-400 uppercase tracking-widest mb-1">Business</p>
+                            <p className="text-3xl font-black text-gray-900 dark:text-white">$29.99<span className="text-base font-normal text-gray-400">/mo</span></p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Ideal for small businesses &amp; teams</p>
+                        </div>
+                        <ul className="space-y-2 flex-1">
+                            {['Everything in Pro', 'Team collaboration (5 users)', 'Tax preparation report', 'API access &amp; custom integrations', 'Dedicated account manager'].map(f => (
+                                <li key={f} className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-300">
+                                    <Check className="w-3.5 h-3.5 text-blue-400 mt-0.5 flex-shrink-0" /><span dangerouslySetInnerHTML={{ __html: f }} />
+                                </li>
+                            ))}
+                        </ul>
+                        <a
+                            href="/pricing"
+                            className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-sm font-bold transition-all"
+                        >
+                            <Building2 className="w-4 h-4" />
+                            Get Business
+                        </a>
+                    </div>
+                </div>
+
+                <div className="mt-3 flex items-center justify-end">
+                    <a href="/pricing" className="flex items-center gap-1 text-xs text-primary-500 hover:text-primary-400 font-medium transition-colors">
+                        View full pricing &amp; feature comparison
+                        <ExternalLink className="w-3 h-3" />
+                    </a>
+                </div>
+            </div>
 
             {/* ── Danger zone ── */}
             <Card className="border-2 border-red-200 dark:border-red-900/60">
