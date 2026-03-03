@@ -20,10 +20,11 @@ const QuoraIcon = () => (
     <path d="M12.005 0C5.373 0 0 5.372 0 12.003c0 6.63 5.372 12 12.005 12 6.63 0 12.002-5.37 12.002-12C24.007 5.372 18.635 0 12.005 0zm4.638 18.317c-.523-1.102-1.15-2.165-2.386-2.165-.276 0-.55.046-.806.138l-.458-1.1c.67-.441 1.598-.717 2.606-.717 1.7 0 2.845.826 3.637 2.017a6.45 6.45 0 0 1-2.593 1.827zm-4.63.72c-3.542 0-6.415-2.873-6.415-6.415 0-3.545 2.873-6.418 6.415-6.418 3.543 0 6.416 2.873 6.416 6.418 0 1.275-.375 2.465-1.017 3.463-.578-.793-1.319-1.441-2.408-1.441-.38 0-.76.082-1.12.22l.477 1.1a2.1 2.1 0 0 1 .645-.1c.586 0 1.052.302 1.452.773a6.46 6.46 0 0 1-4.045 1.4z" />
   </svg>
 );
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.png';
 
 export const Footer = () => {
+  const navigate = useNavigate();
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterStatus, setNewsletterStatus] = useState('idle'); // idle | loading | success | error
   const [newsletterMsg, setNewsletterMsg] = useState('');
@@ -54,7 +55,7 @@ export const Footer = () => {
 
   const footerLinks = {
     Product: [
-      { name: 'Features', href: '#features' },
+      { name: 'Features', href: '/#features' },
       { name: 'Pricing', to: '/pricing' },
       { name: 'Security', to: '/security' },
       { name: 'Roadmap', to: '/roadmap' },
@@ -149,6 +150,14 @@ export const Footer = () => {
                     ) : (
                       <a
                         href={link.href}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (link.href.startsWith('/#')) {
+                            window.location.href = link.href;
+                          } else {
+                            navigate(link.href);
+                          }
+                        }}
                         className="hover:text-amber-400 transition-colors duration-200"
                       >
                         {link.name}
