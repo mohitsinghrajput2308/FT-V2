@@ -186,13 +186,11 @@ const FAQItem = ({ q, a }) => {
 /* ─── Main Page ─────────────────────────────────────────────── */
 const PricingPage = () => {
   const [yearly, setYearly] = useState(false);
-  const { openRegister, user } = useAuthModal();
+  const { openRegister, user, isLoadingAuth } = useAuthModal();
   const navigate = useNavigate();
 
   const handlePlanClick = (planId) => {
-    // Public pricing page never opens Paddle checkout directly.
-    // If already logged in → send to dashboard pricing to complete upgrade.
-    // If not logged in → open signup modal; after login they land on dashboard.
+    if (isLoadingAuth) return; // wait for session to resolve before acting
     if (user) {
       navigate('/dashboard/pricing');
     } else {
