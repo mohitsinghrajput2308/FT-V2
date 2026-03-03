@@ -188,10 +188,15 @@ const FAQItem = ({ q, a }) => {
 const PricingPage = () => {
   const [yearly, setYearly] = useState(false);
   const { modalState, closeModal, openModal } = useAuthModal();
-  const { subscribe, isPaid, plan: currentPlan, loading: subLoading } = useSubscription();
+  const { subscribe, isPaid, plan: currentPlan, loading: subLoading, user } = useSubscription();
 
   const handlePlanClick = (planId, skipTrial = false) => {
     if (planId === 'free') {
+      openModal?.('signup');
+      return;
+    }
+    // If not logged in, open signup modal first
+    if (!user) {
       openModal?.('signup');
       return;
     }

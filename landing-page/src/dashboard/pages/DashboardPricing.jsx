@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Check, Zap, Star, Building2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useSubscription } from '../../hooks/useSubscription';
 import Card from '../components/Common/Card';
 
 const plans = [
@@ -124,10 +125,17 @@ const Cell = ({ value }) => {
 
 const DashboardPricing = () => {
   const { currentUser } = useAuth();
+  const { subscribe, isPro: isProSub, isBusiness: isBusinessSub, plan: currentPlan } = useSubscription();
   const [yearly, setYearly] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
 
-  const isPro = currentUser?.isPro;
+  const isPro = isProSub;
+  const isBusiness = isBusinessSub;
+
+  const handleUpgrade = (planKey) => {
+    const cycle = yearly ? 'yearly' : 'monthly';
+    subscribe(planKey, cycle);
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-2 pb-16 space-y-10">
@@ -142,6 +150,7 @@ const DashboardPricing = () => {
         <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
           Start free. Upgrade when you're ready.
           {isPro && <span className="ml-2 text-amber-500 font-semibold">You're on Pro ⭐</span>}
+          {isBusiness && <span className="ml-2 text-blue-500 font-semibold">You're on Business 🏢</span>}
         </p>
 
         {/* Billing toggle */}
@@ -165,7 +174,7 @@ const DashboardPricing = () => {
       {/* Plan Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {plans.map((plan) => {
-          const isCurrent = plan.key === 'free' ? !isPro : plan.key === 'pro' ? isPro : false;
+          const isCurrent = plan.key === 'free' ? currentPlan === 'free' : currentPlan === plan.key;
           const price = yearly ? plan.price.yearly : plan.price.monthly;
 
           return (
@@ -213,8 +222,8 @@ const DashboardPricing = () => {
                   Free forever
                 </div>
               ) : (
-                <a
-                  href="mailto:billing@fintrack.app"
+                <button
+                  onClick={() => handleUpgrade(plan.key)}
                   className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-black transition-all ${
                     plan.key === 'pro'
                       ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black shadow-md shadow-amber-500/20'
@@ -223,7 +232,7 @@ const DashboardPricing = () => {
                 >
                   {plan.key === 'pro' ? <Zap className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
                   {plan.key === 'pro' ? 'Upgrade to Pro' : 'Get Business'}
-                </a>
+                </button>
               )}
             </div>
           );

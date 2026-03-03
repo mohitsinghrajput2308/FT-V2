@@ -51,7 +51,7 @@ export function useSubscription() {
    */
   const subscribe = useCallback(async (plan, cycle = 'monthly') => {
     if (!user) {
-      console.warn('[useSubscription] User not logged in');
+      console.warn('[useSubscription] User not logged in — redirect to auth first');
       return;
     }
     const priceId = PADDLE_PRICE_IDS[plan]?.[cycle];
@@ -83,6 +83,7 @@ export function useSubscription() {
   return {
     subscription,
     loading,
+    user,
     isPaid,
     isPro,
     isBusiness,
