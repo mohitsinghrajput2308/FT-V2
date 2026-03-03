@@ -101,7 +101,6 @@ export function openPaddleCheckout({ priceId, userId, email, onSuccess }) {
         displayMode: 'overlay',
         theme: 'dark',
         locale: 'en',
-        allowLogout: false,
         successUrl: `${window.location.origin}/dashboard?subscribed=true`,
       },
     });
