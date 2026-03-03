@@ -56,8 +56,19 @@ const PageLoader = () => (
   </div>
 );
 
-const LandingPage = () => {
+// ─── Global AuthModal (available on every route) ─────────────
+const GlobalAuthModal = () => {
   const { modalState, closeModal } = useAuthModal();
+  return (
+    <AuthModal
+      isOpen={modalState.isOpen}
+      onClose={closeModal}
+      initialView={modalState.view}
+    />
+  );
+};
+
+const LandingPage = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
@@ -68,11 +79,6 @@ const LandingPage = () => {
       <ReviewSection />
       <CTASection />
       <Footer />
-      <AuthModal
-        isOpen={modalState.isOpen}
-        onClose={closeModal}
-        initialView={modalState.view}
-      />
     </div>
   );
 };
@@ -84,6 +90,7 @@ function App() {
         <BrowserRouter>
           <AuthProvider>
             <ScrollToTop />
+            <GlobalAuthModal />
             <div className="App">
               <Suspense fallback={<PageLoader />}>
                 <Routes>
