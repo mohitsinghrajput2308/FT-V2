@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard, ArrowUpCircle, ArrowDownCircle, Wallet,
     Target, PieChart, TrendingUp, Bell, Calculator, Settings,
-    HelpCircle, List, Tags, ChevronLeft, ChevronRight, X, Terminal
+    HelpCircle, List, Tags, ChevronLeft, ChevronRight, X, Terminal, Star
 } from 'lucide-react';
 
 const menuItems = [
@@ -18,6 +18,7 @@ const menuItems = [
     { path: '/dashboard/bills', icon: Bell, label: 'Bills' },
     { path: '/dashboard/calculators', icon: Calculator, label: 'Calculators' },
     { path: '/dashboard/categories', icon: Tags, label: 'Categories' },
+    { path: '/dashboard/pricing', icon: Star, label: 'Pricing' },
     { path: '/dashboard/api-docs', icon: Terminal, label: 'API Docs' },
     { path: '/dashboard/settings', icon: Settings, label: 'Settings' },
     { path: '/dashboard/help', icon: HelpCircle, label: 'Help' },

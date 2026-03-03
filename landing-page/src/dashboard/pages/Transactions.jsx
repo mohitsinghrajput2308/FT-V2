@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Download, ArrowUpCircle, ArrowDownCircle, List } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency, formatDate, sortByDate, convertToCSV, downloadFile } from '../utils/helpers';
@@ -13,7 +14,8 @@ import { useAuth } from '../../context/AuthContext';
 
 const Transactions = () => {
     const { transactions, currency, dateFormat } = useFinance();
-    const { currentUser, upgradeToPro } = useAuth();
+    const { currentUser } = useAuth();
+    const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [filterType, setFilterType] = useState('');
     const [filterCategory, setFilterCategory] = useState('');
@@ -261,7 +263,7 @@ const Transactions = () => {
                 onClose={() => setIsUpgradeModalOpen(false)}
                 onUpgrade={() => {
                     setIsUpgradeModalOpen(false);
-                    upgradeToPro();
+                    navigate('/dashboard/pricing');
                 }}
             />
         </div>

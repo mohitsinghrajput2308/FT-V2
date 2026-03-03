@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, Sun, Moon, Bell, User, LogOut, Settings, ChevronDown, Cloud, CloudOff, RefreshCw } from 'lucide-react';
+import { Menu, Sun, Moon, Bell, User, LogOut, Settings, ChevronDown, Cloud, CloudOff, RefreshCw, Star } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useFinance } from '../../context/FinanceContext';
@@ -123,6 +123,14 @@ const Navbar = ({ onMenuClick }) => {
                             >
                                 <User className="w-4 h-4" />
                                 Profile
+                            </Link>
+                            <Link
+                                to="/dashboard/pricing"
+                                onClick={() => setDropdownOpen(false)}
+                                className="flex items-center gap-2 px-4 py-2 text-sm text-amber-600 dark:text-amber-400 hover:bg-gray-100 dark:hover:bg-dark-300"
+                            >
+                                <Star className="w-4 h-4" />
+                                Pricing
                             </Link>
                             <Link
                                 to="/dashboard/settings"
