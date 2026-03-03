@@ -21,18 +21,15 @@ const Transactions = () => {
     const [dateTo, setDateTo] = useState('');
     const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
-    const filteredTransactions = useMemo(() => {
+    const baseFilteredTransactions = useMemo(() => {
         let filtered = [...transactions];
 
         if (searchQuery) {
             filtered = filtered.filter(t =>
-                t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                t.category.toLowerCase().includes(searchQuery.toLowerCase())
+                t.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                t.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                t.description?.toLowerCase().includes(searchQuery.toLowerCase())
             );
-        }
-
-        if (filterType) {
-            filtered = filtered.filter(t => t.type === filterType);
         }
 
         if (filterCategory) {
@@ -47,14 +44,33 @@ const Transactions = () => {
             filtered = filtered.filter(t => t.date <= dateTo);
         }
 
-        return sortByDate(filtered, 'date', 'desc');
-    }, [transactions, searchQuery, filterType, filterCategory, dateFrom, dateTo]);
+        return filtered;
+    }, [transactions, searchQuery, filterCategory, dateFrom, dateTo]);
 
-    // Get unique categories
-    const categories = [...new Set(transactions.map(t => t.category))].map(c => ({
-        value: c,
-        label: c
-    }));
+    const filteredTransactions = useMemo(() => {
+        let filtered = [...baseFilteredTransactions];
+
+        if (filterType) {
+            filtered = filtered.filter(t => t.type === filterType);
+        }
+
+        return sortByDate(filtered, 'date', 'desc');
+    }, [baseFilteredTransactions, filterType]);
+
+    // Get unique categories based on selected type
+    const categories = useMemo(() => {
+        const filteredForType = filterType
+            ? transactions.filter(t => t.type === filterType)
+            : transactions;
+
+        return [...new Set(filteredForType.map(t => t.category))]
+            .filter(Boolean)
+            .sort()
+            .map(c => ({
+                value: c,
+                label: c
+            }));
+    }, [transactions, filterType]);
 
     const handleExportCSV = () => {
         if (!currentUser?.isPro) {
@@ -72,16 +88,16 @@ const Transactions = () => {
         exportTransactionsToPDF(filteredTransactions, currency);
     };
 
-    const totalIncome = filteredTransactions
+    const totalIncome = baseFilteredTransactions
         .filter(t => t.type === 'income')
         .reduce((sum, t) => sum + t.amount, 0);
 
-    const totalExpense = filteredTransactions
+    const totalExpense = baseFilteredTransactions
         .filter(t => t.type === 'expense')
         .reduce((sum, t) => sum + t.amount, 0);
 
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Transactions</h1>
@@ -138,14 +154,16 @@ const Transactions = () => {
             <Card>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                     <Input
+                        label="Search"
                         placeholder="Search..."
                         icon={Search}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                     <Select
-                        placeholder="All Types"
+                        label="Type"
                         options={[
+                            { value: '', label: 'All Types' },
                             { value: 'income', label: 'Income' },
                             { value: 'expense', label: 'Expense' }
                         ]}
@@ -153,20 +171,20 @@ const Transactions = () => {
                         onChange={(e) => setFilterType(e.target.value)}
                     />
                     <Select
-                        placeholder="All Categories"
-                        options={categories}
+                        label="Category"
+                        options={[{ value: '', label: 'All Categories' }, ...categories]}
                         value={filterCategory}
                         onChange={(e) => setFilterCategory(e.target.value)}
                     />
                     <Input
+                        label="From Date"
                         type="date"
-                        placeholder="From"
                         value={dateFrom}
                         onChange={(e) => setDateFrom(e.target.value)}
                     />
                     <Input
+                        label="To Date"
                         type="date"
-                        placeholder="To"
                         value={dateTo}
                         onChange={(e) => setDateTo(e.target.value)}
                     />
@@ -185,6 +203,7 @@ const Transactions = () => {
                     <table className="table">
                         <thead>
                             <tr>
+                                <th>#</th>
                                 <th>Date</th>
                                 <th>Description</th>
                                 <th>Category</th>
@@ -193,9 +212,12 @@ const Transactions = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredTransactions.map((t) => (
+                            {filteredTransactions.map((t, idx) => (
                                 <tr key={t.id}>
-                                    <td className="text-gray-600 dark:text-gray-400">
+                                    <td className="text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">
+                                        {idx + 1}
+                                    </td>
+                                    <td className="text-gray-600 dark:text-gray-400 whitespace-nowrap">
                                         {formatDate(t.date, dateFormat)}
                                     </td>
                                     <td>
@@ -238,10 +260,8 @@ const Transactions = () => {
                 isOpen={isUpgradeModalOpen}
                 onClose={() => setIsUpgradeModalOpen(false)}
                 onUpgrade={() => {
-                    upgradeToPro();
                     setIsUpgradeModalOpen(false);
-                    // Provide a nice UX by automatically downloading after they "upgrade"
-                    exportTransactionsToCSV(filteredTransactions, currency);
+                    upgradeToPro();
                 }}
             />
         </div>

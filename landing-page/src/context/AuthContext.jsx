@@ -181,10 +181,9 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // ── Mock Upgrade Action ──
+    // ── Upgrade Action — redirect to pricing page ──
     const upgradeToPro = () => {
-        setLocalIsPro(true);
-        // In the future, this will redirect to Stripe Checkout
+        window.location.href = '/#pricing';
     };
 
     return (
