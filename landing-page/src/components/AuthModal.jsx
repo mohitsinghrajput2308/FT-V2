@@ -431,14 +431,17 @@ export const AuthModal = ({ isOpen, onClose, initialView = 'login' }) => {
         if (!twoFACode || twoFACode.length !== 6) { setAuthError('Enter the 6-digit code from your authenticator app.'); return; }
         setAuthError('');
         setIsLoading(true);
-        const { supabase } = await import('@/lib/supabase');
-        const { error } = await supabase.auth.mfa.verify({ factorId: twoFAFactorId, challengeId: twoFAChallengeId, code: twoFACode });
-        setIsLoading(false);
-        if (error) { setAuthError('Invalid code. Please try again.'); return; }
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
+        try {
+            const { supabase } = await import('@/lib/supabase');
+            const { error } = await supabase.auth.mfa.verify({ factorId: twoFAFactorId, challengeId: twoFAChallengeId, code: twoFACode });
+            setIsLoading(false);
+            if (error) { setAuthError('Invalid code. Please try again.'); return; }
+            // Verify succeeded — close modal and redirect (no need to re-check session)
             onClose && onClose();
             window.location.href = '/dashboard';
+        } catch (err) {
+            setIsLoading(false);
+            setAuthError('Something went wrong. Please try again.');
         }
     };
 

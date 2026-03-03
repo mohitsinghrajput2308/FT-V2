@@ -4,7 +4,6 @@ import { Button } from '../components/ui/button';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { useAuthModal } from '../context/AuthContext';
-import { AuthModal } from '../components/AuthModal';
 import { useSubscription } from '../hooks/useSubscription';
 
 /* ─── Data ──────────────────────────────────────────────────── */
@@ -187,7 +186,7 @@ const FAQItem = ({ q, a }) => {
 /* ─── Main Page ─────────────────────────────────────────────── */
 const PricingPage = () => {
   const [yearly, setYearly] = useState(false);
-  const { modalState, closeModal, openLogin, openRegister } = useAuthModal();
+  const { openRegister } = useAuthModal();
   const { subscribe, isPaid, plan: currentPlan, loading: subLoading, user } = useSubscription();
 
   const handlePlanClick = (planId, skipTrial = false) => {
@@ -440,7 +439,7 @@ const PricingPage = () => {
       </div>
 
       <Footer />
-      <AuthModal isOpen={modalState.isOpen} onClose={closeModal} initialView={modalState.view} />
+      {/* AuthModal is rendered globally in App.js — no duplicate needed here */}
     </div>
   );
 };
