@@ -70,9 +70,9 @@ export const VALIDATION_RULES = {
         pattern: /^\d{4}-\d{2}-\d{2}$/,
     },
 
-    // Month format (YYYY-MM) used by budgets
+    // Month/Week format (YYYY-MM or YYYY-Wxx) used by budgets
     monthFormat: {
-        pattern: /^\d{4}-(0[1-9]|1[0-2])$/,
+        pattern: /^\d{4}-((0[1-9]|1[0-2])|W(0[1-9]|[1-4][0-9]|5[0-3]))$/,
     },
 };
 
@@ -264,6 +264,18 @@ export function validateTransactionData(data) {
         sanitizedData.amount = amountResult.value;
     }
 
+    // Validate name (Income Source / Expense Description)
+    if (!data.name || typeof data.name !== 'string') {
+        errors.name = 'Name or Description is required';
+    } else {
+        sanitizedData.name = sanitizeString(data.name).slice(0, 100);
+    }
+
+    // Validate paymentMethod (Expenses)
+    if (data.paymentMethod && typeof data.paymentMethod === 'string') {
+        sanitizedData.paymentMethod = sanitizeString(data.paymentMethod).slice(0, 50);
+    }
+
     // Validate type
     if (!['income', 'expense'].includes(data.type)) {
         errors.type = 'Invalid transaction type';
@@ -324,7 +336,7 @@ export function validateTransactionData(data) {
     }
 
     // Reject unexpected fields (whitelist approach)
-    const allowedFields = ['amount', 'type', 'category', 'description', 'date', 'is_recurring', 'recurrence', 'next_occurrence'];
+    const allowedFields = ['amount', 'type', 'category', 'description', 'date', 'is_recurring', 'recurrence', 'next_occurrence', 'name', 'paymentMethod'];
     Object.keys(data).forEach(key => {
         if (!allowedFields.includes(key)) {
             console.warn(`[SECURITY] Unexpected field rejected: ${key}`);
@@ -347,16 +359,43 @@ export function validateInvestmentData(data) {
     const errors = {};
     const sanitizedData = {};
 
-    // Validate stock symbol
-    if (!data.symbol || typeof data.symbol !== 'string') {
-        errors.symbol = 'Stock symbol is required';
+    // Validate name
+    if (!data.name || typeof data.name !== 'string' || !data.name.trim()) {
+        errors.name = 'Investment name is required';
     } else {
-        const symbol = data.symbol.toUpperCase().trim();
-        if (!VALIDATION_RULES.stockSymbol.pattern.test(symbol)) {
-            errors.symbol = 'Invalid stock symbol format';
-        } else {
-            sanitizedData.symbol = symbol;
-        }
+        sanitizedData.name = sanitizeString(data.name).slice(0, 100);
+    }
+
+    // Validate type — accept predefined types OR any custom non-empty string
+    const allowedTypes = ['Stocks', 'Mutual Funds', 'Crypto', 'Gold', 'Real Estate', 'Bonds', 'ETF', 'Other'];
+    if (!data.type || typeof data.type !== 'string' || !data.type.trim()) {
+        errors.type = 'Valid investment type is required';
+    } else if (allowedTypes.includes(data.type)) {
+        sanitizedData.type = data.type;
+    } else {
+        // Custom type string (e.g. user entered "NFT" via the Other → Specify Type field)
+        sanitizedData.type = sanitizeString(data.type).slice(0, 50);
+    }
+
+    // Validate customType if type is 'Other'
+    if (data.type === 'Other' && data.customType) {
+        sanitizedData.customType = sanitizeString(data.customType).slice(0, 50);
+    }
+
+    // Validate purchase price
+    const priceResult = validateAmount(data.purchasePrice);
+    if (!priceResult.valid) {
+        errors.purchasePrice = priceResult.error;
+    } else {
+        sanitizedData.purchasePrice = priceResult.value;
+    }
+
+    // Validate current value
+    const currentResult = validateAmount(data.currentValue);
+    if (!currentResult.valid) {
+        errors.currentValue = currentResult.error;
+    } else {
+        sanitizedData.currentValue = currentResult.value;
     }
 
     // Validate quantity
@@ -367,12 +406,14 @@ export function validateInvestmentData(data) {
         sanitizedData.quantity = quantity;
     }
 
-    // Validate purchase price
-    const priceResult = validateAmount(data.purchasePrice);
-    if (!priceResult.valid) {
-        errors.purchasePrice = priceResult.error;
-    } else {
-        sanitizedData.purchasePrice = priceResult.value;
+    // Validate purchase date
+    if (data.purchaseDate) {
+        const d = new Date(data.purchaseDate);
+        if (isNaN(d.getTime())) {
+            errors.purchaseDate = 'Invalid purchase date';
+        } else {
+            sanitizedData.purchaseDate = d.toISOString().split('T')[0];
+        }
     }
 
     return {
@@ -427,18 +468,26 @@ export function validateBudgetData(data) {
         }
     }
 
-    // Validate month (YYYY-MM format)
+    // Validate month (YYYY-MM or YYYY-Wxx format)
     if (data.month) {
         const month = String(data.month).trim();
         if (!VALIDATION_RULES.monthFormat.pattern.test(month)) {
-            errors.month = 'Invalid month format (expected YYYY-MM)';
+            errors.month = 'Invalid period format (expected YYYY-MM or YYYY-Wxx)';
         } else {
             sanitizedData.month = month;
         }
     }
 
+    // Validate spent (optional)
+    if (data.spent !== undefined) {
+        const spentVal = parseFloat(data.spent);
+        if (!isNaN(spentVal) && spentVal >= 0) {
+            sanitizedData.spent = Math.round(spentVal * 100) / 100;
+        }
+    }
+
     // Whitelist check
-    const allowedFields = ['amount', 'category', 'month', 'userId'];
+    const allowedFields = ['amount', 'category', 'month', 'userId', 'spent'];
     Object.keys(data).forEach(key => {
         if (!allowedFields.includes(key)) {
             console.warn(`[SECURITY] Budget: unexpected field rejected: ${key}`);
