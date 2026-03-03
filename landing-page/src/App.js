@@ -1,6 +1,7 @@
 import React, { Suspense } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { ScrollToTop } from "@/components/ScrollToTop";
 import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/components/HeroSection";
 import { FeaturesSection } from "@/components/FeaturesSection";
@@ -82,6 +83,7 @@ function App() {
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
         <BrowserRouter>
           <AuthProvider>
+            <ScrollToTop />
             <div className="App">
               <Suspense fallback={<PageLoader />}>
                 <Routes>
