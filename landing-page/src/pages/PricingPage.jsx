@@ -285,7 +285,7 @@ const PricingPage = () => {
                     : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black shadow-lg shadow-amber-500/20'
                 }`}
               >
-                {currentPlan === plan.id && isPaid ? 'Current Plan ✓' : plan.cta}
+                {plan.cta}
               </button>
 
               {/* Skip trial card */}
