@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { useAuthModal } from '../context/AuthContext';
-import { useSubscription } from '../hooks/useSubscription';
+import { useNavigate } from 'react-router-dom';
 
 /* ─── Data ──────────────────────────────────────────────────── */
 const plans = [
@@ -186,21 +186,18 @@ const FAQItem = ({ q, a }) => {
 /* ─── Main Page ─────────────────────────────────────────────── */
 const PricingPage = () => {
   const [yearly, setYearly] = useState(false);
-  const { openRegister } = useAuthModal();
-  const { subscribe, isPaid, plan: currentPlan, loading: subLoading, user } = useSubscription();
+  const { openRegister, user } = useAuthModal();
+  const navigate = useNavigate();
 
-  const handlePlanClick = (planId, skipTrial = false) => {
-    if (planId === 'free') {
+  const handlePlanClick = (planId) => {
+    // Public pricing page never opens Paddle checkout directly.
+    // If already logged in → send to dashboard pricing to complete upgrade.
+    // If not logged in → open signup modal; after login they land on dashboard.
+    if (user) {
+      navigate('/dashboard/pricing');
+    } else {
       openRegister();
-      return;
     }
-    // If not logged in, open signup modal first
-    if (!user) {
-      openRegister();
-      return;
-    }
-    const cycle = yearly ? 'yearly' : 'monthly';
-    subscribe(planId, cycle);
   };
 
   return (

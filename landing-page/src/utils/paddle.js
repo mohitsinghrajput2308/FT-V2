@@ -72,8 +72,12 @@ export function openPaddleCheckout({ priceId, userId, email, onSuccess }) {
     return;
   }
 
-  initPaddle();
+  if (!paddleInitialized) {
+    console.error('[Paddle] Paddle not initialized — call initPaddle() first or check REACT_APP_PADDLE_CLIENT_TOKEN in .env');
+    return;
+  }
 
+  try {
   window.Paddle.Checkout.open({
     items: [{ priceId, quantity: 1 }],
     customer: { email },
@@ -93,6 +97,9 @@ export function openPaddleCheckout({ priceId, userId, email, onSuccess }) {
       }
     },
   });
+  } catch (err) {
+    console.error('[Paddle] Checkout.open() failed:', err);
+  }
 }
 
 /**
