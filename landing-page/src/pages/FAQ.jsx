@@ -122,7 +122,7 @@ const FAQ = () => {
     <div className="min-h-screen bg-[#050505] text-white overflow-hidden">
       <Navbar />
       {/* Background effects */}
-      <div className="fixed inset-0 z-0">
+      <div className="fixed inset-0 z-0 pointer-events-none">
         <motion.div
           animate={{ y: [0, -20, 0] }}
           transition={{ duration: 8, repeat: Infinity }}
@@ -135,7 +135,7 @@ const FAQ = () => {
         />
       </div>
       <div
-        className="fixed inset-0 z-0 opacity-[0.03]"
+        className="fixed inset-0 z-0 opacity-[0.03] pointer-events-none"
         style={{
           backgroundImage:
             'linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)',
