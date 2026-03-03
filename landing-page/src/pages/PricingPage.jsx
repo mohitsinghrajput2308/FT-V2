@@ -187,17 +187,17 @@ const FAQItem = ({ q, a }) => {
 /* ─── Main Page ─────────────────────────────────────────────── */
 const PricingPage = () => {
   const [yearly, setYearly] = useState(false);
-  const { modalState, closeModal, openModal } = useAuthModal();
+  const { modalState, closeModal, openLogin, openRegister } = useAuthModal();
   const { subscribe, isPaid, plan: currentPlan, loading: subLoading, user } = useSubscription();
 
   const handlePlanClick = (planId, skipTrial = false) => {
     if (planId === 'free') {
-      openModal?.('signup');
+      openRegister();
       return;
     }
     // If not logged in, open signup modal first
     if (!user) {
-      openModal?.('signup');
+      openRegister();
       return;
     }
     const cycle = yearly ? 'yearly' : 'monthly';

@@ -1,10 +1,23 @@
 import React, { useState } from 'react';
 import { Check } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
+import { useAuthModal } from '../context/AuthContext';
 
 export const PricingSection = () => {
   const [yearly, setYearly] = useState(false);
+  const { openRegister } = useAuthModal();
+  const navigate = useNavigate();
+
+  const handlePlanClick = (plan) => {
+    if (plan.monthlyPrice === 0) {
+      openRegister();
+    } else {
+      // Redirect to full pricing page with toggle pre-selected
+      navigate(`/pricing?cycle=${yearly ? 'yearly' : 'monthly'}`);
+    }
+  };
 
   const plans = [
     {
@@ -141,6 +154,7 @@ export const PricingSection = () => {
                 {!yearly && <div className="mb-5" />}
 
                 <Button
+                  onClick={() => handlePlanClick(plan)}
                   className={`w-full py-6 mb-8 shadow-lg transition-all duration-300 ${price !== 0
                     ? 'bg-gradient-to-r from-[#DAA520] to-[#FFA500] hover:from-[#B8860B] hover:to-[#FF8C00] text-black font-black shadow-orange-500/20'
                     : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-bold'
