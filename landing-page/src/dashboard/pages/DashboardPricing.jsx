@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Check, Zap, Star, Building2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import Card from '../components/Common/Card';
@@ -245,8 +245,8 @@ const DashboardPricing = () => {
             </thead>
             <tbody>
               {comparison.map(({ category, rows }) => (
-                <>
-                  <tr key={category}>
+                <React.Fragment key={category}>
+                  <tr>
                     <td colSpan={4} className="pt-5 pb-2">
                       <span className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">{category}</span>
                     </td>
@@ -259,7 +259,7 @@ const DashboardPricing = () => {
                       <td className="py-2.5 text-center"><Cell value={row.business} /></td>
                     </tr>
                   ))}
-                </>
+                </React.Fragment>
               ))}
             </tbody>
           </table>
