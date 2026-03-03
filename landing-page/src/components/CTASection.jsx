@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { ArrowRight, Sparkles, Shield, TrendingUp, Zap, ChevronRight, DollarSign } from 'lucide-react';
 import { useAuthModal } from '../context/AuthContext';
 import { getVariant, getAbCopy, trackAbEvent, EXPERIMENTS } from '../utils/abTest';
+import { useShaderBackground } from './WebGLHero';
 
 export const CTASection = () => {
   const { openRegister } = useAuthModal();
@@ -12,6 +13,7 @@ export const CTASection = () => {
     A: 'Get Started Free',
     B: 'Start Tracking Free',
   });
+  const canvasRef = useShaderBackground();
 
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -43,8 +45,13 @@ export const CTASection = () => {
     <section
       ref={sectionRef}
       className="py-32 relative overflow-hidden"
-      style={{ background: '#0C0A07' }}
+      style={{ background: 'black' }}
     >
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full object-cover touch-none opacity-80 mix-blend-screen"
+        style={{ background: 'black' }}
+      />
       {/* Ambient warmth */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -147,7 +154,7 @@ export const CTASection = () => {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
           {/* Avatars */}
           <div className="flex -space-x-3">
-            {['🧑‍💼','👩‍💻','🧑‍🎓','👨‍🍳','👩‍🔬'].map((emoji, i) => (
+            {['🧑‍💼', '👩‍💻', '🧑‍🎓', '👨‍🍳', '👩‍🔬'].map((emoji, i) => (
               <div
                 key={i}
                 className="w-9 h-9 rounded-full border-2 flex items-center justify-center text-base"

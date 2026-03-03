@@ -157,7 +157,6 @@ const DashboardPricing = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-2 pb-16 space-y-10">
-
       {/* Header */}
       <div className="text-center pt-6">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase mb-4 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400">
@@ -244,8 +243,8 @@ const DashboardPricing = () => {
                 <button
                   onClick={() => handleUpgrade(plan.key)}
                   className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-black transition-all ${plan.key === 'pro'
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black shadow-md shadow-amber-500/20'
-                      : 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white'
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black shadow-md shadow-amber-500/20'
+                    : 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white'
                     }`}
                 >
                   {plan.key === 'pro' ? <Zap className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}

@@ -34,6 +34,7 @@ const Roadmap = React.lazy(() => import("@/pages/Roadmap"));
 const Changelog = React.lazy(() => import("@/pages/Changelog"));
 const FAQ = React.lazy(() => import("@/pages/FAQ"));
 const PricingPage = React.lazy(() => import("@/pages/PricingPage"));
+const WebGLPreview = React.lazy(() => import("@/pages/WebGLPreview"));
 
 // ─── Loading fallback ──────────────────────────────────────────
 const PageLoader = () => (
@@ -113,6 +114,7 @@ function App() {
                   <Route path="/changelog" element={<Changelog />} />
                   <Route path="/faq" element={<FAQ />} />
                   <Route path="/pricing" element={<PricingPage />} />
+                  <Route path="/webgl-preview" element={<WebGLPreview />} />
                 </Routes>
               </Suspense>
             </div>
