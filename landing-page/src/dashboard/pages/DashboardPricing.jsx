@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Check, Zap, Star, Building2, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Check, Zap, Star, Building2, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSubscription } from '../../hooks/useSubscription';
+import { initPaddle } from '../../utils/paddle';
 import Card from '../components/Common/Card';
 
 const plans = [
@@ -128,17 +129,46 @@ const DashboardPricing = () => {
   const { subscribe, isPro: isProSub, isBusiness: isBusinessSub, plan: currentPlan } = useSubscription();
   const [yearly, setYearly] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
+  const [paddleReady, setPaddleReady] = useState(false);
 
   const isPro = isProSub;
   const isBusiness = isBusinessSub;
 
+  useEffect(() => {
+    // Try to initialize Paddle; retry up to 5 times waiting for paddle.js to load
+    let attempts = 0;
+    const tryInit = () => {
+      const ok = initPaddle();
+      if (ok) { setPaddleReady(true); return; }
+      attempts++;
+      if (attempts < 5) setTimeout(tryInit, 800);
+    };
+    tryInit();
+  }, []);
+
   const handleUpgrade = (planKey) => {
+    if (!paddleReady) {
+      alert('Payment system is not ready.\n\nIf you are running locally, please restart your dev server (Ctrl+C → npm start) to load the Paddle configuration from .env.\n\nIf you are on the live site, please refresh the page.');
+      return;
+    }
     const cycle = yearly ? 'yearly' : 'monthly';
     subscribe(planKey, cycle);
   };
 
   return (
     <div className="max-w-6xl mx-auto px-2 pb-16 space-y-10">
+      {/* Paddle not ready warning */}
+      {!paddleReady && (
+        <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl px-5 py-4">
+          <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-bold text-amber-700 dark:text-amber-400">Payment system loading…</p>
+            <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">
+              If buttons don't respond, <strong>restart the dev server</strong> (Ctrl+C → npm start) so the Paddle token is loaded from .env. On the live site, refresh the page.
+            </p>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="text-center pt-6">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase mb-4 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400">
