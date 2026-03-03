@@ -18,6 +18,12 @@ const billCategories = [
     { value: 'Other', label: 'Other' }
 ];
 
+const priorities = [
+    { value: 'High', label: 'High Priority' },
+    { value: 'Medium', label: 'Medium Priority' },
+    { value: 'Low', label: 'Low Priority' }
+];
+
 const recurringOptions = [
     { value: 'Monthly', label: 'Monthly' },
     { value: 'Quarterly', label: 'Quarterly' },
@@ -35,7 +41,9 @@ const Bills = () => {
         amount: '',
         dueDate: '',
         category: '',
-        recurring: 'Monthly'
+        customCategory: '',
+        recurring: 'Monthly',
+        priority: 'Medium'
     });
     const [errors, setErrors] = useState({});
 
@@ -52,6 +60,10 @@ const Bills = () => {
 
         return filtered.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
     }, [bills, filter]);
+
+    const highBills = filteredBills.filter(b => b.priority === 'High');
+    const mediumBills = filteredBills.filter(b => b.priority === 'Medium' || !b.priority);
+    const lowBills = filteredBills.filter(b => b.priority === 'Low');
 
     const stats = useMemo(() => ({
         total: bills.length,
@@ -72,6 +84,9 @@ const Bills = () => {
         if (!formData.amount || parseFloat(formData.amount) <= 0) newErrors.amount = 'Valid amount is required';
         if (!formData.dueDate) newErrors.dueDate = 'Due date is required';
         if (!formData.category) newErrors.category = 'Category is required';
+        if (formData.category === 'Other' && !formData.customCategory.trim()) {
+            newErrors.customCategory = 'Please specify the category';
+        }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -84,8 +99,11 @@ const Bills = () => {
             name: formData.name,
             amount: parseFloat(formData.amount),
             dueDate: formData.dueDate,
-            category: formData.category,
-            recurring: formData.recurring
+            category: formData.category === 'Other'
+                ? (formData.customCategory.trim() || 'Other')
+                : formData.category,
+            recurring: formData.recurring,
+            priority: formData.priority
         };
 
         if (editingItem) {
@@ -99,12 +117,15 @@ const Bills = () => {
     const openModal = (item = null) => {
         if (item) {
             setEditingItem(item);
+            const isCustom = item.category && !billCategories.find(c => c.value === item.category);
             setFormData({
                 name: item.name,
                 amount: item.amount.toString(),
                 dueDate: item.dueDate,
-                category: item.category,
-                recurring: item.recurring
+                category: isCustom ? 'Other' : (item.category || ''),
+                customCategory: isCustom ? item.category : '',
+                recurring: item.recurring || 'Monthly',
+                priority: item.priority || 'Medium'
             });
         } else {
             setEditingItem(null);
@@ -113,7 +134,9 @@ const Bills = () => {
                 amount: '',
                 dueDate: '',
                 category: '',
-                recurring: 'Monthly'
+                customCategory: '',
+                recurring: 'Monthly',
+                priority: 'Medium'
             });
         }
         setErrors({});
@@ -131,6 +154,89 @@ const Bills = () => {
         }
     };
 
+    const priorityStyle = (priority) => {
+        if (priority === 'High') return 'bg-danger-100 dark:bg-danger-900/30 text-danger-700 dark:text-danger-300';
+        if (priority === 'Low') return 'bg-success-100 dark:bg-success-900/30 text-success-700 dark:text-success-300';
+        return 'bg-warning-100 dark:bg-warning-900/30 text-warning-700 dark:text-warning-300';
+    };
+
+    const renderBillCard = (bill) => {
+        const status = getBillStatus(bill);
+        const days = daysUntil(bill.dueDate);
+        const StatusIcon = status.icon;
+        const prio = bill.priority || 'Medium';
+
+        return (
+            <Card key={bill.id} className={bill.isPaid ? 'opacity-75' : ''}>
+                <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${bill.isPaid ? 'bg-success-100 dark:bg-success-900/30' :
+                            days < 0 ? 'bg-danger-100 dark:bg-danger-900/30' :
+                                'bg-primary-100 dark:bg-primary-900/30'
+                            }`}>
+                            <StatusIcon className={`w-5 h-5 ${bill.isPaid ? 'text-success-600' :
+                                days < 0 ? 'text-danger-600' :
+                                    'text-primary-600'
+                                }`} />
+                        </div>
+                        <div>
+                            <h3 className="font-semibold text-gray-900 dark:text-white">{bill.name}</h3>
+                            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                                <span className={`badge ${status.color}`}>{status.label}</span>
+                                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${priorityStyle(prio)}`}>{prio}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex gap-1">
+                        <button onClick={() => openModal(bill)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-300 text-gray-500">
+                            <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDelete(bill.id)} className="p-1.5 rounded-lg hover:bg-danger-50 text-danger-500">
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <div className="flex justify-between">
+                        <span className="text-gray-500">Amount</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(bill.amount, currency)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="text-gray-500">Category</span>
+                        <span className="text-gray-900 dark:text-white">{bill.category}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="text-gray-500">Due Date</span>
+                        <span className="text-gray-900 dark:text-white">{formatDate(bill.dueDate, dateFormat)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="text-gray-500">Recurring</span>
+                        <span className="text-gray-900 dark:text-white">{bill.recurring}</span>
+                    </div>
+                </div>
+
+                {!bill.isPaid && (
+                    <Button
+                        onClick={() => markBillPaid(bill.id)}
+                        variant="success"
+                        fullWidth
+                        className="mt-4"
+                        icon={CheckCircle}
+                    >
+                        Mark as Paid
+                    </Button>
+                )}
+
+                {bill.isPaid && bill.paidDate && (
+                    <p className="mt-4 text-sm text-center text-success-600">
+                        Paid on {formatDate(bill.paidDate, dateFormat)}
+                    </p>
+                )}
+            </Card>
+        );
+    };
+
     const getBillStatus = (bill) => {
         if (bill.isPaid) {
             return { label: 'Paid', color: 'badge-success', icon: CheckCircle };
@@ -146,7 +252,7 @@ const Bills = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Bill Reminders</h1>
@@ -184,8 +290,8 @@ const Bills = () => {
                         key={f}
                         onClick={() => setFilter(f)}
                         className={`px-4 py-2 rounded-lg font-medium transition-colors capitalize ${filter === f
-                                ? 'bg-primary-600 text-white'
-                                : 'bg-gray-100 dark:bg-dark-300 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-dark-400'
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-gray-100 dark:bg-dark-300 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-dark-400'
                             }`}
                     >
                         {f}
@@ -203,75 +309,54 @@ const Bills = () => {
                     actionLabel="Add Bill"
                 />
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredBills.map((bill) => {
-                        const status = getBillStatus(bill);
-                        const days = daysUntil(bill.dueDate);
-                        const StatusIcon = status.icon;
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* High Priority Column */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 pb-2 border-b-2 border-danger-500">
+                            <span className="w-3 h-3 rounded-full bg-danger-500"></span>
+                            <h3 className="font-semibold text-danger-600 dark:text-danger-400">High Priority</h3>
+                            <span className="ml-auto text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-dark-300 px-2 py-0.5 rounded-full">{highBills.length}</span>
+                        </div>
+                        {highBills.length === 0 ? (
+                            <div className="text-center py-8 text-gray-400 dark:text-gray-600 text-sm border-2 border-dashed border-gray-200 dark:border-dark-300 rounded-xl">No high priority bills</div>
+                        ) : (
+                            <div className="flex flex-col gap-4">
+                                {highBills.map(bill => renderBillCard(bill))}
+                            </div>
+                        )}
+                    </div>
 
-                        return (
-                            <Card key={bill.id} className={bill.isPaid ? 'opacity-75' : ''}>
-                                <div className="flex items-start justify-between mb-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${bill.isPaid ? 'bg-success-100 dark:bg-success-900/30' :
-                                                days < 0 ? 'bg-danger-100 dark:bg-danger-900/30' :
-                                                    'bg-primary-100 dark:bg-primary-900/30'
-                                            }`}>
-                                            <StatusIcon className={`w-5 h-5 ${bill.isPaid ? 'text-success-600' :
-                                                    days < 0 ? 'text-danger-600' :
-                                                        'text-primary-600'
-                                                }`} />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-semibold text-gray-900 dark:text-white">{bill.name}</h3>
-                                            <span className={`badge ${status.color}`}>{status.label}</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-1">
-                                        <button onClick={() => openModal(bill)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-300 text-gray-500">
-                                            <Edit2 className="w-4 h-4" />
-                                        </button>
-                                        <button onClick={() => handleDelete(bill.id)} className="p-1.5 rounded-lg hover:bg-danger-50 text-danger-500">
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
+                    {/* Medium Priority Column */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 pb-2 border-b-2 border-warning-500">
+                            <span className="w-3 h-3 rounded-full bg-warning-500"></span>
+                            <h3 className="font-semibold text-warning-600 dark:text-warning-400">Medium Priority</h3>
+                            <span className="ml-auto text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-dark-300 px-2 py-0.5 rounded-full">{mediumBills.length}</span>
+                        </div>
+                        {mediumBills.length === 0 ? (
+                            <div className="text-center py-8 text-gray-400 dark:text-gray-600 text-sm border-2 border-dashed border-gray-200 dark:border-dark-300 rounded-xl">No medium priority bills</div>
+                        ) : (
+                            <div className="flex flex-col gap-4">
+                                {mediumBills.map(bill => renderBillCard(bill))}
+                            </div>
+                        )}
+                    </div>
 
-                                <div className="space-y-2">
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-500">Amount</span>
-                                        <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(bill.amount, currency)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-500">Due Date</span>
-                                        <span className="text-gray-900 dark:text-white">{formatDate(bill.dueDate, dateFormat)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-500">Recurring</span>
-                                        <span className="text-gray-900 dark:text-white">{bill.recurring}</span>
-                                    </div>
-                                </div>
-
-                                {!bill.isPaid && (
-                                    <Button
-                                        onClick={() => markBillPaid(bill.id)}
-                                        variant="success"
-                                        fullWidth
-                                        className="mt-4"
-                                        icon={CheckCircle}
-                                    >
-                                        Mark as Paid
-                                    </Button>
-                                )}
-
-                                {bill.isPaid && bill.paidDate && (
-                                    <p className="mt-4 text-sm text-center text-success-600">
-                                        Paid on {formatDate(bill.paidDate, dateFormat)}
-                                    </p>
-                                )}
-                            </Card>
-                        );
-                    })}
+                    {/* Low Priority Column */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 pb-2 border-b-2 border-success-500">
+                            <span className="w-3 h-3 rounded-full bg-success-500"></span>
+                            <h3 className="font-semibold text-success-600 dark:text-success-400">Low Priority</h3>
+                            <span className="ml-auto text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-dark-300 px-2 py-0.5 rounded-full">{lowBills.length}</span>
+                        </div>
+                        {lowBills.length === 0 ? (
+                            <div className="text-center py-8 text-gray-400 dark:text-gray-600 text-sm border-2 border-dashed border-gray-200 dark:border-dark-300 rounded-xl">No low priority bills</div>
+                        ) : (
+                            <div className="flex flex-col gap-4">
+                                {lowBills.map(bill => renderBillCard(bill))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -282,9 +367,20 @@ const Bills = () => {
                     <Input label="Amount" name="amount" type="number" placeholder="Enter amount" value={formData.amount} onChange={handleChange} error={errors.amount} />
                     <div className="grid grid-cols-2 gap-4">
                         <Input label="Due Date" name="dueDate" type="date" value={formData.dueDate} onChange={handleChange} error={errors.dueDate} />
-                        <Select label="Category" name="category" options={billCategories} value={formData.category} onChange={handleChange} error={errors.category} />
+                            <Select label="Category" name="category" options={billCategories} value={formData.category} onChange={handleChange} error={errors.category} />
                     </div>
+                    {formData.category === 'Other' && (
+                        <Input
+                            label="Specify Category"
+                            name="customCategory"
+                            placeholder="e.g., Subscriptions, Education, Pet Care..."
+                            value={formData.customCategory}
+                            onChange={handleChange}
+                            error={errors.customCategory}
+                        />
+                    )}
                     <Select label="Recurring" name="recurring" options={recurringOptions} value={formData.recurring} onChange={handleChange} />
+                    <Select label="Priority" name="priority" options={priorities} value={formData.priority} onChange={handleChange} />
                     <div className="flex gap-3 pt-4">
                         <Button type="button" variant="secondary" onClick={closeModal} fullWidth>Cancel</Button>
                         <Button type="submit" fullWidth>{editingItem ? 'Update' : 'Add'} Bill</Button>

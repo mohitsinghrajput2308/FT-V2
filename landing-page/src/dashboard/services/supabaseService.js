@@ -68,11 +68,20 @@ const fromSupabaseTransaction = (row) => {
 
 const toSupabaseBudget = (b) => {
     // Frontend sends month as "YYYY-MM", Supabase stores month/year as ints
-    let month, year;
+    let month = null, year = null;
+    let period_type = 'monthly';
+    const period = b.month; // Front-end uses "month" for the unified period ID
+
     if (b.month && b.month.includes('-')) {
-        const [y, m] = b.month.split('-');
+        const [y, pId] = b.month.split('-');
         year = parseInt(y, 10);
-        month = parseInt(m, 10);
+        if (pId.startsWith('W')) {
+            month = 1; // Dummy month for Weekly constraints
+            period_type = 'weekly';
+        } else {
+            month = parseInt(pId, 10);
+            period_type = 'monthly';
+        }
     } else {
         const now = new Date();
         month = b.month || (now.getMonth() + 1);
@@ -85,6 +94,8 @@ const toSupabaseBudget = (b) => {
         spent_amount: Number(b.spent || 0),
         month,
         year,
+        period,
+        period_type
     };
 };
 
@@ -94,7 +105,7 @@ const fromSupabaseBudget = (row) => ({
     category: row.category,
     amount: Number(row.amount),
     spent: Number(row.spent_amount || 0),
-    month: `${row.year}-${String(row.month).padStart(2, '0')}`,
+    month: row.period || `${row.year}-${String(row.month).padStart(2, '0')}`,
     createdAt: row.created_at,
 });
 
@@ -105,6 +116,8 @@ const toSupabaseGoal = (g) => ({
     current_amount: Number(g.currentAmount || 0),
     deadline: g.deadline || null,
     category: g.category || null,
+    priority: g.priority || 'Medium',
+    description: g.description || null,
 });
 
 const fromSupabaseGoal = (row) => ({
@@ -115,33 +128,51 @@ const fromSupabaseGoal = (row) => ({
     currentAmount: Number(row.current_amount),
     deadline: row.deadline,
     category: row.category,
+    priority: row.priority || 'Medium',
+    description: row.description || '',
     createdAt: row.created_at,
 });
 
-const toSupabaseInvestment = (i) => ({
-    user_id: i.userId,
-    stock_symbol: i.symbol || i.name || i.stockSymbol || '',
-    quantity: Number(i.quantity),
-    purchase_price: Number(i.buyPrice || i.purchasePrice || 0),
-    current_price: Number(i.currentValue || i.currentPrice || 0),
-    purchase_date: i.purchaseDate || i.date || new Date().toISOString().split('T')[0],
-});
+const toSupabaseInvestment = (i) => {
+    // Pack name + type into stock_symbol as JSON so we don't lose data
+    const meta = { name: i.name || i.symbol || '', type: i.type || 'Other' };
+    return {
+        user_id: i.userId,
+        stock_symbol: JSON.stringify(meta),
+        quantity: Number(i.quantity),
+        purchase_price: Number(i.purchasePrice || i.buyPrice || 0),
+        current_price: Number(i.currentValue || i.currentPrice || 0),
+        purchase_date: i.purchaseDate || i.date || new Date().toISOString().split('T')[0],
+    };
+};
 
-const fromSupabaseInvestment = (row) => ({
-    id: row.id,
-    userId: row.user_id,
-    name: row.stock_symbol,
-    symbol: row.stock_symbol,
-    stockSymbol: row.stock_symbol,
-    quantity: Number(row.quantity),
-    buyPrice: Number(row.purchase_price),
-    purchasePrice: Number(row.purchase_price),
-    currentValue: Number(row.current_price || row.purchase_price),
-    currentPrice: Number(row.current_price || row.purchase_price),
-    purchaseDate: row.purchase_date,
-    date: row.purchase_date,
-    createdAt: row.created_at,
-});
+const fromSupabaseInvestment = (row) => {
+    let name = row.stock_symbol || '';
+    let type = 'Other';
+    try {
+        if (name.startsWith('{')) {
+            const parsed = JSON.parse(name);
+            name = parsed.name || '';
+            type = parsed.type || 'Other';
+        }
+    } catch { /* keep raw value */ }
+    return {
+        id: row.id,
+        userId: row.user_id,
+        name,
+        type,
+        symbol: name,
+        stockSymbol: name,
+        quantity: Number(row.quantity),
+        buyPrice: Number(row.purchase_price),
+        purchasePrice: Number(row.purchase_price),
+        currentValue: Number(row.current_price || row.purchase_price),
+        currentPrice: Number(row.current_price || row.purchase_price),
+        purchaseDate: row.purchase_date,
+        date: row.purchase_date,
+        createdAt: row.created_at,
+    };
+};
 
 const toSupabaseBill = (b) => ({
     user_id: b.userId,
@@ -153,6 +184,8 @@ const toSupabaseBill = (b) => ({
     paid_date: b.paidDate || null,
     is_recurring: b.isRecurring || false,
     recurrence: b.recurrence || null,
+    recurring: b.recurring || 'Monthly',
+    priority: b.priority || 'Medium',
 });
 
 const fromSupabaseBill = (row) => ({
@@ -166,6 +199,8 @@ const fromSupabaseBill = (row) => ({
     paidDate: row.paid_date,
     isRecurring: row.is_recurring,
     recurrence: row.recurrence,
+    recurring: row.recurring || 'Monthly',
+    priority: row.priority || 'Medium',
     createdAt: row.created_at,
 });
 
@@ -276,10 +311,18 @@ export const BudgetService = {
             const payload = {};
             if (updates.category !== undefined) payload.category = updates.category;
             if (updates.amount !== undefined) payload.amount = Number(updates.amount);
+            if (updates.spent !== undefined) payload.spent_amount = Number(updates.spent);
             if (updates.month && updates.month.includes('-')) {
-                const [y, m] = updates.month.split('-');
+                const [y, pId] = updates.month.split('-');
                 payload.year = parseInt(y, 10);
-                payload.month = parseInt(m, 10);
+                if (pId.startsWith('W')) {
+                    payload.month = 1;
+                    payload.period_type = 'weekly';
+                } else {
+                    payload.month = parseInt(pId, 10);
+                    payload.period_type = 'monthly';
+                }
+                payload.period = updates.month;
             }
             const { data, error } = await supabase
                 .from('budgets')
@@ -337,6 +380,8 @@ export const GoalService = {
             if (updates.currentAmount !== undefined) payload.current_amount = Number(updates.currentAmount);
             if (updates.deadline !== undefined) payload.deadline = updates.deadline;
             if (updates.category !== undefined) payload.category = updates.category;
+            if (updates.priority !== undefined) payload.priority = updates.priority;
+            if (updates.description !== undefined) payload.description = updates.description;
 
             const { data, error } = await supabase
                 .from('goals')
@@ -389,10 +434,16 @@ export const InvestmentService = {
     async update(id, updates) {
         try {
             const payload = {};
-            if (updates.name || updates.symbol || updates.stockSymbol) payload.stock_symbol = updates.symbol || updates.name || updates.stockSymbol;
+            // Re-pack name+type into stock_symbol JSON
+            if (updates.name !== undefined || updates.type !== undefined) {
+                // We need to merge with existing — fetch current first is complex,
+                // so just pack both if present
+                const meta = { name: updates.name || '', type: updates.type || 'Other' };
+                payload.stock_symbol = JSON.stringify(meta);
+            }
             if (updates.quantity !== undefined) payload.quantity = Number(updates.quantity);
-            if (updates.buyPrice || updates.purchasePrice) payload.purchase_price = Number(updates.buyPrice || updates.purchasePrice);
-            if (updates.currentValue || updates.currentPrice) payload.current_price = Number(updates.currentValue || updates.currentPrice);
+            if (updates.purchasePrice !== undefined || updates.buyPrice !== undefined) payload.purchase_price = Number(updates.purchasePrice || updates.buyPrice);
+            if (updates.currentValue !== undefined || updates.currentPrice !== undefined) payload.current_price = Number(updates.currentValue || updates.currentPrice);
             if (updates.purchaseDate || updates.date) payload.purchase_date = updates.purchaseDate || updates.date;
 
             const { data, error } = await supabase
@@ -454,6 +505,8 @@ export const BillService = {
             if (updates.paidDate !== undefined) payload.paid_date = updates.paidDate;
             if (updates.isRecurring !== undefined) payload.is_recurring = updates.isRecurring;
             if (updates.recurrence !== undefined) payload.recurrence = updates.recurrence;
+            if (updates.recurring !== undefined) payload.recurring = updates.recurring;
+            if (updates.priority !== undefined) payload.priority = updates.priority;
 
             const { data, error } = await supabase
                 .from('bills')
@@ -567,6 +620,8 @@ export const SettingsService = {
                     notifications: data.notifications_enabled,
                     theme: data.theme,
                     language: data.language,
+                    totalBudget: data.total_budget || 0,
+                    onboarding_completed: data.onboarding_completed || false,
                 }
             };
         } catch (err) { return handleError('get settings', err); }
@@ -580,6 +635,8 @@ export const SettingsService = {
             if (settings.notifications !== undefined) payload.notifications_enabled = settings.notifications;
             if (settings.theme !== undefined) payload.theme = settings.theme;
             if (settings.language !== undefined) payload.language = settings.language;
+            if (settings.totalBudget !== undefined) payload.total_budget = settings.totalBudget;
+            if (settings.onboarding_completed !== undefined) payload.onboarding_completed = settings.onboarding_completed;
 
             const { data, error } = await supabase
                 .from('user_settings')
@@ -594,6 +651,8 @@ export const SettingsService = {
                     notifications: data.notifications_enabled,
                     theme: data.theme,
                     language: data.language,
+                    totalBudget: data.total_budget || 0,
+                    onboarding_completed: data.onboarding_completed || false,
                 }
             };
         } catch (err) { return handleError('upsert settings', err); }

@@ -628,6 +628,20 @@ export function validateBillData(data) {
         }
     }
 
+    // Recurring label (UI value like 'Monthly', 'Quarterly', etc.)
+    if (data.recurring) {
+        sanitizedData.recurring = sanitizeString(data.recurring).slice(0, 20);
+    }
+
+    // Priority (optional)
+    if (data.priority) {
+        if (['High', 'Medium', 'Low'].includes(data.priority)) {
+            sanitizedData.priority = data.priority;
+        } else {
+            sanitizedData.priority = 'Medium';
+        }
+    }
+
     // Paid date (optional)
     if (data.paidDate) {
         const pd = new Date(data.paidDate);
@@ -636,7 +650,7 @@ export function validateBillData(data) {
         }
     }
 
-    const allowedFields = ['name', 'amount', 'dueDate', 'category', 'isPaid', 'paidDate', 'isRecurring', 'recurrence', 'userId'];
+    const allowedFields = ['name', 'amount', 'dueDate', 'category', 'isPaid', 'paidDate', 'isRecurring', 'recurrence', 'recurring', 'priority', 'userId'];
     Object.keys(data).forEach(key => {
         if (!allowedFields.includes(key)) {
             console.warn(`[SECURITY] Bill: unexpected field rejected: ${key}`);

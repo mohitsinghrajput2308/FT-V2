@@ -287,20 +287,23 @@ export const SecureInvestmentAPI = {
         if (!idCheck.valid) return validationError(idCheck.error);
 
         const sanitized = {};
-        if (data.name || data.symbol || data.stockSymbol) {
-            sanitized.symbol = sanitizeString(data.symbol || data.name || data.stockSymbol).toUpperCase().slice(0, 10);
+        if (data.name !== undefined) {
+            sanitized.name = sanitizeString(data.name).slice(0, 100);
+        }
+        if (data.type !== undefined) {
+            sanitized.type = data.type;
         }
         if (data.quantity !== undefined) {
             const num = parseFloat(data.quantity);
             if (isNaN(num) || num <= 0) return validationError('Invalid quantity');
             sanitized.quantity = num;
         }
-        if (data.buyPrice || data.purchasePrice) {
-            const num = parseFloat(data.buyPrice || data.purchasePrice);
+        if (data.purchasePrice !== undefined || data.buyPrice !== undefined) {
+            const num = parseFloat(data.purchasePrice || data.buyPrice);
             if (isNaN(num) || num < 0) return validationError('Invalid purchase price');
-            sanitized.buyPrice = Math.round(num * 100) / 100;
+            sanitized.purchasePrice = Math.round(num * 100) / 100;
         }
-        if (data.currentValue || data.currentPrice) {
+        if (data.currentValue !== undefined || data.currentPrice !== undefined) {
             const num = parseFloat(data.currentValue || data.currentPrice);
             if (isNaN(num) || num < 0) return validationError('Invalid current price');
             sanitized.currentValue = Math.round(num * 100) / 100;
@@ -365,6 +368,10 @@ export const SecureBillAPI = {
             if (data.recurrence === null || ['weekly', 'monthly', 'yearly'].includes(data.recurrence)) {
                 sanitized.recurrence = data.recurrence;
             }
+        }
+        if (data.recurring !== undefined) sanitized.recurring = sanitizeString(data.recurring).slice(0, 20);
+        if (data.priority !== undefined) {
+            sanitized.priority = ['High', 'Medium', 'Low'].includes(data.priority) ? data.priority : 'Medium';
         }
 
         return BillService.update(idCheck.value, sanitized);
