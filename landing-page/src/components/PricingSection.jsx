@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Check } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { useAuthModal } from '../context/AuthContext';
@@ -8,15 +7,10 @@ import { useAuthModal } from '../context/AuthContext';
 export const PricingSection = () => {
   const [yearly, setYearly] = useState(false);
   const { openRegister } = useAuthModal();
-  const navigate = useNavigate();
 
   const handlePlanClick = (plan) => {
-    if (plan.monthlyPrice === 0) {
-      openRegister();
-    } else {
-      // Redirect to full pricing page with toggle pre-selected
-      navigate(`/pricing?cycle=${yearly ? 'yearly' : 'monthly'}`);
-    }
+    // All plan buttons open signup — paid users complete checkout after signing in
+    openRegister();
   };
 
   const plans = [

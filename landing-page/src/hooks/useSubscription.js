@@ -17,7 +17,10 @@ export function useSubscription() {
     initPaddle();
 
     const load = async () => {
-      const { data: { user: u } } = await supabase.auth.getUser();
+      // Use getSession() (reads localStorage, no network lock) instead of
+      // getUser() (network call) to avoid NavigatorLockAcquireTimeoutError
+      const { data: { session } } = await supabase.auth.getSession();
+      const u = session?.user ?? null;
       setUser(u);
       if (!u) { setLoading(false); return; }
 
