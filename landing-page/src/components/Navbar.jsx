@@ -25,9 +25,9 @@ export const Navbar = () => {
   }, []);
 
   const navLinks = [
-    { name: 'Home', href: '#' },
-    { name: 'Features', href: '#features' },
-    { name: 'How It Works', href: '#how-it-works' },
+    { name: 'Home', href: '/' },
+    { name: 'Features', href: '/#features' },
+    { name: 'How It Works', href: '/#how-it-works' },
     { name: 'Pricing', href: '/pricing' },
     { name: 'FAQ', href: '/faq' }
   ];
@@ -59,7 +59,7 @@ export const Navbar = () => {
       <div className="w-full px-6 sm:px-10 lg:px-12">
         <div className="flex justify-between items-center h-28">
           {/* Logo */}
-          <div className="flex items-center cursor-pointer group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+          <div className="flex items-center cursor-pointer group" onClick={() => navigate('/')}>
             <img
               src={logo}
               alt="FinTrack Logo"
@@ -74,11 +74,11 @@ export const Navbar = () => {
                 key={link.name}
                 href={link.href}
                 onClick={(e) => {
-                  if (link.name === 'Home') {
-                    e.preventDefault();
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  } else if (link.href.startsWith('/')) {
-                    e.preventDefault();
+                  e.preventDefault();
+                  if (link.href.startsWith('/#')) {
+                    // anchor on home page — navigate there (browser will scroll to hash)
+                    window.location.href = link.href;
+                  } else {
                     navigate(link.href);
                   }
                 }}
@@ -126,12 +126,11 @@ export const Navbar = () => {
                   href={link.href}
                   className="text-gray-300 hover:text-white text-lg font-medium transition-colors duration-200"
                   onClick={(e) => {
+                    e.preventDefault();
                     setIsMobileMenuOpen(false);
-                    if (link.name === 'Home') {
-                      e.preventDefault();
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    } else if (link.href.startsWith('/')) {
-                      e.preventDefault();
+                    if (link.href.startsWith('/#')) {
+                      window.location.href = link.href;
+                    } else {
                       navigate(link.href);
                     }
                   }}
