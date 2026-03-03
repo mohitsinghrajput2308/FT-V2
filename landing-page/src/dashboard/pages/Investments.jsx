@@ -29,6 +29,7 @@ const Investments = () => {
     const [formData, setFormData] = useState({
         name: '',
         type: '',
+        customType: '',
         purchasePrice: '',
         currentValue: '',
         quantity: '',
@@ -82,7 +83,9 @@ const Investments = () => {
 
         const data = {
             name: formData.name,
-            type: formData.type,
+            type: formData.type === 'Other'
+                ? (formData.customType.trim() || 'Other')
+                : formData.type,
             purchasePrice: parseFloat(formData.purchasePrice),
             currentValue: parseFloat(formData.currentValue),
             quantity: parseFloat(formData.quantity),
@@ -103,6 +106,7 @@ const Investments = () => {
             setFormData({
                 name: item.name,
                 type: item.type,
+                customType: '',
                 purchasePrice: item.purchasePrice.toString(),
                 currentValue: item.currentValue.toString(),
                 quantity: item.quantity.toString(),
@@ -113,6 +117,7 @@ const Investments = () => {
             setFormData({
                 name: '',
                 type: '',
+                customType: '',
                 purchasePrice: '',
                 currentValue: '',
                 quantity: '',
@@ -294,6 +299,15 @@ const Investments = () => {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <Input label="Investment Name" name="name" placeholder="e.g., Reliance Industries" value={formData.name} onChange={handleChange} error={errors.name} />
                     <Select label="Type" name="type" options={investmentTypes} value={formData.type} onChange={handleChange} error={errors.type} />
+                    {formData.type === 'Other' && (
+                        <Input
+                            label="Specify Type"
+                            name="customType"
+                            placeholder="e.g., Real Assets, REIT, Commodities..."
+                            value={formData.customType}
+                            onChange={handleChange}
+                        />
+                    )}
                     <div className="grid grid-cols-2 gap-4">
                         <Input label="Purchase Price" name="purchasePrice" type="number" step="0.01" placeholder="Price per unit" value={formData.purchasePrice} onChange={handleChange} error={errors.purchasePrice} />
                         <Input label="Current Value" name="currentValue" type="number" step="0.01" placeholder="Current price" value={formData.currentValue} onChange={handleChange} error={errors.currentValue} />

@@ -9,21 +9,31 @@ import Select from '../components/Common/Select';
 import Modal from '../components/Common/Modal';
 import EmptyState from '../components/Common/EmptyState';
 
-const incomeCategories = [
-    { value: 'Salary', label: 'Salary' },
-    { value: 'Freelance', label: 'Freelance' },
-    { value: 'Business', label: 'Business' },
-    { value: 'Investment Returns', label: 'Investment Returns' },
-    { value: 'Gift', label: 'Gift' },
+const paymentMethods = [
+    { value: 'Cash', label: 'Cash' },
+    { value: 'Card', label: 'Card' },
+    { value: 'UPI', label: 'UPI' },
+    { value: 'Bank Transfer', label: 'Bank Transfer' },
     { value: 'Other', label: 'Other' }
 ];
 
 const Income = () => {
-    const { transactions, addTransaction, updateTransaction, deleteTransaction, currency, dateFormat } = useFinance();
+    const { transactions, categories, addTransaction, updateTransaction, deleteTransaction, currency, dateFormat } = useFinance();
+
+    const activeIncomeCategories = useMemo(() => {
+        const mappedCategories = (categories?.income || []).map(c => ({
+            value: c.name,
+            label: c.name
+        }));
+
+        return mappedCategories;
+    }, [categories]);
+
     const [modalOpen, setModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterCategory, setFilterCategory] = useState('');
+    const [sortBy, setSortBy] = useState('date');
     const [formData, setFormData] = useState({
         name: '',
         amount: '',
@@ -31,6 +41,7 @@ const Income = () => {
         date: new Date().toISOString().split('T')[0],
         description: '',
         paymentMethod: 'Bank Transfer',
+        customPaymentMethod: '',
         is_recurring: false,
         recurrence: 'monthly'
     });
@@ -41,8 +52,9 @@ const Income = () => {
 
         if (searchQuery) {
             filtered = filtered.filter(t =>
-                t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                t.description?.toLowerCase().includes(searchQuery.toLowerCase())
+                t.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                t.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                t.category?.toLowerCase().includes(searchQuery.toLowerCase())
             );
         }
 
@@ -50,8 +62,12 @@ const Income = () => {
             filtered = filtered.filter(t => t.category === filterCategory);
         }
 
+        if (sortBy === 'amount') {
+            return [...filtered].sort((a, b) => b.amount - a.amount);
+        }
+
         return sortByDate(filtered, 'date', 'desc');
-    }, [transactions, searchQuery, filterCategory]);
+    }, [transactions, searchQuery, filterCategory, sortBy]);
 
     const totalIncome = incomeTransactions.reduce((sum, t) => sum + t.amount, 0);
 
@@ -66,7 +82,7 @@ const Income = () => {
 
     const validate = () => {
         const newErrors = {};
-        if (!formData.name.trim()) newErrors.name = 'Source name is required';
+        if (!formData.name?.trim()) newErrors.name = 'Income source is required';
         if (!formData.amount || parseFloat(formData.amount) <= 0) {
             newErrors.amount = 'Valid amount is required';
         }
@@ -83,7 +99,11 @@ const Income = () => {
         const data = {
             ...formData,
             amount: parseFloat(formData.amount),
+            category: formData.category,
             type: 'income',
+            paymentMethod: formData.paymentMethod === 'Other'
+                ? (formData.customPaymentMethod.trim() || 'Other')
+                : formData.paymentMethod,
             is_recurring: formData.is_recurring,
             recurrence: formData.is_recurring ? formData.recurrence : null,
             next_occurrence: formData.is_recurring ? calculateNextOccurrence(formData.date, formData.recurrence) : null
@@ -102,12 +122,13 @@ const Income = () => {
         if (item) {
             setEditingItem(item);
             setFormData({
-                name: item.name,
+                name: item.name || '',
                 amount: item.amount.toString(),
                 category: item.category,
                 date: item.date,
                 description: item.description || '',
                 paymentMethod: item.paymentMethod || 'Bank Transfer',
+                customPaymentMethod: '',
                 is_recurring: item.is_recurring || false,
                 recurrence: item.recurrence || 'monthly'
             });
@@ -120,6 +141,7 @@ const Income = () => {
                 date: new Date().toISOString().split('T')[0],
                 description: '',
                 paymentMethod: 'Bank Transfer',
+                customPaymentMethod: '',
                 is_recurring: false,
                 recurrence: 'monthly'
             });
@@ -138,6 +160,7 @@ const Income = () => {
             date: new Date().toISOString().split('T')[0],
             description: '',
             paymentMethod: 'Bank Transfer',
+            customPaymentMethod: '',
             is_recurring: false,
             recurrence: 'monthly'
         });
@@ -150,7 +173,7 @@ const Income = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Income</h1>
@@ -174,21 +197,28 @@ const Income = () => {
 
             {/* Filters */}
             <Card>
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1">
-                        <Input
-                            placeholder="Search income..."
-                            icon={Search}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <Input
+                        label="Search"
+                        placeholder="Search income..."
+                        icon={Search}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                     <Select
-                        placeholder="All Categories"
-                        options={incomeCategories}
+                        label="Category"
+                        options={[{ value: '', label: 'All Categories' }, ...activeIncomeCategories]}
                         value={filterCategory}
                         onChange={(e) => setFilterCategory(e.target.value)}
-                        className="sm:w-48"
+                    />
+                    <Select
+                        label="Sort By"
+                        options={[
+                            { value: 'date', label: 'Date (Newest)' },
+                            { value: 'amount', label: 'Amount (Highest)' }
+                        ]}
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
                     />
                 </div>
             </Card>
@@ -208,53 +238,59 @@ const Income = () => {
                         <table className="table">
                             <thead>
                                 <tr>
+                                    <th>#</th>
                                     <th>Source</th>
                                     <th>Category</th>
+                                    <th>Payment</th>
                                     <th>Date</th>
                                     <th>Amount</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {incomeTransactions.map((item) => (
+                                {incomeTransactions.map((item, idx) => (
                                     <tr key={item.id}>
-                                    <td>
-                                        <div>
-                                            <p className="font-medium text-gray-900 dark:text-white">{item.name}</p>
-                                            {item.description && (
-                                                <p className="text-sm text-gray-500 dark:text-gray-400">{item.description}</p>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span className="badge badge-success">{item.category}</span>
-                                    </td>
-                                    <td className="text-gray-600 dark:text-gray-400">
-                                        {formatDate(item.date, dateFormat)}
-                                    </td>
-                                    <td className="font-semibold text-success-600 dark:text-success-400">
-                                        +{formatCurrency(item.amount, currency)}
-                                    </td>
-                                    <td>
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={() => openModal(item)}
-                                                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-300 text-gray-500"
-                                            >
-                                                <Edit2 className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(item.id)}
-                                                className="p-1.5 rounded-lg hover:bg-danger-50 dark:hover:bg-danger-900/20 text-danger-500"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                        <td className="text-gray-500 dark:text-gray-400 font-medium">
+                                            {idx + 1}
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <p className="font-medium text-gray-900 dark:text-white">{item.name}</p>
+                                                {item.description && (
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">{item.description}</p>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span className="badge badge-success">{item.category}</span>
+                                        </td>
+                                        <td className="text-gray-600 dark:text-gray-400">{item.paymentMethod}</td>
+                                        <td className="text-gray-600 dark:text-gray-400">
+                                            {formatDate(item.date, dateFormat)}
+                                        </td>
+                                        <td className="font-semibold text-success-600 dark:text-success-400">
+                                            +{formatCurrency(item.amount, currency)}
+                                        </td>
+                                        <td>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => openModal(item)}
+                                                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-300 text-gray-500"
+                                                >
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(item.id)}
+                                                    className="p-1.5 rounded-lg hover:bg-danger-50 dark:hover:bg-danger-900/20 text-danger-500"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </Card>
             )}
@@ -279,28 +315,46 @@ const Income = () => {
                         onChange={handleChange}
                         error={errors.amount}
                     />
+                    <div className="grid grid-cols-2 gap-4">
+                        <Select
+                            label="Category"
+                            name="category"
+                            options={activeIncomeCategories}
+                            value={formData.category}
+                            onChange={handleChange}
+                            error={errors.category}
+                        />
+                        <Input
+                            label="Date"
+                            name="date"
+                            type="date"
+                            value={formData.date}
+                            onChange={handleChange}
+                            error={errors.date}
+                        />
+                    </div>
                     <Select
-                        label="Category"
-                        name="category"
-                        options={incomeCategories}
-                        value={formData.category}
+                        label="Payment Method"
+                        name="paymentMethod"
+                        options={paymentMethods}
+                        value={formData.paymentMethod}
                         onChange={handleChange}
-                        error={errors.category}
                     />
-                    <Input
-                        label="Date"
-                        name="date"
-                        type="date"
-                        value={formData.date}
-                        onChange={handleChange}
-                        error={errors.date}
-                    />
+                    {formData.paymentMethod === 'Other' && (
+                        <Input
+                            label="Specify Payment Method"
+                            name="customPaymentMethod"
+                            placeholder="e.g., Cheque, Crypto, Gift Card..."
+                            value={formData.customPaymentMethod}
+                            onChange={handleChange}
+                        />
+                    )}
                     <div>
-                        <label className="label">Description (Optional)</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Description (Optional)</label>
                         <textarea
                             name="description"
                             rows={3}
-                            className="input"
+                            className="w-full px-4 py-2.5 rounded-lg bg-white dark:bg-dark-200 border border-gray-300 dark:border-dark-400 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-200"
                             placeholder="Add notes..."
                             value={formData.description}
                             onChange={handleChange}

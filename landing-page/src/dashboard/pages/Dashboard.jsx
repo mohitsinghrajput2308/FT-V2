@@ -10,7 +10,9 @@ import ExpensePieChart from '../components/Charts/ExpensePieChart';
 import OnboardingWizard from '../components/Onboarding/OnboardingWizard';
 
 const Dashboard = () => {
-    const [wizardDone, setWizardDone] = useState(false);
+    const [wizardDone, setWizardDone] = useState(() => {
+        return localStorage.getItem('fintrack_onboarding_completed') === 'true';
+    });
     const {
         transactions,
         monthlyIncome,
@@ -48,7 +50,7 @@ const Dashboard = () => {
         : 0;
 
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
             {/* Page Header */}
             <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -110,7 +112,7 @@ const Dashboard = () => {
             <RecentTransactions />
 
             {/* Onboarding Overlay */}
-            {!wizardDone && !settings?.onboarding_completed && (
+            {!wizardDone && (
                 <OnboardingWizard onComplete={() => setWizardDone(true)} />
             )}
         </div>

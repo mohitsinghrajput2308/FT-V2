@@ -8,18 +8,18 @@ import Input from '../Common/Input';
 import Select from '../Common/Select';
 
 const steps = [
-    { id: 'welcome',     title: 'Welcome to FinTrack', icon: CheckCircle2 },
-    { id: 'transaction', title: 'First Transaction',    icon: PlusCircle },
-    { id: 'budget',      title: 'Set a Budget',         icon: Target },
+    { id: 'welcome', title: 'Welcome to FinTrack', icon: CheckCircle2 },
+    { id: 'transaction', title: 'First Transaction', icon: PlusCircle },
+    { id: 'budget', title: 'Set a Budget', icon: Target },
 ];
 
 // Fallback categories for brand-new users who have no DB categories yet
 const DEFAULT_EXPENSE_CATS = ['Food & Dining', 'Transport', 'Shopping', 'Housing', 'Health', 'Entertainment', 'Utilities', 'Other'];
-const DEFAULT_INCOME_CATS  = ['Salary', 'Freelance', 'Investment', 'Business', 'Gift', 'Other'];
+const DEFAULT_INCOME_CATS = ['Salary', 'Freelance', 'Investment', 'Business', 'Gift', 'Other'];
 
 const THEME_OPTIONS = [
-    { value: 'light',  label: 'Light',  Icon: Sun },
-    { value: 'dark',   label: 'Dark',   Icon: Moon },
+    { value: 'light', label: 'Light', Icon: Sun },
+    { value: 'dark', label: 'Dark', Icon: Moon },
     { value: 'system', label: 'System', Icon: Monitor },
 ];
 
@@ -46,7 +46,7 @@ const OnboardingWizard = ({ onComplete }) => {
 
     // Available categories — fall back to built-in defaults for new users
     const expenseCategories = (categories.expense.length > 0 ? categories.expense.map(c => ({ value: c.name, label: c.name })) : DEFAULT_EXPENSE_CATS.map(c => ({ value: c, label: c })));
-    const incomeCategories  = (categories.income.length  > 0 ? categories.income.map(c  => ({ value: c.name, label: c.name })) : DEFAULT_INCOME_CATS.map(c  => ({ value: c, label: c })));
+    const incomeCategories = (categories.income.length > 0 ? categories.income.map(c => ({ value: c.name, label: c.name })) : DEFAULT_INCOME_CATS.map(c => ({ value: c, label: c })));
     const displayCategories = txType === 'expense' ? expenseCategories : incomeCategories;
 
     // Dynamic currency prefix component for Input icons
@@ -69,10 +69,11 @@ const OnboardingWizard = ({ onComplete }) => {
 
     const handleFinish = async () => {
         // Save step 1 (always save currency)
-        await updateSettings({ currency, onboarding_completed: true });
+        await updateSettings({ currency });
+        localStorage.setItem('fintrack_onboarding_completed', 'true');
 
         // Resolve "Other" to the custom label the user typed
-        const resolvedTxCategory  = txCategory  === 'Other' ? (txCustomCategory.trim()  || 'Other') : txCategory;
+        const resolvedTxCategory = txCategory === 'Other' ? (txCustomCategory.trim() || 'Other') : txCategory;
         const resolvedBudCategory = budCategory === 'Other' ? (budCustomCategory.trim() || 'Other') : budCategory;
 
         // Save step 2 (if filled)
@@ -183,14 +184,14 @@ const OnboardingWizard = ({ onComplete }) => {
                                             value={currency}
                                             onChange={(e) => setCurrency(e.target.value)}
                                             options={[
-                                                { value: '$',  label: 'USD ($)' },
-                                                { value: '€',  label: 'EUR (€)' },
-                                                { value: '£',  label: 'GBP (£)' },
-                                                { value: '₹',  label: 'INR (₹)' },
-                                                { value: '¥',  label: 'JPY (¥)' },
+                                                { value: '$', label: 'USD ($)' },
+                                                { value: '€', label: 'EUR (€)' },
+                                                { value: '£', label: 'GBP (£)' },
+                                                { value: '₹', label: 'INR (₹)' },
+                                                { value: '¥', label: 'JPY (¥)' },
                                                 { value: 'A$', label: 'AUD (A$)' },
                                                 { value: 'C$', label: 'CAD (C$)' },
-                                                { value: 'CHF',label: 'CHF (CHF)' },
+                                                { value: 'CHF', label: 'CHF (CHF)' },
                                             ]}
                                         />
                                     </div>

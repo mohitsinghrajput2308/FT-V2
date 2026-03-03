@@ -35,16 +35,58 @@ const shiftMonth = (ym, delta) => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 };
 
+// --- WEEK HELPERS ---
+const getCurrentWeek = () => {
+    const now = new Date();
+    const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+};
+
+const formatWeekLabel = (yw) => {
+    const [y, w] = yw.split('-W');
+    return `Week ${parseInt(w, 10)}, ${y}`;
+};
+
+const shiftWeek = (yw, delta) => {
+    const [y, w] = yw.split('-W').map(Number);
+    const simple = new Date(y, 0, 1 + (w - 1) * 7);
+    simple.setDate(simple.getDate() + delta * 7);
+    const d = new Date(Date.UTC(simple.getFullYear(), simple.getMonth(), simple.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+};
+
 const Budgets = () => {
     const { budgets, addBudget, updateBudget, deleteBudget, transactions, currency, settings, updateSettings } = useFinance();
 
     // ── Master total budget (envelope) ────────────────────────────
     const masterTotal = parseFloat(settings.totalBudget || 0);
 
+    // ── Period Context ────────────────────────────
+    const [periodType, setPeriodType] = useState('monthly'); // 'monthly' | 'weekly'
+
     // ── Month navigation ──────────────────────────────────────────
     const todayMonth = getCurrentMonth();
     const [viewMonth, setViewMonth] = useState(todayMonth);
-    const isCurrentMonth = viewMonth === todayMonth;
+
+    // ── Week navigation ──────────────────────────────────────────
+    const todayWeek = getCurrentWeek();
+    const [viewWeek, setViewWeek] = useState(todayWeek);
+
+    // ── Unified Resolvers ──────────────────────────────────────
+    const todayPeriod = periodType === 'monthly' ? todayMonth : todayWeek;
+    const viewPeriod = periodType === 'monthly' ? viewMonth : viewWeek;
+    const isCurrentPeriod = viewPeriod === todayPeriod;
+    const shiftPeriodFn = periodType === 'monthly' ? shiftMonth : shiftWeek;
+    const formatPeriodFn = periodType === 'monthly' ? formatMonthLabel : formatWeekLabel;
+    const setViewPeriod = periodType === 'monthly' ? setViewMonth : setViewWeek;
 
     // ── Category state ────────────────────────────────────────────
     const [categoryModalOpen, setCategoryModalOpen] = useState(false);
@@ -58,12 +100,12 @@ const Budgets = () => {
     const [masterInput, setMasterInput] = useState('');
     const [masterError, setMasterError] = useState('');
 
-    // ── Filter budgets for the viewed month ───────────────────────
-    const viewBudgets = budgets.filter(b => b.month === viewMonth);
+    // ── Filter budgets for the viewed period ───────────────────────
+    const viewBudgets = budgets.filter(b => b.month === viewPeriod);
 
     // ── Derived totals (scoped to viewed month) ───────────────────
     const totalAllocated = viewBudgets.reduce((sum, b) => sum + (b.amount || 0), 0);
-    const totalSpent     = viewBudgets.reduce((sum, b) => sum + (b.spent  || 0), 0);
+    const totalSpent = viewBudgets.reduce((sum, b) => sum + (b.spent || 0), 0);
     const totalUnallocated = masterTotal - totalAllocated;
     // "Unspent" = how much of allocated money is still not used
     const totalUnspent = totalAllocated - totalSpent;
@@ -74,7 +116,7 @@ const Budgets = () => {
         transactions.filter(t => t.type === 'expense').forEach(t => { if (t.category) uniqueCats.add(t.category); });
         budgets.forEach(b => { if (b.category) uniqueCats.add(b.category); });
         return [...Array.from(uniqueCats).filter(c => c !== 'Other').sort().map(c => ({ value: c, label: c })),
-                { value: 'Other', label: 'Other' }];
+        { value: 'Other', label: 'Other' }];
     }, [transactions, budgets]);
 
     // ── Master budget ─────────────────────────────────────────────
@@ -124,15 +166,16 @@ const Budgets = () => {
             }
         }
 
-        const spentVal = formData.spent === '' ? 0 : parseFloat(formData.spent);
-        if (formData.spent !== '' && (isNaN(spentVal) || spentVal < 0)) errs.spent = 'Spent amount must be 0 or more';
+        if (formData.spent === '' || isNaN(parseFloat(formData.spent)) || parseFloat(formData.spent) < 0) {
+            errs.spent = 'Spent amount must be 0 or more and is required';
+        }
 
         const finalCat = formData.category === 'Other' && formData.customCategory?.trim()
             ? formData.customCategory.trim() : formData.category;
         if (finalCat && viewBudgets.some(b =>
             b.category.toLowerCase() === finalCat.toLowerCase() && (!editingItem || b.id !== editingItem.id)
         )) {
-            errs.category = `A budget for "${finalCat}" already exists this month`;
+            errs.category = `A budget for "${finalCat}" already exists this ${periodType}`;
         }
         setFormErrors(errs);
         return Object.keys(errs).length === 0;
@@ -145,8 +188,8 @@ const Budgets = () => {
             category: formData.category === 'Other' && formData.customCategory?.trim()
                 ? formData.customCategory.trim() : formData.category,
             amount: parseFloat(formData.limit),
-            spent:  formData.spent === '' ? 0 : parseFloat(formData.spent),
-            month:  viewMonth,
+            spent: parseFloat(formData.spent) || 0,
+            month: viewPeriod,
         };
         if (editingItem) updateBudget(editingItem.id, data);
         else addBudget(data);
@@ -158,10 +201,10 @@ const Budgets = () => {
             const isCustom = !defaultCategories.some(c => c.value === item.category);
             setEditingItem(item);
             setFormData({
-                category:       isCustom ? 'Other' : item.category,
+                category: isCustom ? 'Other' : item.category,
                 customCategory: isCustom ? item.category : '',
-                limit:  item.amount?.toString() ?? '',
-                spent:  item.spent != null ? item.spent.toString() : '0',
+                limit: item.amount?.toString() ?? '',
+                spent: item.spent != null ? item.spent.toString() : '0',
             });
         } else {
             setEditingItem(null);
@@ -171,26 +214,26 @@ const Budgets = () => {
         setCategoryModalOpen(true);
     };
 
-    const closeModal     = () => { setCategoryModalOpen(false); setEditingItem(null); };
-    const confirmDelete  = (id) => setDeletingId(id);
-    const cancelDelete   = () => setDeletingId(null);
-    const handleDelete   = () => { if (deletingId) { deleteBudget(deletingId); setDeletingId(null); } };
+    const closeModal = () => { setCategoryModalOpen(false); setEditingItem(null); };
+    const confirmDelete = (id) => setDeletingId(id);
+    const cancelDelete = () => setDeletingId(null);
+    const handleDelete = () => { if (deletingId) { deleteBudget(deletingId); setDeletingId(null); } };
 
     const getStatusBadge = (pct) => {
         if (pct >= 100) return <span className="badge badge-danger">Over Limit</span>;
-        if (pct >= 90)  return <span className="badge badge-danger">Critical</span>;
-        if (pct >= 70)  return <span className="badge badge-warning">Warning</span>;
+        if (pct >= 90) return <span className="badge badge-danger">Critical</span>;
+        if (pct >= 70) return <span className="badge badge-warning">Warning</span>;
         return <span className="badge badge-success">On Track</span>;
     };
 
     // ── Envelope status ───────────────────────────────────────────
-    const isOverAllocated  = masterTotal > 0 && totalAllocated > masterTotal;
+    const isOverAllocated = masterTotal > 0 && totalAllocated > masterTotal;
     const isFullyAllocated = masterTotal > 0 && totalUnallocated <= 0;
     // ⚠ Must have set a total budget AND have room left to add a category
     const canAddBudget = masterTotal > 0 && !isFullyAllocated;
 
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
 
             {/* ── Header ── */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -230,33 +273,50 @@ const Budgets = () => {
                 </div>
             </div>
 
-            {/* ── Month navigator ── */}
-            <div className="flex items-center justify-between bg-white dark:bg-dark-100 border border-gray-200 dark:border-dark-400 rounded-xl px-4 py-2.5">
-                <button
-                    onClick={() => setViewMonth(shiftMonth(viewMonth, -1))}
-                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-300 text-gray-500 dark:text-gray-400 transition-colors"
-                    title="Previous month"
-                >
-                    <ChevronLeft className="w-5 h-5" />
-                </button>
-                <div className="text-center">
-                    <p className="font-semibold text-gray-900 dark:text-white text-sm">{formatMonthLabel(viewMonth)}</p>
-                    {!isCurrentMonth && (
-                        <button
-                            onClick={() => setViewMonth(todayMonth)}
-                            className="text-xs text-primary-500 dark:text-primary-400 hover:underline"
-                        >
-                            Back to current month
-                        </button>
-                    )}
+            {/* ── Period navigator ── */}
+            <div className="flex flex-col sm:flex-row items-center gap-4 bg-white dark:bg-dark-100 border border-gray-200 dark:border-dark-400 rounded-xl px-4 py-2.5">
+                <div className="flex bg-gray-100 dark:bg-dark-300 rounded-lg p-1 mr-auto">
+                    <button
+                        onClick={() => setPeriodType('monthly')}
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${periodType === 'monthly' ? 'bg-white dark:bg-dark-100 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+                    >
+                        Monthly
+                    </button>
+                    <button
+                        onClick={() => setPeriodType('weekly')}
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${periodType === 'weekly' ? 'bg-white dark:bg-dark-100 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+                    >
+                        Weekly
+                    </button>
                 </div>
-                <button
-                    onClick={() => setViewMonth(shiftMonth(viewMonth, 1))}
-                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-300 text-gray-500 dark:text-gray-400 transition-colors"
-                    title="Next month"
-                >
-                    <ChevronRight className="w-5 h-5" />
-                </button>
+
+                <div className="flex items-center justify-between w-full sm:w-auto gap-4">
+                    <button
+                        onClick={() => setViewPeriod(shiftPeriodFn(viewPeriod, -1))}
+                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-300 text-gray-500 dark:text-gray-400 transition-colors"
+                        title={`Previous ${periodType}`}
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <div className="text-center min-w-[140px]">
+                        <p className="font-semibold text-gray-900 dark:text-white text-sm">{formatPeriodFn(viewPeriod)}</p>
+                        {!isCurrentPeriod && (
+                            <button
+                                onClick={() => setViewPeriod(todayPeriod)}
+                                className="text-xs text-primary-500 dark:text-primary-400 hover:underline"
+                            >
+                                Back to current {periodType}
+                            </button>
+                        )}
+                    </div>
+                    <button
+                        onClick={() => setViewPeriod(shiftPeriodFn(viewPeriod, 1))}
+                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-300 text-gray-500 dark:text-gray-400 transition-colors"
+                        title={`Next ${periodType}`}
+                    >
+                        <ChevronRight className="w-5 h-5" />
+                    </button>
+                </div>
             </div>
 
             {/* ── Warnings ── */}
@@ -341,79 +401,82 @@ const Budgets = () => {
             {masterTotal > 0 && viewBudgets.length === 0 && (
                 <EmptyState
                     icon={PiggyBank}
-                    title={isCurrentMonth ? 'No category budgets yet' : `No budgets for ${formatMonthLabel(viewMonth)}`}
-                    description={isCurrentMonth
+                    title={isCurrentPeriod ? 'No category budgets yet' : `No budgets for ${formatPeriodFn(viewPeriod)}`}
+                    description={isCurrentPeriod
                         ? 'Click "Add Category" to start allocating your budget across spending categories.'
-                        : 'No category budgets were created for this month.'}
-                    action={isCurrentMonth ? () => openModal() : undefined}
+                        : `No category budgets were created for this ${periodType}.`}
+                    action={isCurrentPeriod ? () => openModal() : undefined}
                     actionLabel="Add Category"
                 />
             )}
 
             {/* ── Category cards ── */}
             {viewBudgets.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {viewBudgets.map((budget, idx) => {
-                        const spent     = budget.spent || 0;
-                        const remaining = budget.amount - spent;
-                        const pct       = calculatePercentage(spent, budget.amount);
-                        const isDeleting = deletingId === budget.id;
-                        const allocPct  = masterTotal > 0 ? ((budget.amount / masterTotal) * 100).toFixed(1) : null;
+                <div className="space-y-4 pt-4">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Category Budgets</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {viewBudgets.map((budget, idx) => {
+                            const spent = budget.spent || 0;
+                            const remaining = budget.amount - spent;
+                            const pct = calculatePercentage(spent, budget.amount);
+                            const isDeleting = deletingId === budget.id;
+                            const allocPct = masterTotal > 0 ? ((budget.amount / masterTotal) * 100).toFixed(1) : null;
 
-                        return (
-                            <Card key={budget.id}>
-                                <div className="flex items-start justify-between mb-3">
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 flex-wrap">
-                                            <span className="text-xs text-gray-400 font-medium">#{idx + 1}</span>
-                                            {budget.category}
-                                            {allocPct && (
-                                                <span className="text-xs bg-gray-100 dark:bg-dark-300 text-gray-500 dark:text-gray-400 rounded-full px-2 py-0.5">
-                                                    {allocPct}% of total
-                                                </span>
+                            return (
+                                <Card key={budget.id}>
+                                    <div className="flex items-start justify-between mb-3">
+                                        <div>
+                                            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 flex-wrap">
+                                                <span className="text-xs text-gray-400 font-medium">#{idx + 1}</span>
+                                                {budget.category}
+                                                {allocPct && (
+                                                    <span className="text-xs bg-gray-100 dark:bg-dark-300 text-gray-500 dark:text-gray-400 rounded-full px-2 py-0.5">
+                                                        {allocPct}% of total
+                                                    </span>
+                                                )}
+                                            </h3>
+                                            {getStatusBadge(pct)}
+                                        </div>
+                                        <div className="flex gap-1">
+                                            {!isDeleting ? (
+                                                <>
+                                                    <button onClick={() => openModal(budget)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-300 text-gray-500" title="Edit">
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                    <button onClick={() => confirmDelete(budget.id)} className="p-1.5 rounded-lg hover:bg-danger-50 dark:hover:bg-danger-900/20 text-danger-500" title="Delete">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-xs text-gray-500 dark:text-gray-400">Delete?</span>
+                                                    <button onClick={handleDelete} className="px-2 py-1 text-xs font-semibold bg-danger-600 hover:bg-danger-700 text-white rounded-md">Yes</button>
+                                                    <button onClick={cancelDelete} className="px-2 py-1 text-xs font-semibold bg-gray-200 dark:bg-dark-300 text-gray-700 dark:text-gray-300 rounded-md">No</button>
+                                                </div>
                                             )}
-                                        </h3>
-                                        {getStatusBadge(pct)}
+                                        </div>
                                     </div>
-                                    <div className="flex gap-1">
-                                        {!isDeleting ? (
-                                            <>
-                                                <button onClick={() => openModal(budget)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-300 text-gray-500" title="Edit">
-                                                    <Edit2 className="w-4 h-4" />
-                                                </button>
-                                                <button onClick={() => confirmDelete(budget.id)} className="p-1.5 rounded-lg hover:bg-danger-50 dark:hover:bg-danger-900/20 text-danger-500" title="Delete">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </>
-                                        ) : (
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="text-xs text-gray-500 dark:text-gray-400">Delete?</span>
-                                                <button onClick={handleDelete} className="px-2 py-1 text-xs font-semibold bg-danger-600 hover:bg-danger-700 text-white rounded-md">Yes</button>
-                                                <button onClick={cancelDelete} className="px-2 py-1 text-xs font-semibold bg-gray-200 dark:bg-dark-300 text-gray-700 dark:text-gray-300 rounded-md">No</button>
-                                            </div>
-                                        )}
+
+                                    <ProgressBar value={spent} max={budget.amount} color="auto" />
+
+                                    <div className="flex justify-between text-sm mt-2">
+                                        <span className="text-gray-500 dark:text-gray-400">
+                                            Spent: <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(spent, currency)}</span>
+                                        </span>
+                                        <span className="text-gray-500 dark:text-gray-400">
+                                            Limit: <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(budget.amount, currency)}</span>
+                                        </span>
                                     </div>
-                                </div>
 
-                                <ProgressBar value={spent} max={budget.amount} color="auto" />
-
-                                <div className="flex justify-between text-sm mt-2">
-                                    <span className="text-gray-500 dark:text-gray-400">
-                                        Spent: <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(spent, currency)}</span>
-                                    </span>
-                                    <span className="text-gray-500 dark:text-gray-400">
-                                        Limit: <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(budget.amount, currency)}</span>
-                                    </span>
-                                </div>
-
-                                <div className={`mt-2 text-sm font-semibold ${remaining >= 0 ? 'text-success-600 dark:text-success-400' : 'text-danger-600 dark:text-danger-400'}`}>
-                                    {remaining >= 0
-                                        ? `${formatCurrency(remaining, currency)} remaining`
-                                        : `${formatCurrency(Math.abs(remaining), currency)} over limit`}
-                                </div>
-                            </Card>
-                        );
-                    })}
+                                    <div className={`mt-2 text-sm font-semibold ${remaining >= 0 ? 'text-success-600 dark:text-success-400' : 'text-danger-600 dark:text-danger-400'}`}>
+                                        {remaining >= 0
+                                            ? `${formatCurrency(remaining, currency)} remaining`
+                                            : `${formatCurrency(Math.abs(remaining), currency)} over limit`}
+                                    </div>
+                                </Card>
+                            );
+                        })}
+                    </div>
                 </div>
             )}
 
@@ -451,11 +514,10 @@ const Budgets = () => {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="bg-gray-50 dark:bg-dark-300 rounded-lg px-4 py-3 text-sm flex justify-between">
                         <span className="text-gray-500 dark:text-gray-400">Unallocated in envelope</span>
-                        <span className={`font-semibold ${
-                            (editingItem ? totalUnallocated + (editingItem.amount || 0) : totalUnallocated) > 0
-                                ? 'text-success-600 dark:text-success-400'
-                                : 'text-danger-600 dark:text-danger-400'
-                        }`}>
+                        <span className={`font-semibold ${(editingItem ? totalUnallocated + (editingItem.amount || 0) : totalUnallocated) > 0
+                            ? 'text-success-600 dark:text-success-400'
+                            : 'text-danger-600 dark:text-danger-400'
+                            }`}>
                             {formatCurrency(editingItem ? totalUnallocated + (editingItem.amount || 0) : totalUnallocated, currency)}
                         </span>
                     </div>
@@ -491,7 +553,7 @@ const Budgets = () => {
                         error={formErrors.limit}
                     />
                     <Input
-                        label="Already Spent (optional)"
+                        label="Already Spent"
                         name="spent"
                         type="number"
                         placeholder="0.00"
@@ -502,11 +564,10 @@ const Budgets = () => {
                         error={formErrors.spent}
                     />
                     {formData.limit && formData.spent !== '' && !formErrors.limit && !formErrors.spent && (
-                        <p className={`text-sm font-medium ${
-                            parseFloat(formData.limit) - parseFloat(formData.spent || 0) >= 0
-                                ? 'text-success-600 dark:text-success-400'
-                                : 'text-danger-600 dark:text-danger-400'
-                        }`}>
+                        <p className={`text-sm font-medium ${parseFloat(formData.limit) - parseFloat(formData.spent || 0) >= 0
+                            ? 'text-success-600 dark:text-success-400'
+                            : 'text-danger-600 dark:text-danger-400'
+                            }`}>
                             {parseFloat(formData.limit) - parseFloat(formData.spent || 0) >= 0
                                 ? `${formatCurrency(parseFloat(formData.limit) - parseFloat(formData.spent || 0), currency)} will remain in this category`
                                 : `${formatCurrency(Math.abs(parseFloat(formData.limit) - parseFloat(formData.spent || 0)), currency)} over category limit`}

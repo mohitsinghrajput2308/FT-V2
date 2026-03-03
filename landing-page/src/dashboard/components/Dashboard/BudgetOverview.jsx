@@ -1,13 +1,15 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
-import { formatCurrency, calculatePercentage, getBudgetColor } from '../../utils/helpers';
+import { formatCurrency, calculatePercentage, getBudgetColor, getCurrentMonth } from '../../utils/helpers';
 import ProgressBar from '../Common/ProgressBar';
 
 const BudgetOverview = () => {
-    const { budgets, currency } = useFinance();
+    const { budgets, transactions, currency } = useFinance();
+    const currentMonth = getCurrentMonth();
 
-    const activeBudgets = budgets.slice(0, 4);
+    const currentMonthBudgets = budgets.filter(b => b.month === currentMonth);
+    const activeBudgets = currentMonthBudgets.slice(0, 4);
 
     if (activeBudgets.length === 0) {
         return (
@@ -45,7 +47,9 @@ const BudgetOverview = () => {
             </div>
             <div className="space-y-4">
                 {activeBudgets.map((budget) => {
-                    const percentage = calculatePercentage(budget.spent, budget.limit);
+                    const spent = budget.spent || 0;
+                    const limit = budget.amount || 0;
+                    const percentage = calculatePercentage(spent, limit);
                     const color = getBudgetColor(percentage);
 
                     return (
@@ -55,10 +59,10 @@ const BudgetOverview = () => {
                                     {budget.category}
                                 </span>
                                 <span className="text-sm text-gray-500 dark:text-gray-400">
-                                    {formatCurrency(budget.spent, currency)} / {formatCurrency(budget.limit, currency)}
+                                    {formatCurrency(spent, currency)} / {formatCurrency(limit, currency)}
                                 </span>
                             </div>
-                            <ProgressBar value={budget.spent} max={budget.limit} color={color} size="sm" />
+                            <ProgressBar value={spent} max={limit} color={color} size="sm" />
                         </div>
                     );
                 })}

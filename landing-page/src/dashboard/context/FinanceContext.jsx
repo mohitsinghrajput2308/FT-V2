@@ -26,6 +26,25 @@ import { getCurrentMonth } from '../utils/helpers';
 // All data flows through secureApi → supabaseService → Supabase
 import SecureAPI from '../utils/secureApi';
 
+const DEFAULT_CATEGORIES = {
+    expense: [
+        { id: 'cat_food', name: 'Food', color: '#ef4444', type: 'expense' },
+        { id: 'cat_transport', name: 'Transport', color: '#f59e0b', type: 'expense' },
+        { id: 'cat_entertainment', name: 'Entertainment', color: '#8b5cf6', type: 'expense' },
+        { id: 'cat_shopping', name: 'Shopping', color: '#ec4899', type: 'expense' },
+        { id: 'cat_bills', name: 'Bills', color: '#3b82f6', type: 'expense' },
+        { id: 'cat_healthcare', name: 'Healthcare', color: '#10b981', type: 'expense' },
+        { id: 'cat_education', name: 'Education', color: '#6366f1', type: 'expense' },
+    ],
+    income: [
+        { id: 'inc_salary', name: 'Salary', color: '#10b981', type: 'income' },
+        { id: 'inc_freelance', name: 'Freelance', color: '#3b82f6', type: 'income' },
+        { id: 'inc_business', name: 'Business', color: '#8b5cf6', type: 'income' },
+        { id: 'inc_investment', name: 'Investment Returns', color: '#f59e0b', type: 'income' },
+        { id: 'inc_gift', name: 'Gift', color: '#ec4899', type: 'income' },
+    ]
+};
+
 const FinanceContext = createContext();
 
 export const useFinance = () => {
@@ -102,7 +121,11 @@ export const FinanceProvider = ({ children }) => {
                 setGoals(resolveSecure(goalRes, []));
                 setInvestments(resolveSecure(invRes, []));
                 setBills(resolveSecure(billRes, []));
-                setCategories(resolveSecure(catRes, { expense: [], income: [] }));
+                const fetchedCategories = resolveSecure(catRes, { expense: [], income: [] });
+                setCategories({
+                    expense: [...DEFAULT_CATEGORIES.expense, ...(fetchedCategories.expense || [])],
+                    income: [...DEFAULT_CATEGORIES.income, ...(fetchedCategories.income || [])]
+                });
                 setSettings(resolveSettings(settRes));
 
                 const financialResults = [txRes, budRes, goalRes, invRes, billRes, catRes];
@@ -145,10 +168,10 @@ export const FinanceProvider = ({ children }) => {
         fxConvert(
             amount,
             SYMBOL_TO_CODE[fromSymbol] ?? 'USD',
-            SYMBOL_TO_CODE[toSymbol]   ?? 'USD',
+            SYMBOL_TO_CODE[toSymbol] ?? 'USD',
             fxRates
         ),
-    [fxRates]);
+        [fxRates]);
 
     // ── Filter data by current user ──
     const userTransactions = transactions.filter(t => !t.userId || t.userId === userId);
@@ -232,9 +255,9 @@ export const FinanceProvider = ({ children }) => {
     const addToGoal = useCallback(async (id, amount) => {
         const goal = goals.find(g => g.id === id);
         if (goal) {
-            const newAmount = Math.min(goal.currentAmount + amount, goal.targetAmount);
+            const newAmount = (goal.currentAmount || 0) + amount;
             await updateGoal(id, { currentAmount: newAmount });
-            if (newAmount >= goal.targetAmount) {
+            if (newAmount >= goal.targetAmount && (goal.currentAmount || 0) < goal.targetAmount) {
                 success?.('🎉 Congratulations! Goal completed!');
             }
         }
@@ -302,6 +325,10 @@ export const FinanceProvider = ({ children }) => {
     }, [userId, success, notifyError]);
 
     const updateCategory = useCallback(async (type, id, data) => {
+        if (id.startsWith('cat_') || id.startsWith('inc_')) {
+            notifyError?.("Cannot edit built-in categories");
+            return;
+        }
         const result = await SecureAPI.categories.update(id, data, userId);
         if (result.error) { notifyError?.(result.error); return; }
         setCategories(prev => ({
@@ -312,6 +339,10 @@ export const FinanceProvider = ({ children }) => {
     }, [userId, success, notifyError]);
 
     const deleteCategory = useCallback(async (type, id) => {
+        if (id.startsWith('cat_') || id.startsWith('inc_')) {
+            notifyError?.("Cannot delete built-in categories");
+            return;
+        }
         const result = await SecureAPI.categories.delete(id, userId);
         if (result.error) { notifyError?.(result.error); return; }
         setCategories(prev => ({

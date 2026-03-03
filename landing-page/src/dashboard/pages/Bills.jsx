@@ -166,8 +166,14 @@ const Bills = () => {
         const StatusIcon = status.icon;
         const prio = bill.priority || 'Medium';
 
+        const borderClass = prio === 'High' ? 'ring-2 ring-danger-500' :
+            prio === 'Medium' ? 'ring-2 ring-warning-500' :
+                prio === 'Low' ? 'ring-2 ring-success-500' : '';
+
+        const cardClasses = `${bill.isPaid ? 'opacity-75' : ''} ${borderClass}`.trim();
+
         return (
-            <Card key={bill.id} className={bill.isPaid ? 'opacity-75' : ''}>
+            <Card key={bill.id} className={cardClasses}>
                 <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${bill.isPaid ? 'bg-success-100 dark:bg-success-900/30' :
@@ -367,7 +373,7 @@ const Bills = () => {
                     <Input label="Amount" name="amount" type="number" placeholder="Enter amount" value={formData.amount} onChange={handleChange} error={errors.amount} />
                     <div className="grid grid-cols-2 gap-4">
                         <Input label="Due Date" name="dueDate" type="date" value={formData.dueDate} onChange={handleChange} error={errors.dueDate} />
-                            <Select label="Category" name="category" options={billCategories} value={formData.category} onChange={handleChange} error={errors.category} />
+                        <Select label="Category" name="category" options={billCategories} value={formData.category} onChange={handleChange} error={errors.category} />
                     </div>
                     {formData.category === 'Other' && (
                         <Input

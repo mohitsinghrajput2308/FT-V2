@@ -286,7 +286,9 @@ const Goals = () => {
                         {highGoals.length === 0 ? (
                             <div className="text-center py-8 text-gray-400 dark:text-gray-600 text-sm border-2 border-dashed border-gray-200 dark:border-dark-300 rounded-xl">No high priority goals</div>
                         ) : (
-                            highGoals.map(goal => renderGoalCard(goal))
+                            <div className="flex flex-col gap-4">
+                                {highGoals.map(goal => renderGoalCard(goal))}
+                            </div>
                         )}
                     </div>
 
@@ -300,7 +302,9 @@ const Goals = () => {
                         {mediumGoals.length === 0 ? (
                             <div className="text-center py-8 text-gray-400 dark:text-gray-600 text-sm border-2 border-dashed border-gray-200 dark:border-dark-300 rounded-xl">No medium priority goals</div>
                         ) : (
-                            mediumGoals.map(goal => renderGoalCard(goal))
+                            <div className="flex flex-col gap-4">
+                                {mediumGoals.map(goal => renderGoalCard(goal))}
+                            </div>
                         )}
                     </div>
 
@@ -314,7 +318,9 @@ const Goals = () => {
                         {lowGoals.length === 0 ? (
                             <div className="text-center py-8 text-gray-400 dark:text-gray-600 text-sm border-2 border-dashed border-gray-200 dark:border-dark-300 rounded-xl">No low priority goals</div>
                         ) : (
-                            lowGoals.map(goal => renderGoalCard(goal))
+                            <div className="flex flex-col gap-4">
+                                {lowGoals.map(goal => renderGoalCard(goal))}
+                            </div>
                         )}
                     </div>
                 </div>

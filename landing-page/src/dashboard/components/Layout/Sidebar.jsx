@@ -81,16 +81,17 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
                             <li key={item.path}>
                                 <NavLink
                                     to={item.path}
+                                    end={item.path === '/dashboard'}
                                     onClick={onClose}
                                     className={({ isActive }) => `
-                    flex items-center gap-3 px-3 py-2.5 rounded-lg
-                    transition-all duration-200
-                    ${isActive
-                                            ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400'
+                                        flex items-center gap-3 px-3 py-2.5 rounded-lg
+                                        transition-all duration-200
+                                        ${isActive
+                                            ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400'
                                             : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-dark-300'
                                         }
-                    ${isCollapsed ? 'justify-center' : ''}
-                  `}
+                                        ${isCollapsed ? 'justify-center' : ''}
+                                    `}
                                     title={isCollapsed ? item.label : undefined}
                                 >
                                     <item.icon className="w-5 h-5 flex-shrink-0" />
