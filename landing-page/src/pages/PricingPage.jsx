@@ -186,16 +186,10 @@ const FAQItem = ({ q, a }) => {
 /* ─── Main Page ─────────────────────────────────────────────── */
 const PricingPage = () => {
   const [yearly, setYearly] = useState(false);
-  const { openRegister, user, isLoadingAuth } = useAuthModal();
-  const navigate = useNavigate();
+  const { openRegister } = useAuthModal();
 
   const handlePlanClick = (planId) => {
-    if (isLoadingAuth) return; // wait for session to resolve before acting
-    if (user) {
-      navigate('/dashboard/pricing');
-    } else {
-      openRegister();
-    }
+    openRegister();
   };
 
   return (
