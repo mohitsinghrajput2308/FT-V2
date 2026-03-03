@@ -224,7 +224,7 @@ const DashboardPricing = () => {
               ) : (
                 <button
                   onClick={() => handleUpgrade(plan.key)}
-                  className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-black transition-all ${
+                  className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-black transition-all ${
                     plan.key === 'pro'
                       ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black shadow-md shadow-amber-500/20'
                       : 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white'

@@ -30,10 +30,10 @@ let paddleInitialized = false;
  * Uses sandbox if REACT_APP_PADDLE_SANDBOX=true
  */
 export function initPaddle() {
-  if (paddleInitialized || typeof window === 'undefined') return;
+  if (paddleInitialized || typeof window === 'undefined') return paddleInitialized;
   if (!window.Paddle) {
     console.error('[Paddle] Paddle.js not loaded. Add the CDN script to index.html');
-    return;
+    return false;
   }
 
   const isSandbox = process.env.REACT_APP_PADDLE_SANDBOX === 'true';
@@ -41,7 +41,7 @@ export function initPaddle() {
 
   if (!token) {
     console.error('[Paddle] Missing REACT_APP_PADDLE_CLIENT_TOKEN in .env');
-    return;
+    return false;
   }
 
   if (isSandbox) {
@@ -56,6 +56,7 @@ export function initPaddle() {
   });
 
   paddleInitialized = true;
+  return true;
 }
 
 /**
@@ -68,12 +69,14 @@ export function initPaddle() {
  */
 export function openPaddleCheckout({ priceId, userId, email, onSuccess }) {
   if (typeof window === 'undefined' || !window.Paddle) {
-    console.error('[Paddle] Paddle.js not available');
+    alert('Payment system is loading. Please refresh the page and try again.');
     return;
   }
 
-  if (!paddleInitialized) {
-    console.error('[Paddle] Paddle not initialized — call initPaddle() first or check REACT_APP_PADDLE_CLIENT_TOKEN in .env');
+  // Retry initialization in case it was skipped on mount
+  const ready = initPaddle();
+  if (!ready) {
+    alert('Payment system not ready. Please restart the dev server to load the Paddle configuration, then try again.');
     return;
   }
 
