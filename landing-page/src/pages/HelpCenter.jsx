@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HelpCircle, Sparkles, Search, Book, MessageSquare, Video, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Navbar } from '../components/Navbar';
+import { Footer } from '../components/Footer';
+import { AuthModal } from '../components/AuthModal';
+import { useAuthModal } from '../context/AuthContext';
 
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] } }) };
 
