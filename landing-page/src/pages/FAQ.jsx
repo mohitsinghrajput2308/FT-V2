@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { HelpCircle, ArrowLeft, Search, ChevronDown } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { HelpCircle, Search, ChevronDown } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '../components/ui/accordion';
+import { Navbar } from '../components/Navbar';
+import { Footer } from '../components/Footer';
+import { AuthModal } from '../components/AuthModal';
+import { useAuthModal } from '../context/AuthContext';
 
 const faqs = [
   {
@@ -113,8 +116,11 @@ const FAQ = () => {
 
   const totalResults = filteredCategories.reduce((sum, cat) => sum + cat.items.length, 0);
 
+  const { modalState, closeModal } = useAuthModal();
+
   return (
     <div className="min-h-screen bg-[#050505] text-white overflow-hidden">
+      <Navbar />
       {/* Background effects */}
       <div className="fixed inset-0 z-0">
         <motion.div
@@ -138,23 +144,8 @@ const FAQ = () => {
       />
 
       <div className="relative z-10">
-        {/* Back button */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="fixed top-8 left-8 z-50"
-        >
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-all group bg-white/5 border border-white/10 rounded-full px-4 py-2 backdrop-blur-xl hover:bg-white/10"
-          >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span className="text-sm font-semibold">Back</span>
-          </Link>
-        </motion.div>
-
         {/* Hero Header */}
-        <section className="pt-32 pb-12 px-6">
+        <section className="pt-40 pb-12 px-6">
           <div className="max-w-4xl mx-auto text-center">
             <motion.div
               initial={{ scale: 0 }}
@@ -308,6 +299,9 @@ const FAQ = () => {
           </div>
         </section>
       </div>
+
+      <Footer />
+      <AuthModal isOpen={modalState.isOpen} onClose={closeModal} initialView={modalState.view} />
     </div>
   );
 };
