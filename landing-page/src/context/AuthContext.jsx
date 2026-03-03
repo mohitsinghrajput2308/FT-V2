@@ -183,7 +183,7 @@ export const AuthProvider = ({ children }) => {
 
     // ── Upgrade Action — redirect to pricing page ──
     const upgradeToPro = () => {
-        window.location.href = '/#pricing';
+        window.location.href = '/pricing';
     };
 
     return (

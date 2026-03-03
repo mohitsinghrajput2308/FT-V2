@@ -6,7 +6,6 @@ import { HeroSection } from "@/components/HeroSection";
 import { FeaturesSection } from "@/components/FeaturesSection";
 import { Showcase3DSection } from "@/components/Showcase3DSection";
 import { HowItWorksSection } from "@/components/HowItWorksSection";
-import { PricingSection } from "@/components/PricingSection";
 import { ReviewSection } from "@/components/ReviewSection";
 import { CTASection } from "@/components/CTASection";
 import { Footer } from "@/components/Footer";
@@ -33,6 +32,7 @@ const Security = React.lazy(() => import("@/pages/Security"));
 const Roadmap = React.lazy(() => import("@/pages/Roadmap"));
 const Changelog = React.lazy(() => import("@/pages/Changelog"));
 const FAQ = React.lazy(() => import("@/pages/FAQ"));
+const PricingPage = React.lazy(() => import("@/pages/PricingPage"));
 
 // ─── Loading fallback ──────────────────────────────────────────
 const PageLoader = () => (
@@ -64,7 +64,6 @@ const LandingPage = () => {
       <FeaturesSection />
       <Showcase3DSection />
       <HowItWorksSection />
-      <PricingSection />
       <ReviewSection />
       <CTASection />
       <Footer />
@@ -104,6 +103,7 @@ function App() {
                   <Route path="/roadmap" element={<Roadmap />} />
                   <Route path="/changelog" element={<Changelog />} />
                   <Route path="/faq" element={<FAQ />} />
+                  <Route path="/pricing" element={<PricingPage />} />
                 </Routes>
               </Suspense>
             </div>
