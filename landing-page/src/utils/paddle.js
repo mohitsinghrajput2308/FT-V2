@@ -24,6 +24,8 @@ export const PADDLE_PRICE_IDS = {
 };
 
 let paddleInitialized = false;
+// Module-level success callback — set before each Checkout.open() call
+let _onCheckoutSuccess = null;
 
 /**
  * Initialize Paddle.js — call once on app start or before first checkout.
@@ -48,10 +50,15 @@ export function initPaddle() {
     window.Paddle.Environment.set('sandbox');
   }
 
+  // eventCallback MUST live in Initialize(), not in Checkout.open()
   window.Paddle.Initialize({
     token,
     eventCallback(event) {
       console.log('[Paddle] Event:', event.name, event.data);
+      if (event.name === 'checkout.completed' && typeof _onCheckoutSuccess === 'function') {
+        _onCheckoutSuccess(event.data);
+        _onCheckoutSuccess = null;
+      }
     },
   });
 
@@ -81,25 +88,23 @@ export function openPaddleCheckout({ priceId, userId, email, onSuccess }) {
   }
 
   try {
-  window.Paddle.Checkout.open({
-    items: [{ priceId, quantity: 1 }],
-    customer: { email },
-    customData: {
-      user_id: userId, // ← this is passed to your webhook so you know which user subscribed
-    },
-    settings: {
-      displayMode: 'overlay',        // shows as modal overlay
-      theme: 'dark',
-      locale: 'en',
-      allowLogout: false,
-      successUrl: `${window.location.origin}/dashboard?subscribed=true`,
-    },
-    eventCallback(event) {
-      if (event.name === 'checkout.completed') {
-        onSuccess?.(event.data);
-      }
-    },
-  });
+    // Store the success callback so the Initialize() eventCallback can fire it
+    _onCheckoutSuccess = onSuccess ?? null;
+
+    window.Paddle.Checkout.open({
+      items: [{ priceId, quantity: 1 }],
+      customer: { email },
+      customData: {
+        user_id: userId,
+      },
+      settings: {
+        displayMode: 'overlay',
+        theme: 'dark',
+        locale: 'en',
+        allowLogout: false,
+        successUrl: `${window.location.origin}/dashboard?subscribed=true`,
+      },
+    });
   } catch (err) {
     console.error('[Paddle] Checkout.open() failed:', err);
   }
