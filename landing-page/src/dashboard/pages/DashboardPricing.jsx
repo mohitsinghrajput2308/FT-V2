@@ -157,18 +157,7 @@ const DashboardPricing = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-2 pb-16 space-y-10">
-      {/* Paddle not ready warning */}
-      {!paddleReady && (
-        <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl px-5 py-4">
-          <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-bold text-amber-700 dark:text-amber-400">Payment system loading…</p>
-            <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">
-              If buttons don't respond, <strong>restart the dev server</strong> (Ctrl+C → npm start) so the Paddle token is loaded from .env. On the live site, refresh the page.
-            </p>
-          </div>
-        </div>
-      )}
+
       {/* Header */}
       <div className="text-center pt-6">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase mb-4 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400">
@@ -254,11 +243,10 @@ const DashboardPricing = () => {
               ) : (
                 <button
                   onClick={() => handleUpgrade(plan.key)}
-                  className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-black transition-all ${
-                    plan.key === 'pro'
+                  className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-black transition-all ${plan.key === 'pro'
                       ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black shadow-md shadow-amber-500/20'
                       : 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white'
-                  }`}
+                    }`}
                 >
                   {plan.key === 'pro' ? <Zap className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
                   {plan.key === 'pro' ? 'Upgrade to Pro' : 'Get Business'}
