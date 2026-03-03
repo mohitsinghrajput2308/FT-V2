@@ -42,7 +42,7 @@ const plans = [
     key: 'business',
     label: 'BUSINESS',
     name: 'Business',
-    price: { monthly: 29.99, yearly: 23.99 },
+    price: { monthly: 29.99, yearly: 24.99 },
     description: 'Ideal for small businesses & teams',
     color: 'text-blue-400',
     border: 'border-blue-400/40 dark:border-blue-500/40',

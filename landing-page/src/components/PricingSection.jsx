@@ -40,7 +40,7 @@ export const PricingSection = () => {
     {
       name: 'Business',
       monthlyPrice: 29.99,
-      yearlyPrice: 23.99,
+      yearlyPrice: 24.99,
       description: 'Ideal for small businesses and teams',
       features: [
         'Everything in Pro',

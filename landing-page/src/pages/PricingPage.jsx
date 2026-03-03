@@ -5,6 +5,7 @@ import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { useAuthModal } from '../context/AuthContext';
 import { AuthModal } from '../components/AuthModal';
+import { useSubscription } from '../hooks/useSubscription';
 
 /* ─── Data ──────────────────────────────────────────────────── */
 const plans = [
@@ -36,7 +37,7 @@ const plans = [
     id: 'business',
     name: 'Business',
     monthlyPrice: 29.99,
-    yearlyPrice: 23.99,
+    yearlyPrice: 24.99,
     description: 'Ideal for small businesses and teams',
     color: 'blue',
     cta: 'Start 14-Day Trial',
@@ -186,7 +187,17 @@ const FAQItem = ({ q, a }) => {
 /* ─── Main Page ─────────────────────────────────────────────── */
 const PricingPage = () => {
   const [yearly, setYearly] = useState(false);
-  const { modalState, closeModal } = useAuthModal();
+  const { modalState, closeModal, openModal } = useAuthModal();
+  const { subscribe, isPaid, plan: currentPlan, loading: subLoading } = useSubscription();
+
+  const handlePlanClick = (planId, skipTrial = false) => {
+    if (planId === 'free') {
+      openModal?.('signup');
+      return;
+    }
+    const cycle = yearly ? 'yearly' : 'monthly';
+    subscribe(planId, cycle);
+  };
 
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-white">
@@ -266,18 +277,19 @@ const PricingPage = () => {
 
               {/* Main CTA */}
               <button
+                onClick={() => handlePlanClick(plan.id)}
                 className={`w-full py-3 rounded-xl font-black text-sm mb-4 transition-all duration-300 hover:scale-[1.02] ${
                   plan.price === '0' || plan.monthlyPrice === 0
                     ? 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
                     : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black shadow-lg shadow-amber-500/20'
                 }`}
               >
-                {plan.cta}
+                {currentPlan === plan.id && isPaid ? 'Current Plan ✓' : plan.cta}
               </button>
 
               {/* Skip trial card */}
               {plan.trial && (
-                <div className="relative group cursor-pointer mb-6">
+                <div onClick={() => handlePlanClick(plan.id, true)} className="relative group cursor-pointer mb-6">
                   <div className="absolute -inset-0.5 bg-orange-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
                   <div className="relative flex items-center justify-between p-4 bg-[#17191E] border border-amber-700/40 rounded-2xl hover:border-amber-500/60 transition-all duration-300 overflow-hidden">
                     <div className="flex flex-col text-left z-10">
@@ -388,17 +400,17 @@ const PricingPage = () => {
           <div className="grid grid-cols-4 border-t border-white/10 bg-white/[0.02] p-5 gap-4">
             <div />
             <div>
-              <button className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-bold border border-white/20 transition-all">
+              <button onClick={() => handlePlanClick('free')} className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-bold border border-white/20 transition-all">
                 Start Free
               </button>
             </div>
             <div>
-              <button className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black text-sm font-black transition-all shadow-lg shadow-amber-500/20">
+              <button onClick={() => handlePlanClick('pro')} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black text-sm font-black transition-all shadow-lg shadow-amber-500/20">
                 Get Pro
               </button>
             </div>
             <div>
-              <button className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black text-sm font-black transition-all shadow-lg shadow-amber-500/20">
+              <button onClick={() => handlePlanClick('business')} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black text-sm font-black transition-all shadow-lg shadow-amber-500/20">
                 Get Business
               </button>
             </div>
@@ -419,7 +431,7 @@ const PricingPage = () => {
 
       {/* ── Trust bar ── */}
       <div className="border-t border-white/10 py-6 text-center text-gray-500 text-sm px-4">
-        🔒 Secure payments powered by Stripe &nbsp;•&nbsp; Cancel during trial, no charge &nbsp;•&nbsp; All payments are non-refundable &nbsp;•&nbsp; No hidden fees
+        🔒 Secure payments powered by Paddle &nbsp;•&nbsp; Cancel during trial, no charge &nbsp;•&nbsp; All payments are non-refundable &nbsp;•&nbsp; No hidden fees &nbsp;•&nbsp; GST &amp; taxes handled automatically
       </div>
 
       <Footer />
