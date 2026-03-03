@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Check } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 
 export const PricingSection = () => {
+  const [yearly, setYearly] = useState(false);
+
   const plans = [
     {
       name: 'Free',
-      price: '0',
+      monthlyPrice: 0,
+      yearlyPrice: 0,
       description: 'Perfect for getting started with basic finance tracking',
       features: [
         'Track up to 3 accounts',
@@ -20,7 +23,8 @@ export const PricingSection = () => {
     },
     {
       name: 'Pro',
-      price: '9.99',
+      monthlyPrice: 9.99,
+      yearlyPrice: 7.99,
       description: 'Best for individuals serious about their finances',
       features: [
         'Unlimited accounts',
@@ -35,7 +39,8 @@ export const PricingSection = () => {
     },
     {
       name: 'Business',
-      price: '29.99',
+      monthlyPrice: 29.99,
+      yearlyPrice: 23.99,
       description: 'Ideal for small businesses and teams',
       features: [
         'Everything in Pro',
@@ -69,14 +74,41 @@ export const PricingSection = () => {
               For Your Journey
             </span>
           </h2>
-          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-8">
             Start free, upgrade when you need more. Paid plans include a 14-day free trial — cancel anytime during the trial at no charge. All payments are final and non-refundable.
           </p>
+
+          {/* Monthly / Yearly Toggle */}
+          <div className="inline-flex items-center bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full p-1 gap-1">
+            <button
+              onClick={() => setYearly(false)}
+              className={`px-6 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${
+                !yearly
+                  ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-md'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setYearly(true)}
+              className={`px-6 py-2 rounded-full text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
+                yearly
+                  ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-md'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              }`}
+            >
+              Yearly
+              <span className="bg-green-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">SAVE 20%</span>
+            </button>
+          </div>
         </div>
 
         {/* Pricing Cards */}
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {plans.map((plan, index) => (
+          {plans.map((plan, index) => {
+            const price = yearly ? plan.yearlyPrice : plan.monthlyPrice;
+            return (
             <Card
               key={index}
               className={`relative transform hover:-translate-y-2 transition-all duration-300 bg-white dark:bg-gray-800/50 ${plan.popular
@@ -96,21 +128,28 @@ export const PricingSection = () => {
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{plan.name}</h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-6 h-12">{plan.description}</p>
 
-                <div className="mb-6">
-                  <span className="text-5xl font-bold text-gray-900 dark:text-white">${plan.price}</span>
+                <div className="mb-2">
+                  <span className="text-5xl font-bold text-gray-900 dark:text-white">${price === 0 ? '0' : price.toFixed(2)}</span>
                   <span className="text-gray-600 dark:text-gray-400">/month</span>
                 </div>
+                {yearly && plan.monthlyPrice > 0 && (
+                  <div className="mb-5 flex items-center gap-2">
+                    <span className="line-through text-gray-400 text-sm">${plan.monthlyPrice.toFixed(2)}/mo</span>
+                    <span className="text-green-500 text-xs font-bold bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-full">Save ${((plan.monthlyPrice - price) * 12).toFixed(0)}/yr</span>
+                  </div>
+                )}
+                {!yearly && <div className="mb-5" />}
 
                 <Button
-                  className={`w-full py-6 mb-8 shadow-lg transition-all duration-300 ${plan.price !== '0'
+                  className={`w-full py-6 mb-8 shadow-lg transition-all duration-300 ${price !== 0
                     ? 'bg-gradient-to-r from-[#DAA520] to-[#FFA500] hover:from-[#B8860B] hover:to-[#FF8C00] text-black font-black shadow-orange-500/20'
                     : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-bold'
                     }`}
                 >
-                  {plan.price === '0' ? 'Start Free' : 'Start 14-Day Trial'}
+                  {price === 0 ? 'Start Free' : 'Start 14-Day Trial'}
                 </Button>
 
-                {plan.price !== '0' && (
+                {price !== 0 && (
                   <div className="relative group cursor-pointer mb-8">
                     {/* Outer Glow */}
                     <div className="absolute -inset-0.5 bg-orange-500/20 rounded-[2rem] blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
@@ -151,13 +190,14 @@ export const PricingSection = () => {
                 </ul>
               </CardContent>
             </Card>
-          ))}
+          );
+          })}
         </div>
 
         {/* Trust Badge */}
         <div className="text-center mt-12">
           <p className="text-gray-600 dark:text-gray-400">
-            🔒 Secure payments powered by Stripe • Cancel during trial, no charge • All payments are non-refundable • No hidden fees
+            🔒 Secure payments powered by Paddle • Cancel during trial, no charge • GST & taxes handled automatically • No hidden fees
           </p>
         </div>
       </div>
