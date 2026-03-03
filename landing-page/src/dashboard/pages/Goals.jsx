@@ -23,6 +23,7 @@ const Goals = () => {
     const [editingItem, setEditingItem] = useState(null);
     const [selectedGoal, setSelectedGoal] = useState(null);
     const [addAmount, setAddAmount] = useState('');
+    const [addAmountError, setAddAmountError] = useState('');
     const [formData, setFormData] = useState({
         name: '',
         targetAmount: '',
@@ -33,10 +34,9 @@ const Goals = () => {
     });
     const [errors, setErrors] = useState({});
 
-    const sortedGoals = [...goals].sort((a, b) => {
-        const priorityOrder = { High: 1, Medium: 2, Low: 3 };
-        return priorityOrder[a.priority] - priorityOrder[b.priority];
-    });
+    const highGoals = goals.filter(g => g.priority === 'High');
+    const mediumGoals = goals.filter(g => g.priority === 'Medium');
+    const lowGoals = goals.filter(g => g.priority === 'Low');
 
     const completedGoals = goals.filter(g => g.currentAmount >= g.targetAmount).length;
     const totalSaved = goals.reduce((sum, g) => sum + g.currentAmount, 0);
@@ -53,6 +53,9 @@ const Goals = () => {
         if (!formData.name.trim()) newErrors.name = 'Goal name is required';
         if (!formData.targetAmount || parseFloat(formData.targetAmount) <= 0) {
             newErrors.targetAmount = 'Valid target amount is required';
+        }
+        if (formData.currentAmount && parseFloat(formData.currentAmount) > parseFloat(formData.targetAmount)) {
+            newErrors.currentAmount = 'Current amount cannot exceed target amount';
         }
         if (!formData.deadline) newErrors.deadline = 'Deadline is required';
         setErrors(newErrors);
@@ -81,11 +84,19 @@ const Goals = () => {
     };
 
     const handleAddMoney = () => {
+        setAddAmountError('');
         if (selectedGoal && addAmount && parseFloat(addAmount) > 0) {
-            addToGoal(selectedGoal.id, parseFloat(addAmount));
+            const added = parseFloat(addAmount);
+            if (selectedGoal.currentAmount + added > selectedGoal.targetAmount) {
+                setAddAmountError(`Cannot exceed target amount of ${formatCurrency(selectedGoal.targetAmount, currency)}`);
+                return;
+            }
+            addToGoal(selectedGoal.id, added);
             setAddMoneyModal(false);
             setSelectedGoal(null);
             setAddAmount('');
+        } else if (!addAmount || parseFloat(addAmount) <= 0) {
+            setAddAmountError('Enter a valid amount');
         }
     };
 
@@ -130,13 +141,100 @@ const Goals = () => {
         const colors = {
             High: 'badge-danger',
             Medium: 'badge-warning',
-            Low: 'badge-primary'
+            Low: 'badge-success'
         };
         return <span className={`badge ${colors[priority]}`}>{priority}</span>;
     };
 
+    const renderGoalCard = (goal) => {
+        const percentage = calculatePercentage(goal.currentAmount, goal.targetAmount);
+        const isCompleted = percentage >= 100;
+        const days = daysUntil(goal.deadline);
+
+        const borderClass = goal.priority === 'High' ? 'ring-2 ring-danger-500' :
+            goal.priority === 'Medium' ? 'ring-2 ring-warning-500' :
+                goal.priority === 'Low' ? 'ring-2 ring-success-500' : '';
+
+        return (
+            <Card key={goal.id} className={borderClass}>
+                {isCompleted && (
+                    <div className="flex items-center gap-2 mb-3 text-success-600 dark:text-success-400">
+                        <Trophy className="w-5 h-5" />
+                        <span className="font-medium">Goal Completed! 🎉</span>
+                    </div>
+                )}
+
+                <div className="flex items-start justify-between mb-3">
+                    <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">
+                            {goal.name}
+                        </h3>
+                        {getPriorityBadge(goal.priority)}
+                    </div>
+                    <div className="flex gap-1">
+                        <button
+                            onClick={() => {
+                                setSelectedGoal(goal);
+                                setAddMoneyModal(true);
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-success-50 dark:hover:bg-success-900/20 text-success-500"
+                            disabled={isCompleted}
+                        >
+                            <PlusCircle className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={() => openModal(goal)}
+                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-300 text-gray-500"
+                        >
+                            <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={() => handleDelete(goal.id)}
+                            className="p-1.5 rounded-lg hover:bg-danger-50 dark:hover:bg-danger-900/20 text-danger-500"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+
+                {goal.description && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{goal.description}</p>
+                )}
+
+                <div className="mb-2">
+                    <ProgressBar
+                        value={goal.currentAmount}
+                        max={goal.targetAmount}
+                        color={isCompleted ? 'success' : 'primary'}
+                        showLabel
+                    />
+                </div>
+
+                <div className="flex justify-between text-sm">
+                    <span className="text-gray-500 dark:text-gray-400">
+                        {formatCurrency(goal.currentAmount, currency)}
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                        {formatCurrency(goal.targetAmount, currency)}
+                    </span>
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-dark-300">
+                    <div className="flex justify-between text-sm">
+                        <span className="text-gray-500 dark:text-gray-400">Deadline</span>
+                        <span className={`font-medium ${days < 0 ? 'text-danger-600' : days < 30 ? 'text-warning-600' : 'text-gray-900 dark:text-white'}`}>
+                            {formatDate(goal.deadline, dateFormat)}
+                            {days > 0 && ` (${days} days left)`}
+                            {days < 0 && ' (Overdue)'}
+                        </span>
+                    </div>
+                </div>
+            </Card>
+        );
+    };
+
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Savings Goals</h1>
@@ -168,7 +266,7 @@ const Goals = () => {
             </div>
 
             {/* Goals List */}
-            {sortedGoals.length === 0 ? (
+            {goals.length === 0 ? (
                 <EmptyState
                     icon={Target}
                     title="No savings goals"
@@ -177,87 +275,48 @@ const Goals = () => {
                     actionLabel="Create Goal"
                 />
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {sortedGoals.map((goal) => {
-                        const percentage = calculatePercentage(goal.currentAmount, goal.targetAmount);
-                        const isCompleted = percentage >= 100;
-                        const days = daysUntil(goal.deadline);
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* High Priority — Left Column */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 pb-2 border-b-2 border-danger-500">
+                            <span className="w-3 h-3 rounded-full bg-danger-500"></span>
+                            <h3 className="font-semibold text-danger-600 dark:text-danger-400">High Priority</h3>
+                            <span className="ml-auto text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-dark-300 px-2 py-0.5 rounded-full">{highGoals.length}</span>
+                        </div>
+                        {highGoals.length === 0 ? (
+                            <div className="text-center py-8 text-gray-400 dark:text-gray-600 text-sm border-2 border-dashed border-gray-200 dark:border-dark-300 rounded-xl">No high priority goals</div>
+                        ) : (
+                            highGoals.map(goal => renderGoalCard(goal))
+                        )}
+                    </div>
 
-                        return (
-                            <Card key={goal.id} className={isCompleted ? 'ring-2 ring-success-500' : ''}>
-                                {isCompleted && (
-                                    <div className="flex items-center gap-2 mb-3 text-success-600 dark:text-success-400">
-                                        <Trophy className="w-5 h-5" />
-                                        <span className="font-medium">Goal Completed! 🎉</span>
-                                    </div>
-                                )}
+                    {/* Medium Priority — Center Column */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 pb-2 border-b-2 border-warning-500">
+                            <span className="w-3 h-3 rounded-full bg-warning-500"></span>
+                            <h3 className="font-semibold text-warning-600 dark:text-warning-400">Medium Priority</h3>
+                            <span className="ml-auto text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-dark-300 px-2 py-0.5 rounded-full">{mediumGoals.length}</span>
+                        </div>
+                        {mediumGoals.length === 0 ? (
+                            <div className="text-center py-8 text-gray-400 dark:text-gray-600 text-sm border-2 border-dashed border-gray-200 dark:border-dark-300 rounded-xl">No medium priority goals</div>
+                        ) : (
+                            mediumGoals.map(goal => renderGoalCard(goal))
+                        )}
+                    </div>
 
-                                <div className="flex items-start justify-between mb-3">
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900 dark:text-white">{goal.name}</h3>
-                                        {getPriorityBadge(goal.priority)}
-                                    </div>
-                                    <div className="flex gap-1">
-                                        <button
-                                            onClick={() => {
-                                                setSelectedGoal(goal);
-                                                setAddMoneyModal(true);
-                                            }}
-                                            className="p-1.5 rounded-lg hover:bg-success-50 dark:hover:bg-success-900/20 text-success-500"
-                                            disabled={isCompleted}
-                                        >
-                                            <PlusCircle className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => openModal(goal)}
-                                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-300 text-gray-500"
-                                        >
-                                            <Edit2 className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(goal.id)}
-                                            className="p-1.5 rounded-lg hover:bg-danger-50 dark:hover:bg-danger-900/20 text-danger-500"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {goal.description && (
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{goal.description}</p>
-                                )}
-
-                                <div className="mb-2">
-                                    <ProgressBar
-                                        value={goal.currentAmount}
-                                        max={goal.targetAmount}
-                                        color={isCompleted ? 'success' : 'primary'}
-                                        showLabel
-                                    />
-                                </div>
-
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500 dark:text-gray-400">
-                                        {formatCurrency(goal.currentAmount, currency)}
-                                    </span>
-                                    <span className="font-medium text-gray-900 dark:text-white">
-                                        {formatCurrency(goal.targetAmount, currency)}
-                                    </span>
-                                </div>
-
-                                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-dark-300">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500 dark:text-gray-400">Deadline</span>
-                                        <span className={`font-medium ${days < 0 ? 'text-danger-600' : days < 30 ? 'text-warning-600' : 'text-gray-900 dark:text-white'}`}>
-                                            {formatDate(goal.deadline, dateFormat)}
-                                            {days > 0 && ` (${days} days left)`}
-                                            {days < 0 && ' (Overdue)'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </Card>
-                        );
-                    })}
+                    {/* Low Priority — Right Column */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 pb-2 border-b-2 border-success-500">
+                            <span className="w-3 h-3 rounded-full bg-success-500"></span>
+                            <h3 className="font-semibold text-success-600 dark:text-success-400">Low Priority</h3>
+                            <span className="ml-auto text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-dark-300 px-2 py-0.5 rounded-full">{lowGoals.length}</span>
+                        </div>
+                        {lowGoals.length === 0 ? (
+                            <div className="text-center py-8 text-gray-400 dark:text-gray-600 text-sm border-2 border-dashed border-gray-200 dark:border-dark-300 rounded-xl">No low priority goals</div>
+                        ) : (
+                            lowGoals.map(goal => renderGoalCard(goal))
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -289,6 +348,7 @@ const Goals = () => {
                             placeholder="Saved so far"
                             value={formData.currentAmount}
                             onChange={handleChange}
+                            error={errors.currentAmount}
                         />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -309,11 +369,11 @@ const Goals = () => {
                         />
                     </div>
                     <div>
-                        <label className="label">Description (Optional)</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Description (Optional)</label>
                         <textarea
                             name="description"
-                            rows={2}
-                            className="input"
+                            rows={3}
+                            className="w-full px-4 py-2.5 rounded-lg bg-white dark:bg-dark-200 border border-gray-300 dark:border-dark-400 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-200"
                             placeholder="Describe your goal..."
                             value={formData.description}
                             onChange={handleChange}
@@ -331,7 +391,10 @@ const Goals = () => {
             </Modal>
 
             {/* Add Money Modal */}
-            <Modal isOpen={addMoneyModal} onClose={() => setAddMoneyModal(false)} title="Add Money to Goal" size="sm">
+            <Modal isOpen={addMoneyModal} onClose={() => {
+                setAddMoneyModal(false);
+                setAddAmountError('');
+            }} title="Add Money to Goal" size="sm">
                 <div className="space-y-4">
                     <p className="text-gray-600 dark:text-gray-400">
                         Add funds to <span className="font-semibold">{selectedGoal?.name}</span>
@@ -341,10 +404,17 @@ const Goals = () => {
                         type="number"
                         placeholder="Enter amount"
                         value={addAmount}
-                        onChange={(e) => setAddAmount(e.target.value)}
+                        onChange={(e) => {
+                            setAddAmount(e.target.value);
+                            setAddAmountError('');
+                        }}
+                        error={addAmountError}
                     />
                     <div className="flex gap-3">
-                        <Button variant="secondary" onClick={() => setAddMoneyModal(false)} fullWidth>
+                        <Button variant="secondary" onClick={() => {
+                            setAddMoneyModal(false);
+                            setAddAmountError('');
+                        }} fullWidth>
                             Cancel
                         </Button>
                         <Button onClick={handleAddMoney} fullWidth>
