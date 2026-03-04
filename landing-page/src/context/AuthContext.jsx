@@ -171,10 +171,31 @@ export const AuthProvider = ({ children }) => {
 
     const deleteAccount = async () => {
         try {
-            // Delete user data from profiles table first
-            await supabase.from('profiles').delete().eq('id', user.id);
-            // Sign out (server-side deletion requires admin API; sign out for now)
-            await supabase.auth.signOut();
+            // Get current session
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                return { success: false, error: "Not authenticated" };
+            }
+
+            // Call Edge Function directly via fetch — avoids any supabase-js wrapper issues
+            const fnUrl = `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/delete-account`;
+            const resp = await fetch(fnUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'apikey': process.env.REACT_APP_SUPABASE_ANON_KEY,
+                },
+            });
+
+            const data = await resp.json().catch(() => ({}));
+
+            if (!resp.ok || data?.error) {
+                return { success: false, error: data?.error ?? `HTTP ${resp.status}` };
+            }
+
+            // Clear local session after remote deletion
+            await supabase.auth.signOut({ scope: 'local' });
             return { success: true };
         } catch (err) {
             return { success: false, error: err.message };

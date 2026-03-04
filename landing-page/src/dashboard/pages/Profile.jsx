@@ -460,7 +460,7 @@ const Profile = () => {
                         </div>
 
                         <Button type="submit" loading={securityLoading} icon={Shield}>
-                            Save Security Question
+                            Save your new Security Question and Answer
                         </Button>
                     </form>
                 </Card>

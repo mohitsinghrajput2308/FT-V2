@@ -426,7 +426,6 @@ const PricingPage = () => {
       <div className="border-t border-white/10 py-6 text-center text-gray-500 text-sm px-4">
         🔒 Secure payments powered by Paddle &nbsp;•&nbsp; Cancel during trial, no charge &nbsp;•&nbsp; All payments are non-refundable &nbsp;•&nbsp; No hidden fees &nbsp;•&nbsp; GST &amp; taxes handled automatically
       </div>
-
       <Footer />
       {/* AuthModal is rendered globally in App.js — no duplicate needed here */}
     </div>
