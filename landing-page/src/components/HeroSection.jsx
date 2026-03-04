@@ -104,7 +104,7 @@ export const HeroSection = () => {
 
         {/* 3D Credit Card - Private Graphic Edition */}
         <div
-          className="absolute top-1/2 right-4 md:right-10 w-80 h-48 hidden lg:block transition-transform duration-300 ease-out will-change-transform"
+          className="absolute top-1/2 right-0 md:right-2 lg:right-8 xl:right-12 w-80 h-48 hidden lg:block transition-transform duration-300 ease-out will-change-transform"
           style={{
             transform: `perspective(1200px) rotateY(${mousePos.x - 18}deg) rotateX(${mousePos.y + 12}deg) rotateZ(-2deg)`,
             transformStyle: 'preserve-3d'
