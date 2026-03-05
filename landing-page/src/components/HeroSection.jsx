@@ -104,7 +104,7 @@ export const HeroSection = () => {
 
         {/* 3D Credit Card - Private Graphic Edition */}
         <div
-          className="absolute top-1/2 right-0 md:right-2 lg:right-8 xl:right-12 w-80 h-48 hidden lg:block transition-transform duration-300 ease-out will-change-transform"
+          className="absolute top-1/2 right-0 md:right-2 lg:right-8 xl:right-12 w-80 h-48 hidden lg:block transition-transform duration-300 ease-out will-change-transform z-20"
           style={{
             transform: `perspective(1200px) rotateY(${mousePos.x - 18}deg) rotateX(${mousePos.y + 12}deg) rotateZ(-2deg)`,
             transformStyle: 'preserve-3d'
@@ -256,8 +256,11 @@ export const HeroSection = () => {
               >
                 <img
                   src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80"
-                  alt="Financial Dashboard"
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
                   className="rounded-xl w-full"
+                  onError={(e) => { e.target.style.display = 'none'; }}
                 />
 
                 {/* Holographic overlay */}
