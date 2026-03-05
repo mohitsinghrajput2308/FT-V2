@@ -19,9 +19,6 @@ export const Showcase3DSection = () => {
     if (videoRef.current && videoRef.current.readyState >= 3) {
       setIsVideoReady(true);
     }
-    // Fallback: show video background after 3s even if onPlaying hasn't fired
-    const fallbackTimer = setTimeout(() => setIsVideoReady(true), 3000);
-    return () => clearTimeout(fallbackTimer);
   }, []);
   const stats = [
     {
