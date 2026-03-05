@@ -255,12 +255,9 @@ export const HeroSection = () => {
                 }}
               >
                 <img
-                  src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80"
-                  alt=""
-                  referrerPolicy="no-referrer"
-                  crossOrigin="anonymous"
+                  src="/analytic.jpg"
+                  alt="Financial Dashboard"
                   className="rounded-xl w-full"
-                  onError={(e) => { e.target.style.display = 'none'; }}
                 />
 
                 {/* Holographic overlay */}
