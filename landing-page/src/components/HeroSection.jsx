@@ -255,7 +255,7 @@ export const HeroSection = () => {
                 }}
               >
                 <img
-                  src="/finance-dashboard.png"
+                  src="/analytic.jpg"
                   alt="Financial Dashboard"
                   className="rounded-xl w-full"
                 />
