@@ -13,7 +13,7 @@ const plans = [
     name: 'Free',
     monthlyPrice: 0,
     yearlyPrice: 0,
-    description: 'Perfect for getting started with basic finance tracking',
+    description: 'Perfect for getting started with personal finance tracking',
     color: 'gray',
     cta: 'Start Free',
     ctaVariant: 'free',
@@ -25,7 +25,7 @@ const plans = [
     name: 'Pro',
     monthlyPrice: 9.99,
     yearlyPrice: 7.99,
-    description: 'Best for individuals serious about their finances',
+    description: 'For individuals who want full control of their finances',
     color: 'gold',
     cta: 'Start 14-Day Trial',
     ctaVariant: 'gold',
@@ -51,43 +51,42 @@ const featureCategories = [
   {
     category: 'Core Tracking',
     features: [
-      { name: 'Bank Accounts', free: '3 accounts', pro: 'Unlimited', business: 'Unlimited' },
-      { name: 'Transaction History', free: '3 months', pro: 'Unlimited', business: 'Unlimited' },
-      { name: 'Expense Categorization', free: 'Basic (10 categories)', pro: 'Advanced (50+)', business: 'Custom categories' },
+      { name: 'Transactions (Income & Expenses)', free: 'Unlimited', pro: 'Unlimited', business: 'Unlimited' },
+      { name: 'Investments Tracking', free: 'Unlimited', pro: 'Unlimited', business: 'Unlimited' },
+      { name: 'Financial Calculators', free: 'All 7', pro: 'All 7', business: 'All 7' },
       { name: 'Income Tracking', free: true, pro: true, business: true },
-      { name: 'Multi-Currency Support', free: false, pro: true, business: true },
-      { name: 'Recurring Transactions', free: false, pro: true, business: true },
+      { name: 'Recurring Transactions', free: true, pro: true, business: true },
+      { name: 'Analytics Dashboard', free: true, pro: true, business: true },
     ],
   },
   {
-    category: 'Budgets & Goals',
+    category: 'Budgets, Goals & Bills',
     features: [
-      { name: 'Budget Envelopes', free: '3 budgets', pro: 'Unlimited', business: 'Unlimited' },
-      { name: 'Savings Goals', free: '2 goals', pro: 'Unlimited', business: 'Unlimited' },
-      { name: 'Bill Reminders', free: false, pro: true, business: true },
-      { name: 'Spending Alerts', free: false, pro: true, business: true },
-      { name: 'Shared Budgets (Teams)', free: false, pro: false, business: true },
+      { name: 'Budgets', free: '2 max', pro: '5 max', business: 'Unlimited' },
+      { name: 'Savings Goals', free: '2 max', pro: '5 max', business: 'Unlimited' },
+      { name: 'Bill Reminders', free: '2 max', pro: '5 max', business: 'Unlimited' },
+    ],
+  },
+  {
+    category: 'Categories',
+    features: [
+      { name: 'Default Categories', free: true, pro: true, business: true },
+      { name: 'Custom Categories', free: false, pro: '3 lifetime', business: 'Unlimited' },
     ],
   },
   {
     category: 'Reports & Exports',
     features: [
-      { name: 'Monthly Reports', free: true, pro: true, business: true },
-      { name: 'Custom Date Range Reports', free: false, pro: true, business: true },
+      { name: 'Analytics & Reports', free: true, pro: true, business: true },
       { name: 'CSV Export', free: false, pro: true, business: true },
       { name: 'PDF Export', free: false, pro: true, business: true },
       { name: 'Tax Preparation Report', free: false, pro: false, business: true },
-      { name: 'Advanced Analytics Dashboard', free: false, pro: true, business: true },
     ],
   },
   {
-    category: 'AI & Insights',
+    category: 'Developer',
     features: [
-      { name: 'AI-Powered Spending Insights', free: false, pro: true, business: true },
-      { name: 'Smart Category Suggestions', free: false, pro: true, business: true },
-      { name: 'Anomaly Detection', free: false, pro: true, business: true },
-      { name: 'Financial Health Score', free: false, pro: true, business: true },
-      { name: 'Forecast & Projections', free: false, pro: false, business: true },
+      { name: 'API Documentation', free: false, pro: true, business: true },
     ],
   },
   {
@@ -97,7 +96,6 @@ const featureCategories = [
       { name: 'Business Expense Tracking', free: false, pro: false, business: true },
       { name: 'Dedicated Account Manager', free: false, pro: false, business: true },
       { name: 'Custom Integrations', free: false, pro: false, business: true },
-      { name: 'API Access', free: false, pro: false, business: true },
     ],
   },
   {
@@ -299,10 +297,12 @@ const PricingPage = () => {
               {/* Feature list */}
               <ul className="space-y-3 mt-auto">
                 {plan.id === 'free' && [
-                  'Track up to 3 accounts',
-                  'Basic expense categorization',
-                  'Monthly reports',
-                  'Mobile app access',
+                  'Unlimited transactions (income & expenses)',
+                  'Unlimited investments tracking',
+                  'Analytics dashboard & reports',
+                  '2 budgets, 2 goals & 2 bill reminders',
+                  'Default expense categories',
+                  'All 7 financial calculators',
                   'Email support',
                 ].map(f => (
                   <li key={f} className="flex items-start gap-2 text-sm text-gray-400">
@@ -311,14 +311,12 @@ const PricingPage = () => {
                   </li>
                 ))}
                 {plan.id === 'pro' && [
-                  'Unlimited accounts',
-                  'AI-powered insights',
-                  'Custom budgets & goals',
-                  'Bill reminders',
+                  'Everything in Free',
+                  '5 budgets, 5 goals & 5 bill reminders',
+                  '3 custom categories (lifetime)',
+                  'CSV & PDF data export',
+                  'API documentation access',
                   'Priority support & live chat',
-                  'CSV & PDF export',
-                  'Multi-currency support',
-                  'Advanced analytics',
                 ].map(f => (
                   <li key={f} className="flex items-start gap-2 text-sm text-gray-300">
                     <Check className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
@@ -327,14 +325,12 @@ const PricingPage = () => {
                 ))}
                 {plan.id === 'business' && [
                   'Everything in Pro',
+                  'Unlimited budgets, goals & bills',
+                  'Unlimited custom categories',
                   'Team collaboration (up to 5 users)',
-                  'Business expense tracking',
-                  'Tax preparation report',
-                  'API access',
-                  'Custom integrations',
+                  'Tax preparation reports',
+                  'Custom integrations & API access',
                   'Dedicated account manager',
-                  'Forecast & projections',
-                  'Onboarding assistance',
                 ].map(f => (
                   <li key={f} className="flex items-start gap-2 text-sm text-gray-300">
                     <Check className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
