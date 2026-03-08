@@ -25,9 +25,9 @@ const RATE_LIMITS = {
 
     // Data mutations (create/update/delete)
     mutation: {
-        maxRequests: 30,     // Max 30 mutations
+        maxRequests: 100,    // Max 100 mutations per minute (was 30 — too easy to hit)
         windowMs: 60 * 1000, // Per minute
-        blockDurationMs: 10 * 60 * 1000,
+        blockDurationMs: 2 * 60 * 1000, // Block for 2 min (not 10)
     },
 
     // File uploads

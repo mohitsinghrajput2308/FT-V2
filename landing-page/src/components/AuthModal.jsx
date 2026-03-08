@@ -93,6 +93,7 @@ export const AuthModal = ({ isOpen, onClose, initialView = 'login' }) => {
     const [userId, setUserId] = useState('');
     const [userIdError, setUserIdError] = useState('');
     const [userIdStatus, setUserIdStatus] = useState(''); // 'checking' | 'available' | 'taken' | ''
+    const [showRegisterUserIdInfo, setShowRegisterUserIdInfo] = useState(false);
     const [securityQuestion, setSecurityQuestion] = useState('');
     const [customSecurityQuestion, setCustomSecurityQuestion] = useState('');
     const [securityAnswer, setSecurityAnswer] = useState('');
@@ -100,9 +101,14 @@ export const AuthModal = ({ isOpen, onClose, initialView = 'login' }) => {
     // Forgot password state
     const [forgotStep, setForgotStep] = useState(1);
     const [forgotUserId, setForgotUserId] = useState('');
+    const [forgotUserIdError, setForgotUserIdError] = useState('');
+    const [forgotUserIdStatus, setForgotUserIdStatus] = useState(''); // 'checking' | 'available' | 'taken' | ''
     const [forgotFetchedQuestion, setForgotFetchedQuestion] = useState('');
+    const [forgotSelectedQuestion, setForgotSelectedQuestion] = useState('');
+    const [forgotCustomQuestion, setForgotCustomQuestion] = useState('');
     const [forgotAnswer, setForgotAnswer] = useState('');
     const [forgotEmailInput, setForgotEmailInput] = useState('');
+    const [showForgotUserIdInfo, setShowForgotUserIdInfo] = useState(false);
 
     // Reset password state
     const [newPassword, setNewPassword] = useState('');
@@ -147,14 +153,20 @@ export const AuthModal = ({ isOpen, onClose, initialView = 'login' }) => {
         setUserId('');
         setUserIdError('');
         setUserIdStatus('');
+        setShowRegisterUserIdInfo(false);
         setSecurityQuestion('');
         setCustomSecurityQuestion('');
         setSecurityAnswer('');
         setForgotStep(1);
         setForgotUserId('');
+        setForgotUserIdError('');
+        setForgotUserIdStatus('');
         setForgotFetchedQuestion('');
+        setForgotSelectedQuestion('');
+        setForgotCustomQuestion('');
         setForgotAnswer('');
         setForgotEmailInput('');
+        setShowForgotUserIdInfo(false);
         setNewPassword('');
         setNewConfirmPassword('');
         setNewStrength(0);
@@ -195,23 +207,49 @@ export const AuthModal = ({ isOpen, onClose, initialView = 'login' }) => {
 
     const handleForgotUserIdStep1 = async () => {
         if (!forgotUserId.trim()) { setAuthError('Please enter your User ID.'); return; }
+        // Validate format
+        const cleaned = forgotUserId.trim();
+        if (cleaned.length < 3 || cleaned.length > 15) { setAuthError('User ID must be 3-15 characters.'); return; }
+        if (!/[0-9]/.test(cleaned)) { setAuthError('User ID must contain at least one number.'); return; }
+        if (!/[A-Z]/.test(cleaned)) { setAuthError('User ID must contain at least one uppercase letter.'); return; }
+        if (!/[a-z]/.test(cleaned)) { setAuthError('User ID must contain at least one lowercase letter.'); return; }
+        if (!/_/.test(cleaned)) { setAuthError('User ID must contain an underscore (_).'); return; }
         setAuthError('');
         setIsLoading(true);
         const { supabase } = await import('@/lib/supabase');
-        const { data: question } = await supabase.rpc('get_security_question', { p_username: forgotUserId.trim().toLowerCase() });
+        const { data: question } = await supabase.rpc('get_security_question', { p_username: forgotUserId.trim() });
         setIsLoading(false);
-        if (!question) { setAuthError('No account found with that User ID.'); return; }
+        if (question === null || question === undefined) {
+            setAuthError('No account found with that User ID.');
+            return;
+        }
+        if (question === '__not_set__') {
+            setAuthError('This account has no security question set. Please use "Reset via Email" instead, then log in and set a security question in Profile settings.');
+            return;
+        }
         setForgotFetchedQuestion(question);
+        setForgotSelectedQuestion('');
+        setForgotCustomQuestion('');
+        setForgotAnswer('');
         setForgotStep(2);
     };
 
     const handleForgotUserIdStep2 = async () => {
+        let finalSelectedQuestion = forgotSelectedQuestion;
+        if (finalSelectedQuestion === '__custom__') {
+            finalSelectedQuestion = forgotCustomQuestion.trim();
+        }
+        if (!finalSelectedQuestion) { setAuthError('Please select or write your security question.'); return; }
+        if (finalSelectedQuestion !== forgotFetchedQuestion) {
+            setAuthError('Incorrect security question or answer. Please try again.');
+            return;
+        }
         if (!forgotAnswer.trim()) { setAuthError('Please enter your answer.'); return; }
         setAuthError('');
         setIsLoading(true);
         const { supabase } = await import('@/lib/supabase');
         const { data: emailResult } = await supabase.rpc('verify_security_answer_get_email', {
-            p_username: forgotUserId.trim().toLowerCase(),
+            p_username: forgotUserId.trim(),
             p_answer: forgotAnswer.trim().toLowerCase(),
         });
         if (!emailResult) {
@@ -529,7 +567,7 @@ export const AuthModal = ({ isOpen, onClose, initialView = 'login' }) => {
         setIsLoading(true);
         const { data, error } = await signUp(email.trim(), password, {
             full_name: fullName.trim(),
-            username: userId.trim().toLowerCase(),
+            username: userId.trim(),
             security_question: securityQuestion === '__custom__' ? customSecurityQuestion.trim() : securityQuestion,
             security_answer: securityAnswer.trim().toLowerCase(),
             phone: phone ? `${countryCode}${phone}` : null,
@@ -560,21 +598,36 @@ export const AuthModal = ({ isOpen, onClose, initialView = 'login' }) => {
         }
     };
 
+    const validateForgotUserId = (val) => {
+        // Strip disallowed characters and update state — format validation only.
+        // No availability check here: the reset flow needs an EXISTING account.
+        const cleaned = val.replace(/[^a-zA-Z0-9_]/g, '');
+        setForgotUserId(cleaned);
+        setForgotUserIdError('');
+        setForgotUserIdStatus('');
+        if (!cleaned) return;
+        if (cleaned.length > 15) { setForgotUserIdError('Max 15 characters'); return; }
+    };
+
     const validateUserId = (val) => {
         const cleaned = val.replace(/[^a-zA-Z0-9_]/g, '');
         setUserId(cleaned);
         setUserIdStatus('');
         setUserIdError('');
         if (!cleaned) return;
-        if (cleaned.length < 3) { setUserIdError('Must be at least 3 characters'); return; }
-        if (cleaned.length > 20) { setUserIdError('Max 20 characters'); return; }
-        // debounce check
+        if (cleaned.length < 3) return;
+        if (cleaned.length > 15) { setUserIdError('Max 15 characters'); return; }
+        if (!/[0-9]/.test(cleaned)) return;
+        if (!/[A-Z]/.test(cleaned)) return;
+        if (!/[a-z]/.test(cleaned)) return;
+        if (!/_/.test(cleaned)) return;
+        // debounce availability check (case-sensitive)
         setUserIdStatus('checking');
         clearTimeout(window._userIdTimer);
         window._userIdTimer = setTimeout(async () => {
             try {
                 const { supabase } = await import('@/lib/supabase');
-                const { data, error } = await supabase.rpc('check_username_available', { p_username: cleaned.toLowerCase() });
+                const { data, error } = await supabase.rpc('check_username_available', { p_username: cleaned });
                 if (error) { setUserIdStatus(''); return; }
                 setUserIdStatus(data ? 'available' : 'taken');
                 if (!data) setUserIdError('This User ID is already taken');
@@ -651,990 +704,1082 @@ export const AuthModal = ({ isOpen, onClose, initialView = 'login' }) => {
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden border-none bg-transparent shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-                <div className="relative bg-[#0A0A0B] border border-white/10 rounded-[40px] overflow-hidden p-8 sm:p-10 shadow-2xl">
-                    {/* Top Decorative Icon */}
-                    <div className="flex justify-center mb-6 sm:mb-8">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#2DD4BF] to-[#2563EB] rounded-[24px] flex items-center justify-center shadow-2xl shadow-blue-500/20 transform rotate-0 transition-transform hover:scale-110 duration-500">
-                            <Wallet className="w-8 h-8 sm:w-10 sm:h-10 text-white stroke-[1.5]" />
-                        </div>
-                    </div>
-
-                    {view === 'login' ? (
-                        <div className="space-y-6 sm:space-y-8 animate-in fade-in zoom-in-95 duration-500">
-                            <div className="text-center space-y-1 sm:space-y-2">
-                                <h2 className="text-[32px] sm:text-[36px] font-bold text-white tracking-tight leading-tight">Welcome Back</h2>
-                                <p className="text-gray-400 text-[14px] sm:text-[15px]">Please enter your details</p>
+            <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden border-none bg-transparent shadow-[0_0_50px_rgba(0,0,0,0.5)] w-[95vw] sm:w-full">
+                <DialogTitle className="sr-only">FinTrack Authentication</DialogTitle>
+                <div className="relative bg-[#0A0A0B] border border-white/10 rounded-[32px] sm:rounded-[40px] shadow-2xl flex flex-col max-h-[85dvh] w-full overflow-hidden">
+                    <div className="overflow-y-auto overflow-x-hidden p-6 sm:p-10 h-full w-full [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/20">
+                        {/* Top Decorative Icon */}
+                        <div className="flex justify-center mb-6 sm:mb-8">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#2DD4BF] to-[#2563EB] rounded-[24px] flex items-center justify-center shadow-2xl shadow-blue-500/20 transform rotate-0 transition-transform hover:scale-110 duration-500">
+                                <Wallet className="w-8 h-8 sm:w-10 sm:h-10 text-white stroke-[1.5]" />
                             </div>
+                        </div>
 
-                            <div className="space-y-4 sm:space-y-6">
-                                <div className="space-y-2 sm:space-y-3">
-                                    <Label className="text-white font-semibold text-[14px] ml-1">Email</Label>
-                                    <div className="relative group">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-blue-500 transition-colors" />
-                                        <Input
-                                            value={loginEmail}
-                                            onChange={(e) => setLoginEmail(e.target.value)}
-                                            placeholder="Enter your email"
-                                            className="pl-12 bg-[#1A1A1B] border-white/5 text-white placeholder:text-gray-600 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)] rounded-[14px] h-[52px] transition-all"
-                                        />
+                        {view === 'login' ? (
+                            <div className="space-y-6 sm:space-y-8 animate-in fade-in zoom-in-95 duration-500">
+                                <div className="text-center space-y-1 sm:space-y-2">
+                                    <h2 className="text-[32px] sm:text-[36px] font-bold text-white tracking-tight leading-tight">Welcome Back</h2>
+                                    <p className="text-gray-400 text-[14px] sm:text-[15px]">Please enter your details</p>
+                                </div>
+
+                                <div className="space-y-4 sm:space-y-6">
+                                    <div className="space-y-2 sm:space-y-3">
+                                        <Label className="text-white font-semibold text-[14px] ml-1">Email</Label>
+                                        <div className="relative group">
+                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-blue-500 transition-colors" />
+                                            <Input
+                                                value={loginEmail}
+                                                onChange={(e) => setLoginEmail(e.target.value)}
+                                                placeholder="Enter your email"
+                                                className="pl-12 bg-[#1A1A1B] border-white/5 text-white placeholder:text-gray-600 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)] rounded-[14px] h-[52px] transition-all"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2 sm:space-y-3">
+                                        <div className="flex justify-between items-center px-1">
+                                            <Label className="text-white font-semibold text-[14px]">Password</Label>
+                                            <button onClick={() => { setView('forgot'); setAuthError(''); setAuthSuccess(''); setForgotStep(1); setForgotUserId(''); setForgotFetchedQuestion(''); setForgotAnswer(''); setForgotEmailInput(''); }} className="text-blue-500 text-[13px] font-bold hover:text-blue-400 transition-colors">Forgot?</button>
+                                        </div>
+                                        <div className="relative group">
+                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-blue-500 transition-colors" />
+                                            <Input
+                                                type={showPassword ? "text" : "password"}
+                                                value={loginPassword}
+                                                onChange={(e) => setLoginPassword(e.target.value)}
+                                                placeholder="••••••••"
+                                                className="pl-12 pr-12 bg-[#1A1A1B] border-white/5 text-white placeholder:text-gray-600 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)] rounded-[14px] h-[52px] transition-all"
+                                            />
+                                            <button
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                                            >
+                                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-2 sm:space-y-3">
-                                    <div className="flex justify-between items-center px-1">
-                                        <Label className="text-white font-semibold text-[14px]">Password</Label>
-                                        <button onClick={() => { setView('forgot'); setAuthError(''); setAuthSuccess(''); setForgotStep(1); setForgotUserId(''); setForgotFetchedQuestion(''); setForgotAnswer(''); setForgotEmailInput(''); }} className="text-blue-500 text-[13px] font-bold hover:text-blue-400 transition-colors">Forgot?</button>
-                                    </div>
-                                    <div className="relative group">
-                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-blue-500 transition-colors" />
-                                        <Input
-                                            type={showPassword ? "text" : "password"}
-                                            value={loginPassword}
-                                            onChange={(e) => setLoginPassword(e.target.value)}
-                                            placeholder="••••••••"
-                                            className="pl-12 pr-12 bg-[#1A1A1B] border-white/5 text-white placeholder:text-gray-600 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)] rounded-[14px] h-[52px] transition-all"
-                                        />
+                                {authError && view === 'login' && (
+                                    <p className="text-red-400 text-[13px] text-center font-medium bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>
+                                )}
+
+                                <Button
+                                    onClick={handleSignIn}
+                                    disabled={isLoading}
+                                    className="w-full bg-[#2563EB] hover:bg-[#1d4ed8] border border-transparent hover:border-blue-400 hover:ring-4 hover:ring-blue-500/30 text-white hover:text-white h-[56px] rounded-[16px] font-black text-[16px] shadow-xl shadow-blue-500/20 transition-all hover:scale-[1.01] hover:shadow-[0_0_25px_rgba(37,99,235,0.6)] active:scale-[0.98]"
+                                >
+                                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Sign In'}
+                                </Button>
+
+                                <div className="text-center pt-1 sm:pt-2">
+                                    <p className="text-gray-400 text-[14px] font-medium">
+                                        Don't have an account?{' '}
                                         <button
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                                            onClick={() => setView('register')}
+                                            className="text-blue-500 font-bold hover:underline ml-1"
                                         >
-                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                            Sign Up
                                         </button>
-                                    </div>
+                                    </p>
                                 </div>
                             </div>
-
-                            {authError && view === 'login' && (
-                                <p className="text-red-400 text-[13px] text-center font-medium bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>
-                            )}
-
-                            <Button
-                                onClick={handleSignIn}
-                                disabled={isLoading}
-                                className="w-full bg-[#2563EB] hover:bg-[#1d4ed8] border border-transparent hover:border-blue-400 hover:ring-4 hover:ring-blue-500/30 text-white hover:text-white h-[56px] rounded-[16px] font-black text-[16px] shadow-xl shadow-blue-500/20 transition-all hover:scale-[1.01] hover:shadow-[0_0_25px_rgba(37,99,235,0.6)] active:scale-[0.98]"
-                            >
-                                {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Sign In'}
-                            </Button>
-
-                            <div className="text-center pt-1 sm:pt-2">
-                                <p className="text-gray-400 text-[14px] font-medium">
-                                    Don't have an account?{' '}
-                                    <button
-                                        onClick={() => setView('register')}
-                                        className="text-blue-500 font-bold hover:underline ml-1"
-                                    >
-                                        Sign Up
-                                    </button>
-                                </p>
-                            </div>
-                        </div>
-                    ) : view === 'verify' ? (
-                        <div className="space-y-6 sm:space-y-8 animate-in fade-in zoom-in-95 duration-500">
-                            <div className="text-center space-y-2">
-                                <div className="flex justify-center mb-2">
-                                    <div className="w-14 h-14 bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center justify-center">
-                                        <Mail className="w-7 h-7 text-emerald-400" />
+                        ) : view === 'verify' ? (
+                            <div className="space-y-6 sm:space-y-8 animate-in fade-in zoom-in-95 duration-500">
+                                <div className="text-center space-y-2">
+                                    <div className="flex justify-center mb-2">
+                                        <div className="w-14 h-14 bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center justify-center">
+                                            <Mail className="w-7 h-7 text-emerald-400" />
+                                        </div>
                                     </div>
+                                    <h2 className="text-[28px] sm:text-[32px] font-bold text-white tracking-tight">Verify Your Email</h2>
+                                    <p className="text-gray-400 text-[13px] sm:text-[14px]">
+                                        We sent an 8-digit code to<br />
+                                        <span className="text-white font-semibold">{verifyEmail}</span>
+                                    </p>
                                 </div>
-                                <h2 className="text-[28px] sm:text-[32px] font-bold text-white tracking-tight">Verify Your Email</h2>
-                                <p className="text-gray-400 text-[13px] sm:text-[14px]">
-                                    We sent an 8-digit code to<br />
-                                    <span className="text-white font-semibold">{verifyEmail}</span>
-                                </p>
-                            </div>
 
-                            <div className="flex justify-center gap-2 sm:gap-3">
-                                {otpValues.map((val, idx) => (
-                                    <input
-                                        key={idx}
-                                        id={`otp-${idx}`}
-                                        type="text"
-                                        inputMode="numeric"
-                                        maxLength={1}
-                                        value={val}
-                                        onChange={(e) => handleOtpChange(idx, e.target.value)}
-                                        onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                                        onPaste={(e) => {
-                                            e.preventDefault();
-                                            const paste = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 8);
-                                            const next = ['', '', '', '', '', '', '', ''];
-                                            paste.split('').forEach((c, i) => { next[i] = c; });
-                                            setOtpValues(next);
-                                            const last = Math.min(paste.length, 5);
-                                            setTimeout(() => { const el = document.getElementById(`otp-${last}`); if (el) el.focus(); }, 10);
-                                        }}
-                                        className="w-12 h-14 sm:w-14 sm:h-16 text-center text-[22px] font-bold text-white bg-[#1A1A1B] border border-white/10 rounded-[14px] outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all caret-blue-400"
-                                    />
-                                ))}
-                            </div>
+                                <div className="flex justify-center gap-2 sm:gap-3">
+                                    {otpValues.map((val, idx) => (
+                                        <input
+                                            key={idx}
+                                            id={`otp-${idx}`}
+                                            type="text"
+                                            inputMode="numeric"
+                                            maxLength={1}
+                                            value={val}
+                                            onChange={(e) => handleOtpChange(idx, e.target.value)}
+                                            onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                                            onPaste={(e) => {
+                                                e.preventDefault();
+                                                const paste = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 8);
+                                                const next = ['', '', '', '', '', '', '', ''];
+                                                paste.split('').forEach((c, i) => { next[i] = c; });
+                                                setOtpValues(next);
+                                                const last = Math.min(paste.length, 5);
+                                                setTimeout(() => { const el = document.getElementById(`otp-${last}`); if (el) el.focus(); }, 10);
+                                            }}
+                                            className="w-12 h-14 sm:w-14 sm:h-16 text-center text-[22px] font-bold text-white bg-[#1A1A1B] border border-white/10 rounded-[14px] outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all caret-blue-400"
+                                        />
+                                    ))}
+                                </div>
 
-                            {authError && view === 'verify' && (
-                                <p className="text-red-400 text-[13px] text-center font-medium bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>
-                            )}
-                            {authSuccess && (
-                                <p className="text-emerald-400 text-[13px] text-center font-medium bg-emerald-500/10 rounded-[12px] px-4 py-2">{authSuccess}</p>
-                            )}
+                                {authError && view === 'verify' && (
+                                    <p className="text-red-400 text-[13px] text-center font-medium bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>
+                                )}
+                                {authSuccess && (
+                                    <p className="text-emerald-400 text-[13px] text-center font-medium bg-emerald-500/10 rounded-[12px] px-4 py-2">{authSuccess}</p>
+                                )}
 
-                            <Button
-                                onClick={handleVerify}
-                                disabled={isLoading || otpValues.join('').length < 8}
-                                className={`w-full h-[52px] sm:h-[56px] rounded-[16px] font-black text-[16px] transition-all border border-transparent ${
-                                    otpValues.join('').length === 8 && !isLoading
+                                <Button
+                                    onClick={handleVerify}
+                                    disabled={isLoading || otpValues.join('').length < 8}
+                                    className={`w-full h-[52px] sm:h-[56px] rounded-[16px] font-black text-[16px] transition-all border border-transparent ${otpValues.join('').length === 8 && !isLoading
                                         ? 'bg-[#2563EB] hover:bg-blue-600 text-white hover:scale-[1.01] hover:ring-4 hover:ring-blue-500/30 hover:border-blue-400 shadow-xl shadow-blue-500/20'
                                         : 'bg-gray-800 text-gray-500 cursor-not-allowed'
-                                }`}
-                            >
-                                {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Verify & Continue'}
-                            </Button>
-
-                            <div className="text-center space-y-2">
-                                <p className="text-gray-500 text-[13px]">
-                                    Didn't receive the code?{' '}
-                                    <button onClick={handleResendCode} className="text-blue-500 font-bold hover:underline">Resend</button>
-                                </p>
-                                <p className="text-gray-600 text-[12px]">
-                                    <button onClick={() => setView('register')} className="hover:text-gray-400 transition-colors">← Back to sign up</button>
-                                </p>
-                            </div>
-                        </div>
-                    ) : view === 'forgot' ? (
-                        <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
-                            <div className="text-center space-y-2">
-                                <h2 className="text-[28px] sm:text-[32px] font-bold text-white tracking-tight">Recover Account</h2>
-                                <p className="text-gray-400 text-[14px]">Choose how you want to reset your password</p>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <button
-                                    onClick={() => { setView('forgotByUserId'); setForgotStep(1); setAuthError(''); setAuthSuccess(''); }}
-                                    className="group flex flex-col items-center gap-3 p-6 bg-[#1A1A1B] border border-white/10 rounded-[20px] hover:border-blue-500/50 hover:bg-blue-500/5 transition-all"
+                                        }`}
                                 >
-                                    <div className="w-12 h-12 bg-blue-500/10 rounded-[14px] flex items-center justify-center group-hover:bg-blue-500/20 transition-all">
-                                        <ShieldCheck className="w-6 h-6 text-blue-400" />
-                                    </div>
-                                    <div className="text-center">
-                                        <p className="text-white font-bold text-[14px]">Via Security Question</p>
-                                        <p className="text-gray-500 text-[11px] mt-0.5">Use your User ID + secret answer</p>
-                                    </div>
-                                </button>
+                                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Verify & Continue'}
+                                </Button>
 
-                                <button
-                                    onClick={() => { setView('forgotByEmail'); setAuthError(''); setAuthSuccess(''); }}
-                                    className="group flex flex-col items-center gap-3 p-6 bg-[#1A1A1B] border border-white/10 rounded-[20px] hover:border-blue-500/50 hover:bg-blue-500/5 transition-all"
-                                >
-                                    <div className="w-12 h-12 bg-blue-500/10 rounded-[14px] flex items-center justify-center group-hover:bg-blue-500/20 transition-all">
-                                        <Mail className="w-6 h-6 text-blue-400" />
-                                    </div>
-                                    <div className="text-center">
-                                        <p className="text-white font-bold text-[14px]">Via Email</p>
-                                        <p className="text-gray-500 text-[11px] mt-0.5">Send reset link to your email</p>
-                                    </div>
-                                </button>
-                            </div>
-
-                            <div className="text-center">
-                                <button onClick={() => { setView('login'); setAuthError(''); }} className="text-gray-500 text-[13px] hover:text-white transition-colors">← Back to Sign In</button>
-                            </div>
-                        </div>
-                    ) : view === 'forgotByEmail' ? (
-                        <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
-                            <div className="text-center space-y-2">
-                                <div className="flex justify-center mb-2">
-                                    <div className="w-14 h-14 bg-blue-500/10 border border-blue-500/30 rounded-full flex items-center justify-center">
-                                        <Mail className="w-7 h-7 text-blue-400" />
-                                    </div>
-                                </div>
-                                <h2 className="text-[28px] font-bold text-white">Reset via Email</h2>
-                                <p className="text-gray-400 text-[13px]">Enter your registered email address</p>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label className="text-white font-semibold text-[13px] ml-1">Email Address</Label>
-                                <div className="relative group">
-                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                                    <Input
-                                        value={forgotEmailInput}
-                                        onChange={(e) => setForgotEmailInput(e.target.value)}
-                                        placeholder="Enter your email"
-                                        className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[52px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                                    />
+                                <div className="text-center space-y-2">
+                                    <p className="text-gray-500 text-[13px]">
+                                        Didn't receive the code?{' '}
+                                        <button onClick={handleResendCode} className="text-blue-500 font-bold hover:underline">Resend</button>
+                                    </p>
+                                    <p className="text-gray-600 text-[12px]">
+                                        <button onClick={() => setView('register')} className="hover:text-gray-400 transition-colors">← Back to sign up</button>
+                                    </p>
                                 </div>
                             </div>
-
-                            {authError && <p className="text-red-400 text-[13px] text-center bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>}
-                            {authSuccess && <p className="text-emerald-400 text-[13px] text-center bg-emerald-500/10 rounded-[12px] px-4 py-2">{authSuccess}</p>}
-
-                            <Button onClick={handleForgotByEmail} disabled={isLoading} className="w-full h-[52px] rounded-[16px] font-black text-[16px] bg-[#2563EB] hover:bg-blue-600 text-white transition-all">
-                                {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Send Reset Link'}
-                            </Button>
-
-                            <div className="text-center">
-                                <button onClick={() => { setView('forgot'); setAuthError(''); setAuthSuccess(''); }} className="text-gray-500 text-[13px] hover:text-white transition-colors">← Back</button>
-                            </div>
-                        </div>
-                    ) : view === 'forgotByUserId' ? (
-                        <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
-                            <div className="text-center space-y-2">
-                                <div className="flex justify-center mb-2">
-                                    <div className="w-14 h-14 bg-blue-500/10 border border-blue-500/30 rounded-full flex items-center justify-center">
-                                        <ShieldCheck className="w-7 h-7 text-blue-400" />
-                                    </div>
+                        ) : view === 'forgot' ? (
+                            <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+                                <div className="text-center space-y-2">
+                                    <h2 className="text-[28px] sm:text-[32px] font-bold text-white tracking-tight">Recover Account</h2>
+                                    <p className="text-gray-400 text-[14px]">Choose how you want to reset your password</p>
                                 </div>
-                                <h2 className="text-[28px] font-bold text-white">Reset via User ID</h2>
-                                <p className="text-gray-400 text-[13px]">
-                                    {forgotStep === 1 ? 'Enter your User ID to find your account' : 'Answer your security question'}
-                                </p>
-                            </div>
 
-                            {/* Step indicator */}
-                            <div className="flex items-center gap-2 justify-center">
-                                {[1, 2].map((s) => (
-                                    <div key={s} className={`h-1.5 w-16 rounded-full transition-all ${forgotStep >= s ? 'bg-blue-500' : 'bg-white/10'}`} />
-                                ))}
-                            </div>
-
-                            {forgotStep === 1 ? (
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label className="text-white font-semibold text-[13px] ml-1">User ID</Label>
-                                        <div className="relative group">
-                                            <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                                            <Input
-                                                value={forgotUserId}
-                                                onChange={(e) => setForgotUserId(e.target.value)}
-                                                placeholder="Enter your User ID"
-                                                className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[52px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                                            />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button
+                                        onClick={() => { setView('forgotByUserId'); setForgotStep(1); setAuthError(''); setAuthSuccess(''); }}
+                                        className="group flex flex-col items-center gap-3 p-6 bg-[#1A1A1B] border border-white/10 rounded-[20px] hover:border-blue-500/50 hover:bg-blue-500/5 transition-all"
+                                    >
+                                        <div className="w-12 h-12 bg-blue-500/10 rounded-[14px] flex items-center justify-center group-hover:bg-blue-500/20 transition-all">
+                                            <ShieldCheck className="w-6 h-6 text-blue-400" />
                                         </div>
-                                    </div>
-
-                                    {authError && <p className="text-red-400 text-[13px] text-center bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>}
-
-                                    <Button onClick={handleForgotUserIdStep1} disabled={isLoading} className="w-full h-[52px] rounded-[16px] font-black text-[16px] bg-[#2563EB] hover:bg-blue-600 text-white transition-all">
-                                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Find My Account'}
-                                    </Button>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    <div className="bg-white/5 border border-white/10 rounded-[14px] px-4 py-3">
-                                        <p className="text-gray-400 text-[11px] uppercase font-bold tracking-wider mb-1">Security Question</p>
-                                        <p className="text-white font-semibold text-[14px]">{forgotFetchedQuestion}</p>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label className="text-white font-semibold text-[13px] ml-1">Your Answer</Label>
-                                        <div className="relative group">
-                                            <HelpCircle className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                                            <Input
-                                                value={forgotAnswer}
-                                                onChange={(e) => setForgotAnswer(e.target.value)}
-                                                placeholder="Enter your answer"
-                                                className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[52px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                                            />
+                                        <div className="text-center">
+                                            <p className="text-white font-bold text-[14px]">Via Security Question</p>
+                                            <p className="text-gray-500 text-[11px] mt-0.5">Use your User ID + secret answer</p>
                                         </div>
-                                    </div>
+                                    </button>
 
-                                    {authError && <p className="text-red-400 text-[13px] text-center bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>}
-                                    {authSuccess && <p className="text-emerald-400 text-[13px] text-center bg-emerald-500/10 rounded-[12px] px-4 py-2">{authSuccess}</p>}
-
-                                    <Button onClick={handleForgotUserIdStep2} disabled={isLoading} className="w-full h-[52px] rounded-[16px] font-black text-[16px] bg-[#2563EB] hover:bg-blue-600 text-white transition-all">
-                                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Verify & Send Reset Link'}
-                                    </Button>
-
-                                    <div className="text-center">
-                                        <button onClick={() => { setForgotStep(1); setAuthError(''); setForgotFetchedQuestion(''); setForgotAnswer(''); }} className="text-gray-500 text-[13px] hover:text-white transition-colors">← Try different User ID</button>
-                                    </div>
+                                    <button
+                                        onClick={() => { setView('forgotByEmail'); setAuthError(''); setAuthSuccess(''); }}
+                                        className="group flex flex-col items-center gap-3 p-6 bg-[#1A1A1B] border border-white/10 rounded-[20px] hover:border-blue-500/50 hover:bg-blue-500/5 transition-all"
+                                    >
+                                        <div className="w-12 h-12 bg-blue-500/10 rounded-[14px] flex items-center justify-center group-hover:bg-blue-500/20 transition-all">
+                                            <Mail className="w-6 h-6 text-blue-400" />
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-white font-bold text-[14px]">Via Email</p>
+                                            <p className="text-gray-500 text-[11px] mt-0.5">Send reset link to your email</p>
+                                        </div>
+                                    </button>
                                 </div>
-                            )}
 
-                            {forgotStep === 1 && (
                                 <div className="text-center">
-                                    <button onClick={() => { setView('forgot'); setAuthError(''); setAuthSuccess(''); }} className="text-gray-500 text-[13px] hover:text-white transition-colors">← Back</button>
+                                    <button onClick={() => { setView('login'); setAuthError(''); }} className="text-gray-500 text-[13px] hover:text-white transition-colors">← Back to Sign In</button>
                                 </div>
-                            )}
-                        </div>
-                    ) : view === 'resetPassword' ? (
-                        <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
-                            <div className="text-center space-y-2">
-                                <div className="flex justify-center mb-2">
-                                    <div className="w-14 h-14 bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center justify-center">
-                                        <KeyRound className="w-7 h-7 text-emerald-400" />
-                                    </div>
-                                </div>
-                                <h2 className="text-[28px] font-bold text-white">Set New Password</h2>
-                                <p className="text-gray-400 text-[13px]">You can change your password up to 3 times per week</p>
                             </div>
-
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label className="text-white font-semibold text-[13px] ml-1">New Password</Label>
-                                    <div className="relative group">
-                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                                        <Input
-                                            type={showNewPassword ? 'text' : 'password'}
-                                            value={newPassword}
-                                            onChange={(e) => { setNewPassword(e.target.value); calculateNewStrength(e.target.value); }}
-                                            placeholder="••••••••"
-                                            className="pl-12 pr-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[52px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                                        />
-                                        <button onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
-                                            {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                        </button>
+                        ) : view === 'forgotByEmail' ? (
+                            <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+                                <div className="text-center space-y-2">
+                                    <div className="flex justify-center mb-2">
+                                        <div className="w-14 h-14 bg-blue-500/10 border border-blue-500/30 rounded-full flex items-center justify-center">
+                                            <Mail className="w-7 h-7 text-blue-400" />
+                                        </div>
                                     </div>
+                                    <h2 className="text-[28px] font-bold text-white">Reset via Email</h2>
+                                    <p className="text-gray-400 text-[13px]">Enter your registered email address</p>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label className="text-white font-semibold text-[13px] ml-1">Confirm Password</Label>
+                                    <Label className="text-white font-semibold text-[13px] ml-1">Email Address</Label>
                                     <div className="relative group">
-                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                                         <Input
-                                            type="password"
-                                            value={newConfirmPassword}
-                                            onChange={(e) => setNewConfirmPassword(e.target.value)}
-                                            placeholder="Confirm"
+                                            value={forgotEmailInput}
+                                            onChange={(e) => setForgotEmailInput(e.target.value)}
+                                            placeholder="Enter your email"
                                             className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[52px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                                         />
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Strength indicator */}
-                            <div className="bg-[#050505]/80 rounded-[16px] p-4 border border-white/5">
-                                <div className="flex justify-between items-center mb-2">
-                                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Strength</span>
-                                    <span className={`text-[10px] font-black uppercase ${newStrength <= 20 ? 'text-red-500' : newStrength <= 60 ? 'text-yellow-500' : 'text-emerald-500'}`}>
-                                        {newStrength <= 20 ? 'WEAK' : newStrength <= 40 ? 'FAIR' : newStrength <= 60 ? 'GOOD' : newStrength <= 80 ? 'STRONG' : 'VERY STRONG'}
-                                    </span>
+                                {authError && <p className="text-red-400 text-[13px] text-center bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>}
+                                {authSuccess && <p className="text-emerald-400 text-[13px] text-center bg-emerald-500/10 rounded-[12px] px-4 py-2">{authSuccess}</p>}
+
+                                <Button onClick={handleForgotByEmail} disabled={isLoading} className="w-full h-[52px] rounded-[16px] font-black text-[16px] bg-[#2563EB] hover:bg-blue-600 text-white transition-all">
+                                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Send Reset Link'}
+                                </Button>
+
+                                <div className="text-center">
+                                    <button onClick={() => { setView('forgot'); setAuthError(''); setAuthSuccess(''); }} className="text-gray-500 text-[13px] hover:text-white transition-colors">← Back</button>
                                 </div>
-                                <div className="flex gap-2 mb-3">
-                                    {[20, 40, 60, 80, 100].map((step) => (
-                                        <div key={step} className={`h-1.5 flex-1 rounded-full transition-all duration-700 ${newStrength >= step ? (newStrength <= 20 ? 'bg-red-500' : newStrength <= 60 ? 'bg-yellow-500' : 'bg-emerald-500') : 'bg-white/5'}`} />
+                            </div>
+                        ) : view === 'forgotByUserId' ? (
+                            <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+                                <div className="text-center space-y-2">
+                                    <div className="flex justify-center mb-2">
+                                        <div className="w-14 h-14 bg-blue-500/10 border border-blue-500/30 rounded-full flex items-center justify-center">
+                                            <ShieldCheck className="w-7 h-7 text-blue-400" />
+                                        </div>
+                                    </div>
+                                    <h2 className="text-[28px] font-bold text-white">Reset via User ID</h2>
+                                    <p className="text-gray-400 text-[13px]">
+                                        {forgotStep === 1 ? 'Enter your User ID to find your account' : 'Answer your security question'}
+                                    </p>
+                                </div>
+
+                                {/* Step indicator */}
+                                <div className="flex items-center gap-2 justify-center">
+                                    {[1, 2].map((s) => (
+                                        <div key={s} className={`h-1.5 w-16 rounded-full transition-all ${forgotStep >= s ? 'bg-blue-500' : 'bg-white/10'}`} />
                                     ))}
                                 </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {[
-                                        { label: '8+ Chars', met: newPassword.length >= 8 },
-                                        { label: 'Uppercase', met: /[A-Z]/.test(newPassword) },
-                                        { label: 'Lowercase', met: /[a-z]/.test(newPassword) },
-                                        { label: 'Number', met: /[0-9]/.test(newPassword) },
-                                        { label: 'Symbol', met: /[^A-Za-z0-9]/.test(newPassword) },
-                                    ].map((rule) => (
-                                        <div key={rule.label} className="flex items-center gap-1">
-                                            <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center border ${rule.met ? 'bg-emerald-500 border-emerald-500' : 'border-white/10'}`}>
-                                                <Check className="w-2 h-2 stroke-[4] text-white" />
+
+                                {forgotStep === 1 ? (
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label
+                                                className="text-white font-semibold text-[13px] ml-1 flex items-center gap-1.5 cursor-pointer hover:text-blue-400 transition-colors w-fit"
+                                                onClick={() => setShowForgotUserIdInfo(!showForgotUserIdInfo)}
+                                            >
+                                                User ID <HelpCircle className="w-3.5 h-3.5 text-blue-500" />
+                                            </Label>
+                                            <div className="relative group">
+                                                <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                                <Input
+                                                    value={forgotUserId}
+                                                    onChange={(e) => validateForgotUserId(e.target.value)}
+                                                    placeholder="Enter your User ID"
+                                                    maxLength={15}
+                                                    className={`pl-12 pr-10 bg-[#1A1A1B] text-white rounded-[12px] h-[52px] transition-all ${forgotUserIdError || (forgotUserId.length > 0 && !(forgotUserId.length >= 3 && forgotUserId.length <= 15 && /[0-9]/.test(forgotUserId) && /[A-Z]/.test(forgotUserId) && /[a-z]/.test(forgotUserId) && /_/.test(forgotUserId)))
+                                                        ? 'border-red-500 border-2 focus:ring-4 focus:ring-red-500/30'
+                                                        : 'border-white/5 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500'
+                                                        }`}
+                                                />
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                                    {forgotUserIdError && <X className="w-4 h-4 text-red-500" />}
+                                                </div>
                                             </div>
-                                            <span className={`text-[9px] font-black uppercase ${rule.met ? 'text-emerald-500' : 'text-gray-500'}`}>{rule.label}</span>
+                                            {forgotUserIdError && <p className="text-[10px] text-red-500 font-bold mt-1 ml-1">{forgotUserIdError}</p>}
+                                            {forgotUserId.length > 0 && (
+                                                <div className="mt-2 ml-1 space-y-0.5">
+                                                    {[
+                                                        { label: '3–15 characters', ok: forgotUserId.length >= 3 && forgotUserId.length <= 15 },
+                                                        { label: 'At least one number (0–9)', ok: /[0-9]/.test(forgotUserId) },
+                                                        { label: 'At least one uppercase letter (A–Z)', ok: /[A-Z]/.test(forgotUserId) },
+                                                        { label: 'At least one lowercase letter (a–z)', ok: /[a-z]/.test(forgotUserId) },
+                                                        { label: 'Must contain an underscore (_)', ok: /_/.test(forgotUserId) },
+                                                        { label: 'Only letters, numbers and _ (no spaces)', ok: /^[a-zA-Z0-9_]*$/.test(forgotUserId) },
+                                                    ].map(({ label, ok }) => (
+                                                        <p key={label} className={`text-[10px] font-medium flex items-center gap-1 ${ok ? 'text-emerald-400' : 'text-gray-500'}`}>
+                                                            <span>{ok ? '✓' : '✗'}</span>{label}
+                                                        </p>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <p className="text-[10px] font-medium text-yellow-400/90 mt-1.5 ml-1 leading-relaxed">⚠ UserID is used for identification. You cannot use a UserID that has already been assigned to another user.</p>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
 
-                            {authError && <p className="text-red-400 text-[13px] text-center bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>}
-                            {authSuccess && <p className="text-emerald-400 text-[13px] text-center bg-emerald-500/10 rounded-[12px] px-4 py-2">{authSuccess}</p>}
+                                        {authError && <p className="text-red-400 text-[13px] text-center bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>}
 
-                            <Button
-                                onClick={handleResetPassword}
-                                disabled={isLoading || newStrength < 100 || newPassword !== newConfirmPassword}
-                                className={`w-full h-[52px] rounded-[16px] font-black text-[16px] transition-all border border-transparent ${newStrength === 100 && newPassword === newConfirmPassword && !isLoading ? 'bg-[#2563EB] hover:bg-blue-600 text-white hover:scale-[1.01] shadow-xl shadow-blue-500/20' : 'bg-gray-800 text-gray-500 cursor-not-allowed'}`}
-                            >
-                                {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Set New Password'}
-                            </Button>
-                        </div>
-                    ) : view === 'twoFAPrompt' ? (
-                        <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
-                            <div className="text-center space-y-2">
-                                <div className="flex justify-center mb-2">
-                                    <div className="w-14 h-14 bg-blue-500/10 border border-blue-500/30 rounded-full flex items-center justify-center">
-                                        <ShieldCheck className="w-7 h-7 text-blue-400" />
+                                        <Button onClick={handleForgotUserIdStep1} disabled={isLoading} className="w-full h-[52px] rounded-[16px] font-black text-[16px] bg-[#2563EB] hover:bg-blue-600 text-white transition-all">
+                                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Find My Account'}
+                                        </Button>
                                     </div>
-                                </div>
-                                <h2 className="text-[28px] font-bold text-white">Secure Your Account</h2>
-                                <p className="text-gray-400 text-[13px] max-w-[320px] mx-auto">
-                                    Add an extra layer of security with Two-Factor Authentication (2FA). It only takes 30 seconds — completely optional.
-                                </p>
-                            </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-white font-semibold text-[13px] ml-1">Your Security Question</Label>
+                                            <Select value={forgotSelectedQuestion} onValueChange={(val) => { setForgotSelectedQuestion(val); if (val !== '__custom__') setForgotCustomQuestion(''); setAuthError(''); setAuthSuccess(''); }}>
+                                                <SelectTrigger className="bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[52px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-left">
+                                                    <div className="flex items-center gap-3 overflow-hidden">
+                                                        <ShieldCheck className="w-5 h-5 text-gray-500 shrink-0" />
+                                                        <SelectValue placeholder="Choose or write your own question" />
+                                                    </div>
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-[#1A1A1B] border-white/10 text-white z-[200]">
+                                                    {SECURITY_QUESTIONS.map(q => (
+                                                        <SelectItem key={q} value={q}>{q}</SelectItem>
+                                                    ))}
+                                                    <SelectItem value="__custom__">✏️ Write my own question...</SelectItem>
+                                                </SelectContent>
+                                            </Select>
 
-                            <div className="bg-[#1A1A1B] border border-white/10 rounded-[16px] p-4 space-y-3">
-                                <div className="flex items-start gap-3">
-                                    <div className="w-8 h-8 bg-emerald-500/10 rounded-[8px] flex items-center justify-center shrink-0 mt-0.5">
-                                        <Check className="w-4 h-4 text-emerald-400" />
-                                    </div>
-                                    <div>
-                                        <p className="text-white font-semibold text-[13px]">Protects against stolen passwords</p>
-                                        <p className="text-gray-500 text-[12px]">Even if someone knows your password, they can't log in without your phone</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <div className="w-8 h-8 bg-emerald-500/10 rounded-[8px] flex items-center justify-center shrink-0 mt-0.5">
-                                        <Check className="w-4 h-4 text-emerald-400" />
-                                    </div>
-                                    <div>
-                                        <p className="text-white font-semibold text-[13px]">Works with any authenticator app</p>
-                                        <p className="text-gray-500 text-[12px]">Google Authenticator, Authy, Microsoft Authenticator &amp; more</p>
-                                    </div>
-                                </div>
-                            </div>
+                                            {forgotSelectedQuestion === '__custom__' && (
+                                                <div className="relative group mt-2">
+                                                    <HelpCircle className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                                    <Input
+                                                        type="text"
+                                                        value={forgotCustomQuestion}
+                                                        onChange={(e) => { setForgotCustomQuestion(e.target.value); setAuthError(''); }}
+                                                        placeholder="Type the exact custom question you set"
+                                                        maxLength={120}
+                                                        autoFocus
+                                                        autoComplete="off"
+                                                        className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[52px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-[13px] w-full"
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
 
-                            {authError && <p className="text-red-400 text-[13px] text-center bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>}
+                                        <div className="space-y-2">
+                                            <Label className="text-white font-semibold text-[13px] ml-1">Your Answer</Label>
+                                            <div className="relative group">
+                                                <HelpCircle className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                                <Input
+                                                    value={forgotAnswer}
+                                                    onChange={(e) => setForgotAnswer(e.target.value)}
+                                                    placeholder="Enter your answer"
+                                                    className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[52px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                                />
+                                            </div>
+                                        </div>
 
-                            <Button
-                                onClick={handleSetup2FA}
-                                disabled={isLoading}
-                                className="w-full h-[52px] rounded-[16px] font-black text-[16px] bg-[#2563EB] hover:bg-blue-600 text-white transition-all hover:scale-[1.01] shadow-xl shadow-blue-500/20"
-                            >
-                                {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : '🔐 Enable 2FA (Recommended)'}
-                            </Button>
+                                        {authError && <p className="text-red-400 text-[13px] text-center bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>}
+                                        {authSuccess && <p className="text-emerald-400 text-[13px] text-center bg-emerald-500/10 rounded-[12px] px-4 py-2">{authSuccess}</p>}
 
-                            <button onClick={handleSkip2FA} className="w-full text-gray-500 text-[13px] hover:text-white transition-colors py-1">
-                                Skip for now, continue to app →
-                            </button>
-                        </div>
-                    ) : view === 'twoFASetup' ? (
-                        <div className="space-y-5 animate-in fade-in zoom-in-95 duration-500">
-                            <div className="text-center space-y-2">
-                                <div className="flex justify-center mb-2">
-                                    <div className="w-14 h-14 bg-blue-500/10 border border-blue-500/30 rounded-full flex items-center justify-center">
-                                        <Smartphone className="w-7 h-7 text-blue-400" />
-                                    </div>
-                                </div>
-                                <h2 className="text-[26px] font-bold text-white">Setup Authenticator</h2>
-                                <p className="text-gray-400 text-[13px]">Scan the QR code with your authenticator app, then enter the 6-digit code to confirm</p>
-                            </div>
+                                        <Button onClick={handleForgotUserIdStep2} disabled={isLoading} className="w-full h-[52px] rounded-[16px] font-black text-[16px] bg-[#2563EB] hover:bg-blue-600 text-white transition-all">
+                                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Verify & Send Reset Link'}
+                                        </Button>
 
-                            {twoFAQrCode && (
-                                <div className="flex justify-center">
-                                    <div className="bg-white p-3 rounded-[16px] shadow-lg inline-flex items-center justify-center">
-                                        <img src={twoFAQrCode} alt="QR Code for 2FA setup" className="w-44 h-44 block" />
-                                    </div>
-                                </div>
-                            )}
-
-                            {twoFASecret && (
-                                <div className="bg-[#1A1A1B] border border-white/10 rounded-[12px] p-3">
-                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1.5">Manual entry key (if QR doesn't work)</p>
-                                    <p className="text-white font-mono text-[12px] tracking-widest break-all select-all">{twoFASecret}</p>
-                                </div>
-                            )}
-
-                            <div className="space-y-2">
-                                <Label className="text-white font-semibold text-[13px] ml-1">Enter 6-digit code to confirm setup</Label>
-                                <div className="relative group">
-                                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                                    <Input
-                                        value={twoFACode}
-                                        onChange={(e) => setTwoFACode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                        placeholder="000000"
-                                        maxLength={6}
-                                        inputMode="numeric"
-                                        autoFocus
-                                        className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[52px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all tracking-[0.4em] text-center text-[20px] font-bold"
-                                    />
-                                </div>
-                            </div>
-
-                            {authError && <p className="text-red-400 text-[13px] text-center bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>}
-                            {authSuccess && <p className="text-emerald-400 text-[13px] text-center bg-emerald-500/10 rounded-[12px] px-4 py-2">{authSuccess}</p>}
-
-                            <Button
-                                onClick={handleConfirm2FA}
-                                disabled={isLoading || twoFACode.length !== 6}
-                                className={`w-full h-[52px] rounded-[16px] font-black text-[16px] transition-all border border-transparent ${twoFACode.length === 6 && !isLoading ? 'bg-[#2563EB] hover:bg-blue-600 text-white hover:scale-[1.01] shadow-xl shadow-blue-500/20' : 'bg-gray-800 text-gray-500 cursor-not-allowed'}`}
-                            >
-                                {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Activate 2FA & Continue'}
-                            </Button>
-
-                            <button onClick={handleSkip2FA} className="w-full text-gray-500 text-[13px] hover:text-white transition-colors py-1">
-                                Skip for now →
-                            </button>
-                        </div>
-                    ) : view === 'twoFAVerify' ? (
-                        <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
-                            <div className="text-center space-y-2">
-                                <div className="flex justify-center mb-2">
-                                    <div className="w-14 h-14 bg-blue-500/10 border border-blue-500/30 rounded-full flex items-center justify-center">
-                                        <ShieldCheck className="w-7 h-7 text-blue-400" />
-                                    </div>
-                                </div>
-                                <h2 className="text-[28px] font-bold text-white">Two-Factor Auth</h2>
-                                <p className="text-gray-400 text-[13px]">Enter the 6-digit code from your authenticator app</p>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label className="text-white font-semibold text-[13px] ml-1">Authentication Code</Label>
-                                <div className="relative group">
-                                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                                    <Input
-                                        value={twoFACode}
-                                        onChange={(e) => setTwoFACode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                        placeholder="000000"
-                                        maxLength={6}
-                                        inputMode="numeric"
-                                        autoFocus
-                                        className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[56px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all tracking-[0.4em] text-center text-[22px] font-bold"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="bg-[#1A1A1B] border border-white/10 rounded-[12px] p-3 flex items-center gap-3">
-                                <Smartphone className="w-5 h-5 text-blue-400 shrink-0" />
-                                <p className="text-gray-400 text-[12px]">Open Google Authenticator, Authy, or the TOTP app where you set up 2FA to get your current 6-digit code.</p>
-                            </div>
-
-                            {authError && <p className="text-red-400 text-[13px] text-center bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>}
-
-                            <Button
-                                onClick={handleVerify2FA}
-                                disabled={isLoading || twoFACode.length !== 6}
-                                className={`w-full h-[56px] rounded-[16px] font-black text-[16px] transition-all border border-transparent ${twoFACode.length === 6 && !isLoading ? 'bg-[#2563EB] hover:bg-blue-600 text-white hover:scale-[1.01] hover:ring-4 hover:ring-blue-500/30 shadow-xl shadow-blue-500/20' : 'bg-gray-800 text-gray-500 cursor-not-allowed'}`}
-                            >
-                                {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Verify & Sign In'}
-                            </Button>
-
-                            <div className="bg-amber-500/10 border border-amber-500/20 rounded-[12px] p-3 flex items-start gap-3">
-                                <span className="text-amber-400 text-[18px] leading-none mt-0.5">⚠</span>
-                                <div>
-                                    <p className="text-amber-300 text-[12px] font-semibold mb-1">Lost access to your authenticator?</p>
-                                    <p className="text-gray-400 text-[11px] mb-1">If you deleted the app or lost your device, you can set up 2FA again after giving security question and answer.</p>
-                                    <p className="text-amber-400 text-[11px] font-semibold mb-2">NOTE : Your previous authenticator will be permanently removed.</p>
-                                    <button
-                                        onClick={handleStartIdentityVerify}
-                                        disabled={isLoading}
-                                        className="text-amber-400 text-[12px] font-bold hover:text-amber-300 transition-colors underline underline-offset-2 disabled:opacity-50"
-                                    >
-                                        {isLoading ? 'Processing...' : 'Set up another 2FA'}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="text-center">
-                                <button onClick={() => { setView('login'); setAuthError(''); setTwoFACode(''); }} className="text-gray-500 text-[13px] hover:text-white transition-colors">
-                                    ← Go back to sign in page
-                                </button>
-                            </div>
-                        </div>
-                    ) : view === 'proveIdentity' ? (
-                        <div className="space-y-5 sm:space-y-6 animate-in fade-in zoom-in-95 duration-500">
-                            <div className="text-center space-y-3">
-                                <div className="flex justify-center">
-                                    <div className="relative">
-                                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500/30 to-orange-500/30 flex items-center justify-center border border-amber-500/20">
-                                            <ShieldCheck className="w-8 h-8 text-amber-400" />
+                                        <div className="text-center">
+                                            <button onClick={() => { setForgotStep(1); setAuthError(''); setForgotFetchedQuestion(''); setForgotAnswer(''); }} className="text-gray-500 text-[13px] hover:text-white transition-colors">← Try different User ID</button>
                                         </div>
                                     </div>
-                                </div>
-                                <h2 className="text-[28px] font-bold text-white">Prove Your Identity</h2>
-                                <p className="text-gray-400 text-[13px]">Select the security question you chose during registration and provide the correct answer</p>
-                            </div>
+                                )}
 
-                            <div className="space-y-2">
-                                <Label className="text-white font-semibold text-[13px] ml-1">Your Security Question</Label>
-                                <Select value={identitySelectedQuestion} onValueChange={(val) => { setIdentitySelectedQuestion(val); if (val !== '__custom__') setIdentityCustomQuestion(''); setAuthError(''); }}>
-                                    <SelectTrigger className="bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[56px] focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 transition-all">
-                                        <div className="flex items-center gap-3">
-                                            <ShieldCheck className="w-5 h-5 text-gray-500 shrink-0" />
-                                            <SelectValue placeholder="Choose the question you set during registration" />
-                                        </div>
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-[#1A1A1B] border-white/10 text-white">
-                                        {SECURITY_QUESTIONS.map((q) => (
-                                            <SelectItem key={q} value={q}>{q}</SelectItem>
-                                        ))}
-                                        <SelectItem value="__custom__">✏️ I had my own custom question...</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                {identitySelectedQuestion === '__custom__' && (
-                                    <div className="relative group mt-2">
-                                        <HelpCircle className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400" />
-                                        <Input
-                                            value={identityCustomQuestion}
-                                            onChange={(e) => setIdentityCustomQuestion(e.target.value)}
-                                            placeholder="Type the exact custom question you set"
-                                            maxLength={120}
-                                            autoFocus
-                                            className="pl-12 bg-[#1A1A1B] border-amber-500/40 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
-                                        />
+                                {forgotStep === 1 && (
+                                    <div className="text-center">
+                                        <button onClick={() => { setView('forgot'); setAuthError(''); setAuthSuccess(''); }} className="text-gray-500 text-[13px] hover:text-white transition-colors">← Back</button>
                                     </div>
                                 )}
                             </div>
-
-                            <div className="space-y-2">
-                                <Label className="text-white font-semibold text-[13px] ml-1">Your Answer</Label>
-                                <div className="relative group">
-                                    <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                                    <Input
-                                        value={identityAnswer}
-                                        onChange={(e) => setIdentityAnswer(e.target.value)}
-                                        placeholder="Type your answer here..."
-                                        onKeyDown={(e) => e.key === 'Enter' && identityAnswer.trim() && handleVerifyIdentity()}
-                                        className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[56px] focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
-                                    />
+                        ) : view === 'resetPassword' ? (
+                            <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+                                <div className="text-center space-y-2">
+                                    <div className="flex justify-center mb-2">
+                                        <div className="w-14 h-14 bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center justify-center">
+                                            <KeyRound className="w-7 h-7 text-emerald-400" />
+                                        </div>
+                                    </div>
+                                    <h2 className="text-[28px] font-bold text-white">Set New Password</h2>
+                                    <p className="text-gray-400 text-[13px]">You can change your password up to 3 times per week</p>
                                 </div>
+
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-white font-semibold text-[13px] ml-1">New Password</Label>
+                                        <div className="relative group">
+                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                            <Input
+                                                type={showNewPassword ? 'text' : 'password'}
+                                                value={newPassword}
+                                                onChange={(e) => { setNewPassword(e.target.value); calculateNewStrength(e.target.value); }}
+                                                placeholder="••••••••"
+                                                className="pl-12 pr-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[52px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                            />
+                                            <button onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
+                                                {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-white font-semibold text-[13px] ml-1">Confirm Password</Label>
+                                        <div className="relative group">
+                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                            <Input
+                                                type="password"
+                                                value={newConfirmPassword}
+                                                onChange={(e) => setNewConfirmPassword(e.target.value)}
+                                                placeholder="Confirm"
+                                                className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[52px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Strength indicator */}
+                                <div className="bg-[#050505]/80 rounded-[16px] p-4 border border-white/5">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Strength</span>
+                                        <span className={`text-[10px] font-black uppercase ${newStrength <= 20 ? 'text-red-500' : newStrength <= 60 ? 'text-yellow-500' : 'text-emerald-500'}`}>
+                                            {newStrength <= 20 ? 'WEAK' : newStrength <= 40 ? 'FAIR' : newStrength <= 60 ? 'GOOD' : newStrength <= 80 ? 'STRONG' : 'VERY STRONG'}
+                                        </span>
+                                    </div>
+                                    <div className="flex gap-2 mb-3">
+                                        {[20, 40, 60, 80, 100].map((step) => (
+                                            <div key={step} className={`h-1.5 flex-1 rounded-full transition-all duration-700 ${newStrength >= step ? (newStrength <= 20 ? 'bg-red-500' : newStrength <= 60 ? 'bg-yellow-500' : 'bg-emerald-500') : 'bg-white/5'}`} />
+                                        ))}
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {[
+                                            { label: '8+ Chars', met: newPassword.length >= 8 },
+                                            { label: 'Uppercase', met: /[A-Z]/.test(newPassword) },
+                                            { label: 'Lowercase', met: /[a-z]/.test(newPassword) },
+                                            { label: 'Number', met: /[0-9]/.test(newPassword) },
+                                            { label: 'Symbol', met: /[^A-Za-z0-9]/.test(newPassword) },
+                                        ].map((rule) => (
+                                            <div key={rule.label} className="flex items-center gap-1">
+                                                <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center border ${rule.met ? 'bg-emerald-500 border-emerald-500' : 'border-white/10'}`}>
+                                                    <Check className="w-2 h-2 stroke-[4] text-white" />
+                                                </div>
+                                                <span className={`text-[9px] font-black uppercase ${rule.met ? 'text-emerald-500' : 'text-gray-500'}`}>{rule.label}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {authError && <p className="text-red-400 text-[13px] text-center bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>}
+                                {authSuccess && <p className="text-emerald-400 text-[13px] text-center bg-emerald-500/10 rounded-[12px] px-4 py-2">{authSuccess}</p>}
+
+                                <Button
+                                    onClick={handleResetPassword}
+                                    disabled={isLoading || newStrength < 100 || newPassword !== newConfirmPassword}
+                                    className={`w-full h-[52px] rounded-[16px] font-black text-[16px] transition-all border border-transparent ${newStrength === 100 && newPassword === newConfirmPassword && !isLoading ? 'bg-[#2563EB] hover:bg-blue-600 text-white hover:scale-[1.01] shadow-xl shadow-blue-500/20' : 'bg-gray-800 text-gray-500 cursor-not-allowed'}`}
+                                >
+                                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Set New Password'}
+                                </Button>
                             </div>
+                        ) : view === 'twoFAPrompt' ? (
+                            <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+                                <div className="text-center space-y-2">
+                                    <div className="flex justify-center mb-2">
+                                        <div className="w-14 h-14 bg-blue-500/10 border border-blue-500/30 rounded-full flex items-center justify-center">
+                                            <ShieldCheck className="w-7 h-7 text-blue-400" />
+                                        </div>
+                                    </div>
+                                    <h2 className="text-[28px] font-bold text-white">Secure Your Account</h2>
+                                    <p className="text-gray-400 text-[13px] max-w-[320px] mx-auto">
+                                        Add an extra layer of security with Two-Factor Authentication (2FA). It only takes 30 seconds — completely optional.
+                                    </p>
+                                </div>
 
-                            {authError && <p className="text-red-400 text-[13px] text-center bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>}
-                            {authSuccess && <p className="text-emerald-400 text-[13px] text-center bg-emerald-500/10 rounded-[12px] px-4 py-2">{authSuccess}</p>}
+                                <div className="bg-[#1A1A1B] border border-white/10 rounded-[16px] p-4 space-y-3">
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-8 h-8 bg-emerald-500/10 rounded-[8px] flex items-center justify-center shrink-0 mt-0.5">
+                                            <Check className="w-4 h-4 text-emerald-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-white font-semibold text-[13px]">Protects against stolen passwords</p>
+                                            <p className="text-gray-500 text-[12px]">Even if someone knows your password, they can't log in without your phone</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-8 h-8 bg-emerald-500/10 rounded-[8px] flex items-center justify-center shrink-0 mt-0.5">
+                                            <Check className="w-4 h-4 text-emerald-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-white font-semibold text-[13px]">Works with any authenticator app</p>
+                                            <p className="text-gray-500 text-[12px]">Google Authenticator, Authy, Microsoft Authenticator &amp; more</p>
+                                        </div>
+                                    </div>
+                                </div>
 
-                            <Button
-                                onClick={handleVerifyIdentity}
-                                disabled={isLoading || !identityAnswer.trim() || (!identitySelectedQuestion || (identitySelectedQuestion === '__custom__' && !identityCustomQuestion.trim()))}
-                                className={`w-full h-[56px] rounded-[16px] font-black text-[16px] transition-all border border-transparent ${identityAnswer.trim() && (identitySelectedQuestion && (identitySelectedQuestion !== '__custom__' || identityCustomQuestion.trim())) && !isLoading ? 'bg-amber-500 hover:bg-amber-600 text-black hover:scale-[1.01] hover:ring-4 hover:ring-amber-500/30 shadow-xl shadow-amber-500/20' : 'bg-gray-800 text-gray-500 cursor-not-allowed'}`}
-                            >
-                                {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Verify & Continue'}
-                            </Button>
+                                {authError && <p className="text-red-400 text-[13px] text-center bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>}
 
-                            <div className="bg-[#1A1A1B] border border-white/10 rounded-[12px] p-3 flex items-center gap-3">
-                                <HelpCircle className="w-5 h-5 text-blue-400 shrink-0" />
-                                <p className="text-gray-400 text-[11px]">Select the same security question you chose when creating your account. If you wrote your own, choose the custom option. The answer is case-insensitive.</p>
-                            </div>
+                                <Button
+                                    onClick={handleSetup2FA}
+                                    disabled={isLoading}
+                                    className="w-full h-[52px] rounded-[16px] font-black text-[16px] bg-[#2563EB] hover:bg-blue-600 text-white transition-all hover:scale-[1.01] shadow-xl shadow-blue-500/20"
+                                >
+                                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : '🔐 Enable 2FA (Recommended)'}
+                                </Button>
 
-                            <div className="text-center">
-                                <button onClick={() => { setView('twoFAVerify'); setAuthError(''); setAuthSuccess(''); setIdentityAnswer(''); setIdentitySelectedQuestion(''); setIdentityCustomQuestion(''); }} className="text-gray-500 text-[13px] hover:text-white transition-colors">
-                                    ← Back to verification
+                                <button onClick={handleSkip2FA} className="w-full text-gray-500 text-[13px] hover:text-white transition-colors py-1">
+                                    Skip for now, continue to app →
                                 </button>
                             </div>
-                        </div>
-                    ) : (
-                        <div className="space-y-5 sm:space-y-6 animate-in fade-in zoom-in-95 duration-500">
-                            <div className="text-center space-y-1">
-                                <h2 className="text-[28px] sm:text-[32px] font-bold text-white tracking-tight leading-tight">Create Account</h2>
+                        ) : view === 'twoFASetup' ? (
+                            <div className="space-y-5 animate-in fade-in zoom-in-95 duration-500">
+                                <div className="text-center space-y-2">
+                                    <div className="flex justify-center mb-2">
+                                        <div className="w-14 h-14 bg-blue-500/10 border border-blue-500/30 rounded-full flex items-center justify-center">
+                                            <Smartphone className="w-7 h-7 text-blue-400" />
+                                        </div>
+                                    </div>
+                                    <h2 className="text-[26px] font-bold text-white">Setup Authenticator</h2>
+                                    <p className="text-gray-400 text-[13px]">Scan the QR code with your authenticator app, then enter the 6-digit code to confirm</p>
+                                </div>
+
+                                {twoFAQrCode && (
+                                    <div className="flex justify-center">
+                                        <div className="bg-white p-3 rounded-[16px] shadow-lg inline-flex items-center justify-center">
+                                            <img src={twoFAQrCode} alt="QR Code for 2FA setup" className="w-44 h-44 block" />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {twoFASecret && (
+                                    <div className="bg-[#1A1A1B] border border-white/10 rounded-[12px] p-3">
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1.5">Manual entry key (if QR doesn't work)</p>
+                                        <p className="text-white font-mono text-[12px] tracking-widest break-all select-all">{twoFASecret}</p>
+                                    </div>
+                                )}
+
+                                <div className="space-y-2">
+                                    <Label className="text-white font-semibold text-[13px] ml-1">Enter 6-digit code to confirm setup</Label>
+                                    <div className="relative group">
+                                        <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                        <Input
+                                            value={twoFACode}
+                                            onChange={(e) => setTwoFACode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                            placeholder="000000"
+                                            maxLength={6}
+                                            inputMode="numeric"
+                                            autoFocus
+                                            className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[52px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all tracking-[0.4em] text-center text-[20px] font-bold"
+                                        />
+                                    </div>
+                                </div>
+
+                                {authError && <p className="text-red-400 text-[13px] text-center bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>}
+                                {authSuccess && <p className="text-emerald-400 text-[13px] text-center bg-emerald-500/10 rounded-[12px] px-4 py-2">{authSuccess}</p>}
+
+                                <Button
+                                    onClick={handleConfirm2FA}
+                                    disabled={isLoading || twoFACode.length !== 6}
+                                    className={`w-full h-[52px] rounded-[16px] font-black text-[16px] transition-all border border-transparent ${twoFACode.length === 6 && !isLoading ? 'bg-[#2563EB] hover:bg-blue-600 text-white hover:scale-[1.01] shadow-xl shadow-blue-500/20' : 'bg-gray-800 text-gray-500 cursor-not-allowed'}`}
+                                >
+                                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Activate 2FA & Continue'}
+                                </Button>
+
+                                <button onClick={handleSkip2FA} className="w-full text-gray-500 text-[13px] hover:text-white transition-colors py-1">
+                                    Skip for now →
+                                </button>
                             </div>
-
-                            <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                                <div className="space-y-1.5 sm:space-y-2">
-                                    <Label className="text-white font-semibold text-[13px] ml-1">Full Name</Label>
-                                    <div className="relative group">
-                                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                                        <Input
-                                            value={fullName}
-                                            onChange={(e) => setFullName(e.target.value)}
-                                            placeholder="Enter your full name"
-                                            className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-1.5 sm:space-y-2">
-                                    <Label className="text-white font-semibold text-[13px] ml-1">User ID <span className="text-gray-500 font-normal">(unique)</span></Label>
-                                    <div className="relative group">
-                                        <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                                        <Input
-                                            value={userId}
-                                            onChange={(e) => validateUserId(e.target.value)}
-                                            placeholder="UserID must be Unique"
-                                            maxLength={20}
-                                            className={`pl-12 pr-10 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] transition-all ${
-                                                userIdStatus === 'taken' || userIdError ? 'border-red-500 focus:ring-red-500/30' :
-                                                userIdStatus === 'available' ? 'border-emerald-500 focus:ring-emerald-500/30' :
-                                                'focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500'
-                                            }`}
-                                        />
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                                            {userIdStatus === 'checking' && <Loader2 className="w-4 h-4 text-gray-500 animate-spin" />}
-                                            {userIdStatus === 'available' && <Check className="w-4 h-4 text-emerald-500" />}
-                                            {userIdStatus === 'taken' && <X className="w-4 h-4 text-red-500" />}
+                        ) : view === 'twoFAVerify' ? (
+                            <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+                                <div className="text-center space-y-2">
+                                    <div className="flex justify-center mb-2">
+                                        <div className="w-14 h-14 bg-blue-500/10 border border-blue-500/30 rounded-full flex items-center justify-center">
+                                            <ShieldCheck className="w-7 h-7 text-blue-400" />
                                         </div>
                                     </div>
-                                    {userIdError && <p className="text-[10px] text-red-500 font-bold mt-1 ml-1">{userIdError}</p>}
-                                    {userIdStatus === 'available' && !userIdError && <p className="text-[10px] text-emerald-500 font-bold mt-1 ml-1">User ID is available ✓</p>}
+                                    <h2 className="text-[28px] font-bold text-white">Two-Factor Auth</h2>
+                                    <p className="text-gray-400 text-[13px]">Enter the 6-digit code from your authenticator app</p>
                                 </div>
 
-                                <div className="space-y-1.5 sm:space-y-2">
-                                    <Label className="text-white font-semibold text-[13px] ml-1">Email</Label>
+                                <div className="space-y-2">
+                                    <Label className="text-white font-semibold text-[13px] ml-1">Authentication Code</Label>
                                     <div className="relative group">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                        <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                                         <Input
-                                            value={email}
-                                            onChange={(e) => validateEmail(e.target.value)}
-                                            placeholder="Enter your email address"
-                                            className={`pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] transition-all ${emailError ? 'border-red-500 focus:ring-red-500' : 'focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)]'}`}
+                                            value={twoFACode}
+                                            onChange={(e) => setTwoFACode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                            placeholder="000000"
+                                            maxLength={6}
+                                            inputMode="numeric"
+                                            autoFocus
+                                            className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[56px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all tracking-[0.4em] text-center text-[22px] font-bold"
                                         />
                                     </div>
-                                    {emailError && <p className="text-[10px] text-red-500 font-bold mt-1 ml-1">{emailError}</p>}
                                 </div>
 
-                                <div className="space-y-1.5 sm:space-y-2">
-                                    <Label className="text-white font-semibold text-[13px] ml-1">Phone (Optional)</Label>
-                                    <div className="flex gap-2">
-                                        <div className="w-[110px] shrink-0">
-                                            <Select value={countryCode} onValueChange={setCountryCode}>
-                                                <SelectTrigger className="bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all px-3">
-                                                    <SelectValue>
-                                                        <div className="flex items-center gap-2">
-                                                            <span>{COUNTRIES.find(c => c.code === countryCode)?.flag}</span>
-                                                            <span>{countryCode}</span>
-                                                        </div>
-                                                    </SelectValue>
-                                                </SelectTrigger>
-                                                <SelectContent className="bg-[#1A1A1B] border-white/10 text-white max-h-[300px]">
-                                                    {COUNTRIES.map((country, idx) => (
-                                                        <SelectItem key={`${country.code}-${idx}`} value={country.code}>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-[16px]">{country.flag}</span>
-                                                                <span className="font-medium">{country.code}</span>
-                                                                <span className="text-gray-500 text-[12px]">{country.name}</span>
-                                                            </div>
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="relative group flex-1">
-                                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                            <Input
-                                                value={phone}
-                                                onChange={(e) => setPhone(e.target.value)}
-                                                placeholder="Phone number"
-                                                className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all"
-                                            />
-                                        </div>
-                                    </div>
+                                <div className="bg-[#1A1A1B] border border-white/10 rounded-[12px] p-3 flex items-center gap-3">
+                                    <Smartphone className="w-5 h-5 text-blue-400 shrink-0" />
+                                    <p className="text-gray-400 text-[12px]">Open Google Authenticator, Authy, or the TOTP app where you set up 2FA to get your current 6-digit code.</p>
                                 </div>
 
-                                <div className="space-y-1.5 sm:space-y-2">
-                                    <Label className="text-white font-semibold text-[13px] ml-1">Date of Birth</Label>
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <div className="relative group">
-                                                <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-blue-500 transition-colors z-10" />
-                                                <Input
-                                                    placeholder="DD-MM-YYYY"
-                                                    value={dateInput}
-                                                    onChange={(e) => handleDateChange(e.target.value)}
-                                                    className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 hover:bg-white/5 rounded-md transition-colors"
-                                                >
-                                                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                                                </button>
-                                            </div>
-                                        </PopoverTrigger>
-                                        <PopoverContent
-                                            className="w-auto p-0 bg-[#0F0F10] border-white/10 z-[100] shadow-2xl rounded-[20px]"
-                                            align="center"
-                                            side="bottom"
-                                            sideOffset={10}
-                                        >
-                                            <Calendar
-                                                mode="single"
-                                                selected={birthDate}
-                                                onSelect={(date) => {
-                                                    setBirthDate(date);
-                                                }}
-                                                disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                                                initialFocus
-                                                captionLayout="dropdown-buttons"
-                                                fromYear={1900}
-                                                toYear={new Date().getFullYear()}
-                                                className="bg-[#0F0F10] text-white p-4"
-                                                classNames={{
-                                                    caption_dropdowns: "flex justify-center gap-2 mb-4",
-                                                    dropdown: "bg-[#1A1A1B] border border-white/10 rounded-lg px-2 py-1 text-[12px] font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer hover:border-blue-500/30 transition-all",
-                                                    vhidden: "hidden",
-                                                    caption_label: "hidden",
-                                                    nav: "flex items-center gap-1",
-                                                    nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 text-white border border-white/5 rounded-md",
-                                                    day_selected: "bg-blue-600 text-white hover:bg-blue-500 rounded-lg font-bold",
-                                                    day_today: "bg-white/10 text-white rounded-lg",
-                                                    day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-white/5 rounded-lg transition-colors",
-                                                    head_cell: "text-gray-500 rounded-md w-9 font-medium text-[0.8rem] uppercase",
-                                                }}
-                                            />
-                                        </PopoverContent>
-                                    </Popover>
-                                </div>
+                                {authError && <p className="text-red-400 text-[13px] text-center bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>}
 
-                                <div className="space-y-1.5 sm:space-y-2">
-                                    <Label className="text-white font-semibold text-[13px] ml-1">Gender</Label>
-                                    <Select value={gender} onValueChange={setGender}>
-                                        <SelectTrigger className="bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all">
-                                            <div className="flex items-center gap-3">
-                                                <User className="w-5 h-5 text-gray-500" />
-                                                <SelectValue placeholder="Select Gender" />
-                                            </div>
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-[#1A1A1B] border-white/10 text-white border-white/10">
-                                            <SelectItem value="male">Male</SelectItem>
-                                            <SelectItem value="female">Female</SelectItem>
-                                            <SelectItem value="other">Other</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                <Button
+                                    onClick={handleVerify2FA}
+                                    disabled={isLoading || twoFACode.length !== 6}
+                                    className={`w-full h-[56px] rounded-[16px] font-black text-[16px] transition-all border border-transparent ${twoFACode.length === 6 && !isLoading ? 'bg-[#2563EB] hover:bg-blue-600 text-white hover:scale-[1.01] hover:ring-4 hover:ring-blue-500/30 shadow-xl shadow-blue-500/20' : 'bg-gray-800 text-gray-500 cursor-not-allowed'}`}
+                                >
+                                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Verify & Sign In'}
+                                </Button>
 
-                                <div className="space-y-1.5 sm:space-y-2">
-                                    <Label className="text-white font-semibold text-[13px] ml-1">Password</Label>
-                                    <div className="relative group">
-                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                                        <Input
-                                            type={showPassword ? "text" : "password"}
-                                            value={password}
-                                            onChange={(e) => {
-                                                setPassword(e.target.value);
-                                                calculateStrength(e.target.value);
-                                            }}
-                                            placeholder="••••••••"
-                                            className="pl-12 pr-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all"
-                                        />
+                                <div className="bg-amber-500/10 border border-amber-500/20 rounded-[12px] p-3 flex items-start gap-3">
+                                    <span className="text-amber-400 text-[18px] leading-none mt-0.5">⚠</span>
+                                    <div>
+                                        <p className="text-amber-300 text-[12px] font-semibold mb-1">Lost access to your authenticator?</p>
+                                        <p className="text-gray-400 text-[11px] mb-1">If you deleted the app or lost your device, you can set up 2FA again after giving security question and answer.</p>
+                                        <p className="text-amber-400 text-[11px] font-semibold mb-2">NOTE : Your previous authenticator will be permanently removed.</p>
                                         <button
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500"
+                                            onClick={handleStartIdentityVerify}
+                                            disabled={isLoading}
+                                            className="text-amber-400 text-[12px] font-bold hover:text-amber-300 transition-colors underline underline-offset-2 disabled:opacity-50"
                                         >
-                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                            {isLoading ? 'Processing...' : 'Set up another 2FA'}
                                         </button>
                                     </div>
                                 </div>
 
-                                <div className="space-y-1.5 sm:space-y-2">
-                                    <Label className="text-white font-semibold text-[13px] ml-1">Confirm Password</Label>
-                                    <div className="relative group">
-                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                                        <Input
-                                            type="password"
-                                            value={confirmPassword}
-                                            onChange={(e) => setConfirmPassword(e.target.value)}
-                                            placeholder="Confirm"
-                                            className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all"
-                                        />
+                                <div className="text-center">
+                                    <button onClick={() => { setView('login'); setAuthError(''); setTwoFACode(''); }} className="text-gray-500 text-[13px] hover:text-white transition-colors">
+                                        ← Go back to sign in page
+                                    </button>
+                                </div>
+                            </div>
+                        ) : view === 'proveIdentity' ? (
+                            <div className="space-y-5 sm:space-y-6 animate-in fade-in zoom-in-95 duration-500">
+                                <div className="text-center space-y-3">
+                                    <div className="flex justify-center">
+                                        <div className="relative">
+                                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500/30 to-orange-500/30 flex items-center justify-center border border-amber-500/20">
+                                                <ShieldCheck className="w-8 h-8 text-amber-400" />
+                                            </div>
+                                        </div>
                                     </div>
+                                    <h2 className="text-[28px] font-bold text-white">Prove Your Identity</h2>
+                                    <p className="text-gray-400 text-[13px]">Select the security question you chose during registration and provide the correct answer</p>
                                 </div>
 
-                                <div className="space-y-1.5 sm:space-y-2 col-span-2">
-                                    <Label className="text-white font-semibold text-[13px] ml-1">Security Question <span className="text-gray-500 font-normal">(for account recovery)</span></Label>
-                                    <Select value={securityQuestion} onValueChange={(val) => { setSecurityQuestion(val); if (val !== '__custom__') setCustomSecurityQuestion(''); }}>
-                                        <SelectTrigger className="bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                                <div className="space-y-2">
+                                    <Label className="text-white font-semibold text-[13px] ml-1">Your Security Question</Label>
+                                    <Select value={identitySelectedQuestion} onValueChange={(val) => { setIdentitySelectedQuestion(val); if (val !== '__custom__') setIdentityCustomQuestion(''); setAuthError(''); }}>
+                                        <SelectTrigger className="bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[56px] focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 transition-all">
                                             <div className="flex items-center gap-3">
                                                 <ShieldCheck className="w-5 h-5 text-gray-500 shrink-0" />
-                                                <SelectValue placeholder="Choose or write your own question" />
+                                                <SelectValue placeholder="Choose the question you set during registration" />
                                             </div>
                                         </SelectTrigger>
                                         <SelectContent className="bg-[#1A1A1B] border-white/10 text-white">
                                             {SECURITY_QUESTIONS.map((q) => (
                                                 <SelectItem key={q} value={q}>{q}</SelectItem>
                                             ))}
-                                            <SelectItem value="__custom__">✏️ Write my own question...</SelectItem>
+                                            <SelectItem value="__custom__">✏️ I had my own custom question...</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                    {securityQuestion === '__custom__' && (
+                                    {identitySelectedQuestion === '__custom__' && (
                                         <div className="relative group mt-2">
-                                            <HelpCircle className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" />
+                                            <HelpCircle className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400" />
                                             <Input
-                                                value={customSecurityQuestion}
-                                                onChange={(e) => setCustomSecurityQuestion(e.target.value)}
-                                                placeholder="Type your own security question"
+                                                value={identityCustomQuestion}
+                                                onChange={(e) => setIdentityCustomQuestion(e.target.value)}
+                                                placeholder="Type the exact custom question you set"
                                                 maxLength={120}
                                                 autoFocus
-                                                className="pl-12 bg-[#1A1A1B] border-blue-500/40 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                                className="pl-12 bg-[#1A1A1B] border-amber-500/40 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
                                             />
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="space-y-1.5 sm:space-y-2 col-span-2">
-                                    <Label className="text-white font-semibold text-[13px] ml-1">Security Answer <span className="text-gray-500 font-normal">(kept private — used to recover your account)</span></Label>
+                                <div className="space-y-2">
+                                    <Label className="text-white font-semibold text-[13px] ml-1">Your Answer</Label>
                                     <div className="relative group">
-                                        <HelpCircle className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                        <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                                         <Input
-                                            value={securityAnswer}
-                                            onChange={(e) => setSecurityAnswer(e.target.value)}
-                                            placeholder="Your answer to the question above"
-                                            className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all"
+                                            value={identityAnswer}
+                                            onChange={(e) => setIdentityAnswer(e.target.value)}
+                                            placeholder="Type your answer here..."
+                                            onKeyDown={(e) => e.key === 'Enter' && identityAnswer.trim() && handleVerifyIdentity()}
+                                            className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[56px] focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
                                         />
                                     </div>
                                 </div>
 
-                                {/* Recovery reminder tip */}
-                                <div className="col-span-2 bg-amber-500/8 border border-amber-500/25 rounded-[14px] px-4 py-3 flex gap-3 items-start">
-                                    <span className="text-amber-400 text-[16px] mt-0.5 shrink-0">⚠️</span>
-                                    <div className="space-y-1">
-                                        <p className="text-amber-300 font-bold text-[12px]">Remember these for account recovery</p>
-                                        <ul className="text-amber-200/70 text-[11px] space-y-0.5 list-none">
-                                            <li>• Your <span className="text-white font-semibold">User ID</span> — required to start the recovery process</li>
-                                            <li>• Your <span className="text-white font-semibold">security question</span> — especially if you wrote a custom one</li>
-                                            <li>• Your <span className="text-white font-semibold">security answer</span> — exact wording matters (case-insensitive)</li>
-                                        </ul>
-                                        <p className="text-amber-200/50 text-[10px] pt-0.5">Consider writing these down somewhere safe.</p>
-                                    </div>
+                                {authError && <p className="text-red-400 text-[13px] text-center bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>}
+                                {authSuccess && <p className="text-emerald-400 text-[13px] text-center bg-emerald-500/10 rounded-[12px] px-4 py-2">{authSuccess}</p>}
+
+                                <Button
+                                    onClick={handleVerifyIdentity}
+                                    disabled={isLoading || !identityAnswer.trim() || (!identitySelectedQuestion || (identitySelectedQuestion === '__custom__' && !identityCustomQuestion.trim()))}
+                                    className={`w-full h-[56px] rounded-[16px] font-black text-[16px] transition-all border border-transparent ${identityAnswer.trim() && (identitySelectedQuestion && (identitySelectedQuestion !== '__custom__' || identityCustomQuestion.trim())) && !isLoading ? 'bg-amber-500 hover:bg-amber-600 text-black hover:scale-[1.01] hover:ring-4 hover:ring-amber-500/30 shadow-xl shadow-amber-500/20' : 'bg-gray-800 text-gray-500 cursor-not-allowed'}`}
+                                >
+                                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Verify & Continue'}
+                                </Button>
+
+                                <div className="bg-[#1A1A1B] border border-white/10 rounded-[12px] p-3 flex items-center gap-3">
+                                    <HelpCircle className="w-5 h-5 text-blue-400 shrink-0" />
+                                    <p className="text-gray-400 text-[11px]">Select the same security question you chose when creating your account. If you wrote your own, choose the custom option. The answer is case-insensitive.</p>
+                                </div>
+
+                                <div className="text-center">
+                                    <button onClick={() => { setView('twoFAVerify'); setAuthError(''); setAuthSuccess(''); setIdentityAnswer(''); setIdentitySelectedQuestion(''); setIdentityCustomQuestion(''); }} className="text-gray-500 text-[13px] hover:text-white transition-colors">
+                                        ← Back to verification
+                                    </button>
                                 </div>
                             </div>
-
-                            {/* Security Strength Box */}
-                            <div className="bg-[#050505]/80 rounded-[20px] p-4 sm:p-5 border border-white/5">
-                                <div className="flex justify-between items-center mb-3 sm:mb-4">
-                                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.1em]">Security Strength</span>
-                                    <span className={`text-[10px] font-black uppercase tracking-[0.1em] ${strength <= 20 ? 'text-red-500' :
-                                        strength <= 60 ? 'text-yellow-500' :
-                                            'text-emerald-500'
-                                        }`}>
-                                        {strengthLabel}
-                                    </span>
+                        ) : (
+                            <div className="space-y-5 sm:space-y-6 animate-in fade-in zoom-in-95 duration-500">
+                                <div className="text-center space-y-1">
+                                    <h2 className="text-[28px] sm:text-[32px] font-bold text-white tracking-tight leading-tight">Create Account</h2>
                                 </div>
 
-                                {/* 5-bar Strength Indicator */}
-                                <div className="flex gap-2 mb-4 sm:mb-5">
-                                    {[20, 40, 60, 80, 100].map((step) => (
-                                        <div
-                                            key={step}
-                                            className={`h-1.5 flex-1 rounded-full transition-all duration-700 ease-out ${strength >= step ? strengthColor : 'bg-white/5'
-                                                }`}
-                                        />
-                                    ))}
-                                </div>
-
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                    {[
-                                        { label: '8+ Chars', met: password.length >= 8 },
-                                        { label: 'Uppercase', met: /[A-Z]/.test(password) },
-                                        { label: 'Lowercase', met: /[a-z]/.test(password) },
-                                        { label: 'Number', met: /[0-9]/.test(password) },
-                                        { label: 'Symbol', met: /[^A-Za-z0-9]/.test(password) },
-                                    ].map((rule) => (
-                                        <div key={rule.label} className="flex items-center gap-1.5 grayscale-[0.5] hover:grayscale-0 transition-all">
-                                            <div className={`w-[14px] h-[14px] rounded-full flex items-center justify-center border ${rule.met ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-white/10 text-transparent'
-                                                }`}>
-                                                <Check className="w-2.5 h-2.5 stroke-[4]" />
-                                            </div>
-                                            <span className={`text-[9px] font-black uppercase tracking-tight ${rule.met ? 'text-emerald-500' : 'text-gray-500'}`}>
-                                                {rule.label}
-                                            </span>
+                                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                                    <div className="space-y-1.5 sm:space-y-2">
+                                        <Label className="text-white font-semibold text-[13px] ml-1">Full Name</Label>
+                                        <div className="relative group">
+                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                            <Input
+                                                value={fullName}
+                                                onChange={(e) => setFullName(e.target.value)}
+                                                placeholder="Enter your full name"
+                                                className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all"
+                                            />
                                         </div>
-                                    ))}
+                                    </div>
+
+                                    <div className="space-y-1.5 sm:space-y-2">
+                                        <Label
+                                            className="text-white font-semibold text-[13px] ml-1 flex items-center gap-1.5 cursor-pointer hover:text-blue-400 transition-colors w-fit"
+                                            onClick={() => setShowRegisterUserIdInfo(!showRegisterUserIdInfo)}
+                                        >
+                                            User ID <span className="text-gray-500 font-normal">(unique)</span>
+                                            <HelpCircle className="w-3.5 h-3.5 text-blue-500" />
+                                        </Label>
+                                        <div className="relative group">
+                                            <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                            <Input
+                                                value={userId}
+                                                onChange={(e) => validateUserId(e.target.value)}
+                                                placeholder="UserID must be Unique"
+                                                maxLength={15}
+                                                className={`pl-12 pr-10 bg-[#1A1A1B] text-white rounded-[12px] h-[48px] transition-all ${userIdStatus === 'taken' || userIdError || (userId.length > 0 && !(userId.length >= 3 && /[0-9]/.test(userId) && /[A-Z]/.test(userId) && /[a-z]/.test(userId) && /_/.test(userId) && !/\s/.test(userId)))
+                                                    ? 'border-red-500 border-2 focus:ring-4 focus:ring-red-500/30'
+                                                    : userIdStatus === 'available'
+                                                        ? 'border-emerald-500 focus:ring-4 focus:ring-emerald-500/30'
+                                                        : 'border-white/5 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500'
+                                                    }`}
+                                            />
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                                {userIdStatus === 'checking' && <Loader2 className="w-4 h-4 text-gray-500 animate-spin" />}
+                                                {userIdStatus === 'available' && <Check className="w-4 h-4 text-emerald-500" />}
+                                                {userIdStatus === 'taken' && <X className="w-4 h-4 text-red-500" />}
+                                            </div>
+                                        </div>
+                                        {userIdError && <p className="text-[10px] text-red-500 font-bold mt-1 ml-1">{userIdError}</p>}
+                                        {userId.length > 0 && (
+                                            <div className="mt-2 ml-1 space-y-0.5">
+                                                {[
+                                                    { label: '3–15 characters', ok: userId.length >= 3 && userId.length <= 15 },
+                                                    { label: 'At least one number (0–9)', ok: /[0-9]/.test(userId) },
+                                                    { label: 'At least one uppercase letter (A–Z)', ok: /[A-Z]/.test(userId) },
+                                                    { label: 'At least one lowercase letter (a–z)', ok: /[a-z]/.test(userId) },
+                                                    { label: 'Must contain an underscore (_)', ok: /_/.test(userId) },
+                                                    { label: 'Only letters, numbers and _ (no spaces)', ok: /^[a-zA-Z0-9_]+$/.test(userId) },
+                                                ].map(({ label, ok }) => (
+                                                    <p key={label} className={`text-[10px] font-medium flex items-center gap-1 ${ok ? 'text-emerald-400' : 'text-gray-500'}`}>
+                                                        <span>{ok ? '✓' : '✗'}</span>{label}
+                                                    </p>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {userIdStatus === 'available' && !userIdError && <p className="text-[10px] text-emerald-500 font-bold mt-1 ml-1">User ID is available ✓</p>}
+                                        {showRegisterUserIdInfo && (
+                                            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-2.5 mt-3 flex items-start gap-2 animate-in fade-in zoom-in-95 duration-200">
+                                                <span className="text-yellow-500 shrink-0 text-[12px]">⚠</span>
+                                                <p className="text-[10px] font-medium text-yellow-400/90 leading-relaxed">
+                                                    UserID is used for identification. You cannot use a UserID that has already been assigned to another user.
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-1.5 sm:space-y-2">
+                                        <Label className="text-white font-semibold text-[13px] ml-1">Email</Label>
+                                        <div className="relative group">
+                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                            <Input
+                                                value={email}
+                                                onChange={(e) => validateEmail(e.target.value)}
+                                                placeholder="Enter your email address"
+                                                className={`pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] transition-all ${emailError ? 'border-red-500 focus:ring-red-500' : 'focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)]'}`}
+                                            />
+                                        </div>
+                                        {emailError && <p className="text-[10px] text-red-500 font-bold mt-1 ml-1">{emailError}</p>}
+                                    </div>
+
+                                    <div className="space-y-1.5 sm:space-y-2">
+                                        <Label className="text-white font-semibold text-[13px] ml-1">Phone (Optional)</Label>
+                                        <div className="flex gap-2">
+                                            <div className="w-[110px] shrink-0">
+                                                <Select value={countryCode} onValueChange={setCountryCode}>
+                                                    <SelectTrigger className="bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all px-3">
+                                                        <SelectValue>
+                                                            <div className="flex items-center gap-2">
+                                                                <span>{COUNTRIES.find(c => c.code === countryCode)?.flag}</span>
+                                                                <span>{countryCode}</span>
+                                                            </div>
+                                                        </SelectValue>
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-[#1A1A1B] border-white/10 text-white max-h-[300px]">
+                                                        {COUNTRIES.map((country, idx) => (
+                                                            <SelectItem key={`${country.code}-${idx}`} value={country.code}>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-[16px]">{country.flag}</span>
+                                                                    <span className="font-medium">{country.code}</span>
+                                                                    <span className="text-gray-500 text-[12px]">{country.name}</span>
+                                                                </div>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="relative group flex-1">
+                                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                                <Input
+                                                    value={phone}
+                                                    onChange={(e) => setPhone(e.target.value)}
+                                                    placeholder="Phone number"
+                                                    className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-1.5 sm:space-y-2">
+                                        <Label className="text-white font-semibold text-[13px] ml-1">Date of Birth</Label>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <div className="relative group">
+                                                    <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-blue-500 transition-colors z-10" />
+                                                    <Input
+                                                        placeholder="DD-MM-YYYY"
+                                                        value={dateInput}
+                                                        onChange={(e) => handleDateChange(e.target.value)}
+                                                        className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 hover:bg-white/5 rounded-md transition-colors"
+                                                    >
+                                                        <ChevronDown className="w-4 h-4 text-gray-500" />
+                                                    </button>
+                                                </div>
+                                            </PopoverTrigger>
+                                            <PopoverContent
+                                                className="w-auto p-0 bg-[#0F0F10] border-white/10 z-[100] shadow-2xl rounded-[20px]"
+                                                align="center"
+                                                side="bottom"
+                                                sideOffset={10}
+                                            >
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={birthDate}
+                                                    onSelect={(date) => {
+                                                        setBirthDate(date);
+                                                    }}
+                                                    disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                                                    initialFocus
+                                                    captionLayout="dropdown-buttons"
+                                                    fromYear={1900}
+                                                    toYear={new Date().getFullYear()}
+                                                    className="bg-[#0F0F10] text-white p-4"
+                                                    classNames={{
+                                                        caption_dropdowns: "flex justify-center gap-2 mb-4",
+                                                        dropdown: "bg-[#1A1A1B] border border-white/10 rounded-lg px-2 py-1 text-[12px] font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer hover:border-blue-500/30 transition-all",
+                                                        vhidden: "hidden",
+                                                        caption_label: "hidden",
+                                                        nav: "flex items-center gap-1",
+                                                        nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 text-white border border-white/5 rounded-md",
+                                                        day_selected: "bg-blue-600 text-white hover:bg-blue-500 rounded-lg font-bold",
+                                                        day_today: "bg-white/10 text-white rounded-lg",
+                                                        day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-white/5 rounded-lg transition-colors",
+                                                        head_cell: "text-gray-500 rounded-md w-9 font-medium text-[0.8rem] uppercase",
+                                                    }}
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+
+                                    <div className="space-y-1.5 sm:space-y-2">
+                                        <Label className="text-white font-semibold text-[13px] ml-1">Gender</Label>
+                                        <Select value={gender} onValueChange={setGender}>
+                                            <SelectTrigger className="bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all">
+                                                <div className="flex items-center gap-3">
+                                                    <User className="w-5 h-5 text-gray-500" />
+                                                    <SelectValue placeholder="Select Gender" />
+                                                </div>
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-[#1A1A1B] border-white/10 text-white border-white/10">
+                                                <SelectItem value="male">Male</SelectItem>
+                                                <SelectItem value="female">Female</SelectItem>
+                                                <SelectItem value="non_binary">Non-binary</SelectItem>
+                                                <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-1.5 sm:space-y-2">
+                                        <Label className="text-white font-semibold text-[13px] ml-1">Password</Label>
+                                        <div className="relative group">
+                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                            <Input
+                                                type={showPassword ? "text" : "password"}
+                                                value={password}
+                                                onChange={(e) => {
+                                                    setPassword(e.target.value);
+                                                    calculateStrength(e.target.value);
+                                                }}
+                                                placeholder="••••••••"
+                                                className="pl-12 pr-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all"
+                                            />
+                                            <button
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500"
+                                            >
+                                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-1.5 sm:space-y-2">
+                                        <Label className="text-white font-semibold text-[13px] ml-1">Confirm Password</Label>
+                                        <div className="relative group">
+                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                            <Input
+                                                type="password"
+                                                value={confirmPassword}
+                                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                                placeholder="Confirm"
+                                                className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-1.5 sm:space-y-2 col-span-2">
+                                        <Label className="text-white font-semibold text-[13px] ml-1">Security Question <span className="text-gray-500 font-normal">(for account recovery)</span></Label>
+                                        <Select value={securityQuestion} onValueChange={(val) => { setSecurityQuestion(val); if (val !== '__custom__') setCustomSecurityQuestion(''); }}>
+                                            <SelectTrigger className="bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                                                <div className="flex items-center gap-3">
+                                                    <ShieldCheck className="w-5 h-5 text-gray-500 shrink-0" />
+                                                    <SelectValue placeholder="Choose or write your own question" />
+                                                </div>
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-[#1A1A1B] border-white/10 text-white">
+                                                {SECURITY_QUESTIONS.map((q) => (
+                                                    <SelectItem key={q} value={q}>{q}</SelectItem>
+                                                ))}
+                                                <SelectItem value="__custom__">✏️ Write my own question...</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        {securityQuestion === '__custom__' && (
+                                            <div className="relative group mt-2">
+                                                <HelpCircle className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" />
+                                                <Input
+                                                    value={customSecurityQuestion}
+                                                    onChange={(e) => setCustomSecurityQuestion(e.target.value)}
+                                                    placeholder="Type your own security question"
+                                                    maxLength={120}
+                                                    autoFocus
+                                                    className="pl-12 bg-[#1A1A1B] border-blue-500/40 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-1.5 sm:space-y-2 col-span-2">
+                                        <Label className="text-white font-semibold text-[13px] ml-1">Security Answer <span className="text-gray-500 font-normal">(kept private — used to recover your account)</span></Label>
+                                        <div className="relative group">
+                                            <HelpCircle className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                            <Input
+                                                value={securityAnswer}
+                                                onChange={(e) => setSecurityAnswer(e.target.value)}
+                                                placeholder="Your answer to the question above"
+                                                className="pl-12 bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Recovery reminder tip */}
+                                    <div className="col-span-2 bg-amber-500/8 border border-amber-500/25 rounded-[14px] px-4 py-3 flex gap-3 items-start">
+                                        <span className="text-amber-400 text-[16px] mt-0.5 shrink-0">⚠️</span>
+                                        <div className="space-y-1">
+                                            <p className="text-amber-300 font-bold text-[12px]">Remember these for account recovery</p>
+                                            <ul className="text-amber-200/70 text-[11px] space-y-0.5 list-none">
+                                                <li>• Your <span className="text-white font-semibold">User ID</span> — required to start the recovery process</li>
+                                                <li>• Your <span className="text-white font-semibold">security question</span> — especially if you wrote a custom one</li>
+                                                <li>• Your <span className="text-white font-semibold">security answer</span> — exact wording matters (case-insensitive)</li>
+                                            </ul>
+                                            <p className="text-amber-200/50 text-[10px] pt-0.5">Consider writing these down somewhere safe.</p>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
 
-                            {(authError && view === 'register') && (
-                                <p className="text-red-400 text-[13px] text-center font-medium bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>
-                            )}
+                                {/* Security Strength Box */}
+                                <div className="bg-[#050505]/80 rounded-[20px] p-4 sm:p-5 border border-white/5">
+                                    <div className="flex justify-between items-center mb-3 sm:mb-4">
+                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.1em]">Security Strength</span>
+                                        <span className={`text-[10px] font-black uppercase tracking-[0.1em] ${strength <= 20 ? 'text-red-500' :
+                                            strength <= 60 ? 'text-yellow-500' :
+                                                'text-emerald-500'
+                                            }`}>
+                                            {strengthLabel}
+                                        </span>
+                                    </div>
 
-                            <Button
-                                onClick={handleSignUp}
-                                disabled={isLoading || strength < 100 || !!emailError || userIdStatus !== 'available' || !securityQuestion || (securityQuestion === '__custom__' && !customSecurityQuestion.trim()) || !securityAnswer.trim()}
-                                className={`w-full h-[52px] sm:h-[56px] rounded-[16px] font-black text-[16px] transition-all transform border border-transparent ${
-                                    (strength === 100 && !emailError && userIdStatus === 'available' && securityQuestion && (securityQuestion !== '__custom__' || customSecurityQuestion.trim()) && securityAnswer.trim() && !isLoading)
+                                    {/* 5-bar Strength Indicator */}
+                                    <div className="flex gap-2 mb-4 sm:mb-5">
+                                        {[20, 40, 60, 80, 100].map((step) => (
+                                            <div
+                                                key={step}
+                                                className={`h-1.5 flex-1 rounded-full transition-all duration-700 ease-out ${strength >= step ? strengthColor : 'bg-white/5'
+                                                    }`}
+                                            />
+                                        ))}
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        {[
+                                            { label: '8+ Chars', met: password.length >= 8 },
+                                            { label: 'Uppercase', met: /[A-Z]/.test(password) },
+                                            { label: 'Lowercase', met: /[a-z]/.test(password) },
+                                            { label: 'Number', met: /[0-9]/.test(password) },
+                                            { label: 'Symbol', met: /[^A-Za-z0-9]/.test(password) },
+                                        ].map((rule) => (
+                                            <div key={rule.label} className="flex items-center gap-1.5 grayscale-[0.5] hover:grayscale-0 transition-all">
+                                                <div className={`w-[14px] h-[14px] rounded-full flex items-center justify-center border ${rule.met ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-white/10 text-transparent'
+                                                    }`}>
+                                                    <Check className="w-2.5 h-2.5 stroke-[4]" />
+                                                </div>
+                                                <span className={`text-[9px] font-black uppercase tracking-tight ${rule.met ? 'text-emerald-500' : 'text-gray-500'}`}>
+                                                    {rule.label}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {(authError && view === 'register') && (
+                                    <p className="text-red-400 text-[13px] text-center font-medium bg-red-500/10 rounded-[12px] px-4 py-2">{authError}</p>
+                                )}
+
+                                <Button
+                                    onClick={handleSignUp}
+                                    disabled={isLoading || strength < 100 || !!emailError || userIdStatus !== 'available' || !securityQuestion || (securityQuestion === '__custom__' && !customSecurityQuestion.trim()) || !securityAnswer.trim()}
+                                    className={`w-full h-[52px] sm:h-[56px] rounded-[16px] font-black text-[16px] transition-all transform border border-transparent ${(strength === 100 && !emailError && userIdStatus === 'available' && securityQuestion && (securityQuestion !== '__custom__' || customSecurityQuestion.trim()) && securityAnswer.trim() && !isLoading)
                                         ? 'bg-[#2563EB] hover:bg-blue-600 text-white hover:scale-[1.01] hover:ring-4 hover:ring-blue-500/30 hover:border-blue-400 hover:shadow-[0_0_25px_rgba(37,99,235,0.6)] shadow-xl shadow-blue-500/20'
                                         : 'bg-gray-800 text-gray-500 cursor-not-allowed grayscale'
-                                    }`}
-                            >
-                                {isLoading
-                                    ? <Loader2 className="w-5 h-5 animate-spin mx-auto" />
-                                    : strength === 100 && !emailError && userIdStatus === 'available' && securityQuestion && (securityQuestion !== '__custom__' || customSecurityQuestion.trim()) && securityAnswer.trim() ? 'Create Secure Account' : emailError ? 'Check Email' : userIdStatus === 'taken' ? 'User ID Taken' : userIdStatus === 'checking' ? 'Checking User ID...' : !userId ? 'Enter User ID' : !securityQuestion ? 'Choose Security Question' : (securityQuestion === '__custom__' && !customSecurityQuestion.trim()) ? 'Enter Your Question' : !securityAnswer.trim() ? 'Enter Security Answer' : 'Complete Requirements'
-                                }
-                            </Button>
+                                        }`}
+                                >
+                                    {isLoading
+                                        ? <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                                        : strength === 100 && !emailError && userIdStatus === 'available' && securityQuestion && (securityQuestion !== '__custom__' || customSecurityQuestion.trim()) && securityAnswer.trim() ? 'Create Secure Account' : emailError ? 'Check Email' : userIdStatus === 'taken' ? 'User ID Taken' : userIdStatus === 'checking' ? 'Checking User ID...' : !userId ? 'Enter User ID' : !securityQuestion ? 'Choose Security Question' : (securityQuestion === '__custom__' && !customSecurityQuestion.trim()) ? 'Enter Your Question' : !securityAnswer.trim() ? 'Enter Security Answer' : 'Complete Requirements'
+                                    }
+                                </Button>
 
-                            <div className="text-center">
-                                <p className="text-gray-400 text-[14px]">
-                                    Already have an account?{' '}
-                                    <button
-                                        onClick={() => setView('login')}
-                                        className="text-blue-500 font-bold hover:underline"
-                                    >
-                                        Sign In
-                                    </button>
-                                </p>
+                                <div className="text-center">
+                                    <p className="text-gray-400 text-[14px]">
+                                        Already have an account?{' '}
+                                        <button
+                                            onClick={() => setView('login')}
+                                            className="text-blue-500 font-bold hover:underline"
+                                        >
+                                            Sign In
+                                        </button>
+                                    </p>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>

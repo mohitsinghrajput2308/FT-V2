@@ -1721,6 +1721,23 @@ const babelMetadataPlugin = ({ types: t }) => {
           if (hasProp(openingElement, "data-ve-dynamic") || hasProp(openingElement, "x-excluded")) {
             return;
           }
+          // Skip ALL processing for HTML elements that have strict child content models.
+          // Injecting <span> wrappers into these causes React hydration errors because
+          // the browser removes invalid children (e.g. <span> inside <select>/<option>).
+          const RESTRICTED_ELEMENTS = new Set([
+            // Form select elements — only allow option/optgroup children
+            'select', 'option', 'optgroup', 'datalist',
+            // Table elements — strict child rules
+            'table', 'thead', 'tbody', 'tfoot', 'colgroup', 'col', 'tr', 'td', 'th', 'caption',
+            // List elements
+            'ul', 'ol', 'dl', 'li', 'dt', 'dd',
+            // Media/void elements — no children allowed at all
+            'img', 'input', 'br', 'hr', 'area', 'base', 'embed', 'link', 'meta',
+            'param', 'source', 'track', 'wbr',
+          ]);
+          if (RESTRICTED_ELEMENTS.has(elementName.toLowerCase())) {
+            return;
+          }
           wrapDynamicExpressionChildren(jsxPath, t);
           return;
         }

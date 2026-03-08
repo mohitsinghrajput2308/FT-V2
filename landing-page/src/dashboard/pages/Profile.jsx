@@ -2,12 +2,16 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import {
     User, Mail, Phone, Briefcase, Camera, Save, Shield,
     Eye, EyeOff, Check, Trash2, Info, Clock, Key,
-    FileText, AlertTriangle, ChevronDown
+    FileText, AlertTriangle, ChevronDown, Calendar, UserCheck,
+    Lock, RefreshCw, BadgeCheck, X, ZoomIn, ZoomOut, HelpCircle, ShieldCheck
 } from 'lucide-react';
+import Cropper from 'react-easy-crop';
 import { useAuth } from '../../context/AuthContext';
+import { useSubscription } from '../../hooks/useSubscription';
 import Card from '../components/Common/Card';
 import Input from '../components/Common/Input';
 import Button from '../components/Common/Button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 
 // ─── Toast notification component ────────────────────────────────────────────
 const Toast = ({ message, type = 'success', onClose }) => {
@@ -42,33 +46,49 @@ const SECURITY_QUESTIONS = [
     'What was the name of your first employer?',
 ];
 
-// ─── Resize image to max 256×256 and return base64 ───────────────────────────
-const resizeImage = (file) =>
-    new Promise((resolve) => {
+// ─── Image Crop Helpers ───────────────────────────────────────────
+const readFile = (file) => {
+    return new Promise((resolve) => {
         const reader = new FileReader();
-        reader.onload = (ev) => {
-            const img = new Image();
-            img.onload = () => {
-                const size = 256;
-                const canvas = document.createElement('canvas');
-                canvas.width = size;
-                canvas.height = size;
-                const ctx = canvas.getContext('2d');
-                const min = Math.min(img.width, img.height);
-                const sx = (img.width - min) / 2;
-                const sy = (img.height - min) / 2;
-                ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
-                resolve(canvas.toDataURL('image/jpeg', 0.82));
-            };
-            img.src = ev.target.result;
-        };
+        reader.addEventListener('load', () => resolve(reader.result), false);
         reader.readAsDataURL(file);
     });
+};
+
+const getCroppedImg = async (imageSrc, pixelCrop) => {
+    const image = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.addEventListener('load', () => resolve(img));
+        img.addEventListener('error', (error) => reject(error));
+        img.src = imageSrc;
+    });
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const size = 256;
+    canvas.width = size;
+    canvas.height = size;
+
+    ctx.drawImage(
+        image,
+        pixelCrop.x,
+        pixelCrop.y,
+        pixelCrop.width,
+        pixelCrop.height,
+        0,
+        0,
+        size,
+        size
+    );
+
+    return canvas.toDataURL('image/jpeg', 0.82);
+};
 
 
 // ─── Main component ───────────────────────────────────────────────────────────
 const Profile = () => {
-    const { currentUser, updateProfile, changePassword, deleteAccount } = useAuth();
+    const { currentUser, updateProfile, updateDobGender, changePassword, deleteAccount } = useAuth();
+    const { plan } = useSubscription();
 
     // ── toast ──
     const [toast, setToast] = useState(null);
@@ -84,6 +104,13 @@ const Profile = () => {
     const fileInputRef = useRef(null);
     const [avatarPreview, setAvatarPreview] = useState(currentUser?.avatar || null);
 
+    // ── Image Cropping State ──
+    const [imageSrc, setImageSrc] = useState(null);
+    const [crop, setCrop] = useState({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
+    const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+    const [isUploadingCrop, setIsUploadingCrop] = useState(false);
+
     // ── personal info form ──
     const [formData, setFormData] = useState({
         name: currentUser?.name || '',
@@ -93,9 +120,9 @@ const Profile = () => {
         bio: currentUser?.bio || '',
     });
 
-    // ── security form ──
     const [secData, setSecData] = useState({
-        security_question: currentUser?.security_question || '',
+        security_question: '',
+        custom_security_question: '',
         security_answer: '',
     });
 
@@ -109,6 +136,46 @@ const Profile = () => {
     const [passwordErrors, setPasswordErrors] = useState({});
 
 
+
+    // ── identity fields (DOB / gender) ──
+    const [identityData, setIdentityData] = useState({
+        date_of_birth: currentUser?.date_of_birth || '',
+        gender: currentUser?.gender || '',
+    });
+    const [identityLoading, setIdentityLoading] = useState(false);
+    const [identityEditing, setIdentityEditing] = useState(false);
+
+    // keep local state in sync when currentUser updates
+    useEffect(() => {
+        setIdentityData({
+            date_of_birth: currentUser?.date_of_birth || '',
+            gender: currentUser?.gender || '',
+        });
+    }, [currentUser?.date_of_birth, currentUser?.gender]);
+
+    const handleIdentitySubmit = async (e) => {
+        e.preventDefault();
+        if (currentUser?.changesRemaining === 0) {
+            showToast('Monthly edit limit reached (3 changes per 30 days).', 'error');
+            return;
+        }
+        if (!identityData.date_of_birth && !identityData.gender) {
+            showToast('Please fill in at least one field.', 'error');
+            return;
+        }
+        setIdentityLoading(true);
+        const result = await updateDobGender({
+            date_of_birth: identityData.date_of_birth || null,
+            gender: identityData.gender || null,
+        });
+        setIdentityLoading(false);
+        if (result.success) {
+            showToast('Identity information saved!');
+            setIdentityEditing(false);
+        } else {
+            showToast(result.error || 'Failed to save identity info.', 'error');
+        }
+    };
 
     // ── delete account modal ──
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -142,20 +209,35 @@ const Profile = () => {
         }
         setAvatarLoading(true);
         try {
-            const base64 = await resizeImage(file);
-            setAvatarPreview(base64);
-            const result = await updateProfile({ avatar_url: base64 });
-            if (result.success) {
-                showToast('Profile picture updated!');
-            } else {
-                showToast(result.error || 'Failed to upload picture.', 'error');
-                setAvatarPreview(currentUser?.avatar || null);
-            }
+            const imageDataUrl = await readFile(file);
+            setImageSrc(imageDataUrl);
         } catch {
-            showToast('Failed to process image.', 'error');
+            showToast('Failed to load image.', 'error');
         }
         setAvatarLoading(false);
         e.target.value = '';
+    };
+
+    const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
+        setCroppedAreaPixels(croppedAreaPixels);
+    }, []);
+
+    const handleSaveCrop = async () => {
+        try {
+            setIsUploadingCrop(true);
+            const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
+            const result = await updateProfile({ avatar_url: croppedImage });
+            if (result.success) {
+                setAvatarPreview(croppedImage);
+                showToast('Profile picture updated!');
+            } else {
+                showToast(result.error || 'Failed to upload picture.', 'error');
+            }
+        } catch (e) {
+            showToast('Failed to crop and save image.', 'error');
+        }
+        setIsUploadingCrop(false);
+        setImageSrc(null); // Close modal
     };
 
     const handleSubmit = async (e) => {
@@ -181,7 +263,15 @@ const Profile = () => {
 
     const handleSecuritySubmit = async (e) => {
         e.preventDefault();
-        const effectiveQuestion = secData.security_question;
+        let effectiveQuestion = secData.security_question;
+
+        if (effectiveQuestion === '__custom__') {
+            effectiveQuestion = secData.custom_security_question?.trim();
+            if (!effectiveQuestion) {
+                showToast('Please type your custom security question.', 'error');
+                return;
+            }
+        }
 
         if (!effectiveQuestion) {
             showToast('Please select or enter a security question.', 'error');
@@ -313,16 +403,21 @@ const Profile = () => {
 
                         {/* Name & email */}
                         <div>
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{currentUser?.name}</h2>
+                            <div className="flex items-center justify-center gap-2 flex-wrap">
+                                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{currentUser?.name}</h2>
+                                {plan === 'pro' && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full border-2 border-amber-400 text-amber-500 dark:border-amber-400 dark:text-amber-400">
+                                        ⭐ Pro
+                                    </span>
+                                )}
+                                {plan === 'business' && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full border-2 border-amber-400 text-amber-500 dark:border-amber-400 dark:text-amber-400">
+                                        🏢 Business
+                                    </span>
+                                )}
+                            </div>
                             <p className="text-sm text-gray-500 dark:text-gray-400">{currentUser?.email}</p>
                         </div>
-
-                        {/* Pro badge */}
-                        {currentUser?.isPro && (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-                                ⭐ Pro Member
-                            </span>
-                        )}
 
                         {/* Stats */}
                         <div className="pt-3 border-t border-gray-100 dark:border-dark-400 space-y-2 text-sm">
@@ -411,6 +506,159 @@ const Profile = () => {
                 </Card>
             </div>
 
+            {/* ── Identity & Demographics card ── */}
+            <Card>
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                        <UserCheck className="w-5 h-5 text-primary-500" />
+                        Identity &amp; Demographics
+                    </h3>
+                    {!identityEditing && (
+                        <button
+                            onClick={() => setIdentityEditing(true)}
+                            disabled={currentUser?.changesRemaining === 0}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-900/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                            <RefreshCw className="w-3.5 h-3.5" /> Edit
+                        </button>
+                    )}
+                </div>
+
+                {/* Rate-limit notice */}
+                <div className="mb-4 flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                    <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                        You can update your Date of Birth and Gender only up to <strong>3 times per 30-day period</strong> from your account creation date.
+                        {currentUser?.changesRemaining !== null && (
+                            <span className="block mt-0.5 font-semibold">
+                                {currentUser.changesRemaining > 0
+                                    ? `${currentUser.changesRemaining} edit${currentUser.changesRemaining !== 1 ? 's' : ''} remaining this period.`
+                                    : `Limit reached. Resets on ${currentUser.windowEnd ? new Date(currentUser.windowEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'next period'}.`
+                                }
+                            </span>
+                        )}
+                    </p>
+                </div>
+
+                {currentUser?.changesRemaining === 0 && (
+                    <div className="mb-4 flex items-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                        <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                            Monthly edit limit reached. You can no longer change Date of Birth or Gender until the next 30-day period begins.
+                        </p>
+                    </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                    {/* UserID — permanent, read-only */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+                            <BadgeCheck className="w-4 h-4 text-primary-500" /> User ID
+                        </label>
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={currentUser?.username || '—'}
+                                readOnly
+                                className="w-full px-3 py-2 pr-9 text-sm border border-gray-200 dark:border-dark-400 rounded-lg bg-gray-50 dark:bg-dark-300 text-gray-600 dark:text-gray-400 cursor-not-allowed select-all font-mono"
+                            />
+                            <Lock className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                        </div>
+                        <p className="mt-1 text-xs text-gray-400 dark:text-gray-500 flex items-start gap-1">
+                            <Info className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                            This is your permanent User ID. It is unique and cannot be changed once created.
+                        </p>
+                    </div>
+
+                    {/* Date of Birth */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+                            <Calendar className="w-4 h-4" /> Date of Birth
+                        </label>
+                        {identityEditing ? (
+                            <input
+                                type="date"
+                                value={identityData.date_of_birth || ''}
+                                max={new Date().toISOString().split('T')[0]}
+                                min="1900-01-01"
+                                onChange={e => setIdentityData(p => ({ ...p, date_of_birth: e.target.value }))}
+                                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-dark-400 rounded-lg bg-white dark:bg-dark-200 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            />
+                        ) : (
+                            <input
+                                type="text"
+                                value={currentUser?.date_of_birth
+                                    ? new Date(currentUser.date_of_birth + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                                    : 'Not set'}
+                                readOnly
+                                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-dark-400 rounded-lg bg-gray-50 dark:bg-dark-300 text-gray-600 dark:text-gray-400 cursor-default"
+                            />
+                        )}
+                    </div>
+
+                    {/* Gender */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+                            <User className="w-4 h-4" /> Gender
+                        </label>
+                        {identityEditing ? (
+                            <div className="relative">
+                                <select
+                                    value={identityData.gender || ''}
+                                    onChange={e => setIdentityData(p => ({ ...p, gender: e.target.value }))}
+                                    className="w-full appearance-none px-3 py-2 pr-8 text-sm border border-gray-300 dark:border-dark-400 rounded-lg bg-white dark:bg-dark-200 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                >
+                                    <option value="" disabled hidden>Select Gender</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="non_binary">Non-binary</option>
+                                    <option value="prefer_not_to_say">Prefer not to say</option>
+                                </select>
+                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                            </div>
+                        ) : (
+                            <input
+                                type="text"
+                                value={currentUser?.gender
+                                    ? { male: 'Male', female: 'Female', non_binary: 'Non-binary', prefer_not_to_say: 'Prefer not to say' }[currentUser.gender] || currentUser.gender
+                                    : 'Not set'}
+                                readOnly
+                                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-dark-400 rounded-lg bg-gray-50 dark:bg-dark-300 text-gray-600 dark:text-gray-400 cursor-default"
+                            />
+                        )}
+                    </div>
+                </div>
+
+                {/* Edit action buttons */}
+                {identityEditing && (
+                    <div className="flex gap-3 mt-4 pt-4 border-t border-gray-100 dark:border-dark-400">
+                        <Button
+                            type="button"
+                            loading={identityLoading}
+                            icon={Save}
+                            onClick={handleIdentitySubmit}
+                            disabled={currentUser?.changesRemaining === 0}
+                        >
+                            Save Identity
+                        </Button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIdentityEditing(false);
+                                setIdentityData({
+                                    date_of_birth: currentUser?.date_of_birth || '',
+                                    gender: currentUser?.gender || '',
+                                });
+                            }}
+                            className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                )}
+            </Card>
+
             {/* ── Row 2: Security question + Change password ── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
@@ -429,20 +677,53 @@ const Profile = () => {
                                 Security Question
                             </label>
                             <div className="relative">
-                                <select
-                                    name="security_question"
+                                <Select
                                     value={secData.security_question}
-                                    onChange={handleSecChange}
-                                    className="w-full appearance-none px-3 py-2 pr-8 text-sm border border-gray-300 dark:border-dark-400 rounded-lg bg-white dark:bg-dark-200 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    onValueChange={(val) => {
+                                        setSecData(prev => ({
+                                            ...prev,
+                                            security_question: val,
+                                            custom_security_question: val === '__custom__' ? prev.custom_security_question : ''
+                                        }));
+                                    }}
                                 >
-                                    <option value="" disabled hidden>Select a question…</option>
-                                    {SECURITY_QUESTIONS.map(q => (
-                                        <option key={q} value={q}>{q}</option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                    <SelectTrigger className="bg-[#1A1A1B] border-white/5 text-white rounded-[12px] h-[48px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-sm w-full">
+                                        <div className="flex items-center gap-3">
+                                            <ShieldCheck className="w-5 h-5 text-gray-500 shrink-0" />
+                                            <SelectValue placeholder="Choose or write your own question" />
+                                        </div>
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-[#1A1A1B] border-white/10 text-white z-[200]">
+                                        {SECURITY_QUESTIONS.map(q => (
+                                            <SelectItem key={q} value={q} className="focus:bg-blue-600 focus:text-white cursor-pointer transition-colors">
+                                                {q}
+                                            </SelectItem>
+                                        ))}
+                                        <SelectItem value="__custom__" className="focus:bg-blue-600 focus:text-white cursor-pointer transition-colors font-semibold">
+                                            ✏️ Write my own question...
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
+
+                        {secData.security_question === '__custom__' && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+                                    <HelpCircle className="w-4 h-4 text-primary-500" /> Your Custom Question
+                                </label>
+                                <input
+                                    type="text"
+                                    name="custom_security_question"
+                                    value={secData.custom_security_question || ''}
+                                    onChange={handleSecChange}
+                                    placeholder="Type your own security question"
+                                    maxLength={120}
+                                    autoComplete="off"
+                                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-dark-400 rounded-lg bg-white dark:bg-dark-200 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                />
+                            </div>
+                        )}
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -540,10 +821,25 @@ const Profile = () => {
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="bg-gray-50 dark:bg-dark-200 rounded-lg p-3">
+                        <p className="text-xs text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide mb-1">User ID</p>
+                        <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 font-mono break-all">{currentUser?.username || '—'}</span>
+                    </div>
+
+                    <div className="bg-gray-50 dark:bg-dark-200 rounded-lg p-3">
                         <p className="text-xs text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide mb-1">Account Type</p>
-                        <span className={`text-sm font-semibold ${currentUser?.isPro ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                            {currentUser?.isPro ? '⭐ Pro' : 'Free'}
-                        </span>
+                        {plan === 'pro' && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full border-2 border-amber-400 text-amber-500 dark:border-amber-400 dark:text-amber-400">
+                                ⭐ Pro
+                            </span>
+                        )}
+                        {plan === 'business' && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-full border-2 border-amber-400 text-amber-500 dark:border-amber-400 dark:text-amber-400">
+                                🏢 Business
+                            </span>
+                        )}
+                        {plan === 'free' && (
+                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Free</span>
+                        )}
                     </div>
 
                     <div className="bg-gray-50 dark:bg-dark-200 rounded-lg p-3">
@@ -623,6 +919,67 @@ const Profile = () => {
                                 }
                                 Delete Permanently
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Image Crop overlay modal ── */}
+            {imageSrc && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-dark-100 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-200 dark:border-dark-400 overflow-hidden flex flex-col h-[80vh] max-h-[600px]">
+                        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-dark-400">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">Adjust Profile Picture</h3>
+                            <button onClick={() => setImageSrc(null)} disabled={isUploadingCrop} className="p-1 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-dark-300 transition-colors">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="relative flex-1 w-full bg-black/10 dark:bg-black/50 overflow-hidden">
+                            <Cropper
+                                image={imageSrc}
+                                crop={crop}
+                                zoom={zoom}
+                                aspect={1}
+                                cropShape="round"
+                                showGrid={false}
+                                onCropChange={setCrop}
+                                onCropComplete={onCropComplete}
+                                onZoomChange={setZoom}
+                            />
+                        </div>
+
+                        <div className="p-4 bg-white dark:bg-dark-100 border-t border-gray-100 dark:border-dark-400 space-y-4">
+                            <div className="flex items-center gap-3">
+                                <ZoomOut className="w-4 h-4 text-gray-400" />
+                                <input
+                                    type="range"
+                                    value={zoom}
+                                    min={1}
+                                    max={3}
+                                    step={0.1}
+                                    aria-labelledby="Zoom"
+                                    onChange={(e) => setZoom(Number(e.target.value))}
+                                    className="w-full h-1.5 bg-gray-200 dark:bg-dark-400 rounded-lg appearance-none cursor-pointer accent-primary-500 hover:accent-primary-600 transition-colors"
+                                />
+                                <ZoomIn className="w-4 h-4 text-gray-400" />
+                            </div>
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    onClick={() => setImageSrc(null)}
+                                    disabled={isUploadingCrop}
+                                    className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <Button
+                                    onClick={handleSaveCrop}
+                                    loading={isUploadingCrop}
+                                    icon={Save}
+                                >
+                                    Save Picture
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>

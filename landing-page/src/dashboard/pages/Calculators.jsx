@@ -1,7 +1,7 @@
 ﻿import { useState, useMemo } from 'react';
 import {
     Calculator, TrendingUp, Coins, PiggyBank, Wallet,
-    ReceiptText, RefreshCw, ChevronRight
+    RefreshCw, ChevronRight
 } from 'lucide-react';
 import {
     BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -9,7 +9,7 @@ import {
 } from 'recharts';
 import {
     calculateEMI, calculateSIP, calculateCompoundInterest,
-    calculateFD, calculateRetirement, calculateSavingsGoal, calculateIncomeTax
+    calculateFD, calculateRetirement, calculateSavingsGoal
 } from '../utils/calculators';
 import { formatCurrency } from '../utils/helpers';
 import { useFinance } from '../context/FinanceContext';
@@ -19,23 +19,22 @@ import Button from '../components/Common/Button';
 import Select from '../components/Common/Select';
 
 const TABS = [
-    { id: 'emi',        label: 'EMI',           icon: Calculator,   color: 'primary' },
-    { id: 'sip',        label: 'SIP',           icon: TrendingUp,   color: 'success' },
-    { id: 'fd',         label: 'Fixed Deposit', icon: PiggyBank,    color: 'warning' },
-    { id: 'ci',         label: 'Compound Int.', icon: Coins,        color: 'purple'  },
-    { id: 'retirement', label: 'Retirement',    icon: Wallet,       color: 'rose'    },
-    { id: 'goal',       label: 'Savings Goal',  icon: ChevronRight, color: 'teal'    },
-    { id: 'tax',        label: 'Tax Estimator', icon: ReceiptText,  color: 'danger'  },
+    { id: 'emi', label: 'EMI', icon: Calculator, color: 'primary' },
+    { id: 'sip', label: 'SIP', icon: TrendingUp, color: 'success' },
+    { id: 'fd', label: 'Fixed Deposit', icon: PiggyBank, color: 'warning' },
+    { id: 'ci', label: 'Compound Int.', icon: Coins, color: 'purple' },
+    { id: 'retirement', label: 'Retirement', icon: Wallet, color: 'rose' },
+    { id: 'goal', label: 'Savings Goal', icon: ChevronRight, color: 'teal' },
 ];
 
 const GRAD = {
-    primary:  'from-primary-500 to-primary-700',
-    success:  'from-success-500 to-success-700',
-    warning:  'from-yellow-400 to-yellow-600',
-    purple:   'from-purple-500 to-purple-700',
-    rose:     'from-rose-500 to-rose-700',
-    teal:     'from-teal-500 to-teal-700',
-    danger:   'from-red-500 to-red-700',
+    primary: 'from-primary-500 to-primary-700',
+    success: 'from-success-500 to-success-700',
+    warning: 'from-yellow-400 to-yellow-600',
+    purple: 'from-purple-500 to-purple-700',
+    rose: 'from-rose-500 to-rose-700',
+    teal: 'from-teal-500 to-teal-700',
+    danger: 'from-red-500 to-red-700',
 };
 
 const F = (v, c) => formatCurrency(v, c);
@@ -140,24 +139,14 @@ const Calculators = () => {
         setGoalRes(calculateSavingsGoal(+target, +currentSavings, +years, +returnRate));
     };
 
-    // ── Tax ──────────────────────────────────────────────────────────────────
-    const [tax, setTax] = useState({ income: '', regime: 'new' });
-    const [taxRes, setTaxRes] = useState(null);
-
-    const calcTax = () => {
-        if (!tax.income) return;
-        setTaxRes(calculateIncomeTax(+tax.income, tax.regime));
-    };
-
     // ── Reset ────────────────────────────────────────────────────────────────
     const handleReset = () => {
         if (activeTab === 'emi') { setEmi({ principal: '', rate: '', tenure: '' }); setEmiRes(null); }
         if (activeTab === 'sip') { setSip({ monthly: '', rate: '', years: '' }); setSipRes(null); }
-        if (activeTab === 'fd')  { setFd({ principal: '', rate: '', years: '', freq: '4' }); setFdRes(null); }
-        if (activeTab === 'ci')  { setCi({ principal: '', rate: '', time: '', frequency: '12' }); setCiRes(null); }
+        if (activeTab === 'fd') { setFd({ principal: '', rate: '', years: '', freq: '4' }); setFdRes(null); }
+        if (activeTab === 'ci') { setCi({ principal: '', rate: '', time: '', frequency: '12' }); setCiRes(null); }
         if (activeTab === 'retirement') { setRet({ currentAge: '', retireAge: '60', monthlyExpense: '', currentSavings: '0', monthlySaving: '', returnRate: '12' }); setRetRes(null); }
         if (activeTab === 'goal') { setGoal({ target: '', currentSavings: '0', years: '', returnRate: '8' }); setGoalRes(null); }
-        if (activeTab === 'tax')  { setTax({ income: '', regime: 'new' }); setTaxRes(null); }
     };
 
     const activeColor = TABS.find(t => t.id === activeTab)?.color || 'primary';
@@ -181,11 +170,10 @@ const Calculators = () => {
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all ${
-                            activeTab === tab.id
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all ${activeTab === tab.id
                                 ? 'bg-primary-600 text-white shadow-lg shadow-primary-200 dark:shadow-primary-900/30'
                                 : 'bg-gray-100 dark:bg-dark-300 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-dark-400'
-                        }`}
+                            }`}
                     >
                         <tab.icon className="w-4 h-4" />
                         {tab.label}
@@ -237,7 +225,7 @@ const Calculators = () => {
                                     <BarChart data={emiRes.schedule} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                                         <XAxis dataKey="month" tick={CHART_STYLE} tickLine={false} interval={3} />
-                                        <YAxis tick={CHART_STYLE} tickLine={false} width={55} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                                        <YAxis tick={CHART_STYLE} tickLine={false} width={55} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
                                         <Tooltip formatter={v => F(v, currency)} contentStyle={TOOLTIP_STYLE} />
                                         <Bar dataKey="principal" stackId="a" fill="#6366f1" name="Principal" />
                                         <Bar dataKey="interest" stackId="a" fill="#f97316" name="Interest" radius={[4, 4, 0, 0]} />
@@ -278,7 +266,7 @@ const Calculators = () => {
                                     <BarChart data={sipRes.yearlyGrowth} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                                         <XAxis dataKey="year" tick={CHART_STYLE} tickLine={false} />
-                                        <YAxis tick={CHART_STYLE} tickLine={false} width={60} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                                        <YAxis tick={CHART_STYLE} tickLine={false} width={60} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
                                         <Tooltip formatter={v => F(v, currency)} contentStyle={TOOLTIP_STYLE} />
                                         <Bar dataKey="invested" fill="#86efac" name="Invested" radius={[4, 4, 0, 0]} />
                                         <Bar dataKey="value" fill="#10b981" name="Portfolio Value" radius={[4, 4, 0, 0]} />
@@ -321,7 +309,7 @@ const Calculators = () => {
                                     <LineChart data={fdRes.yearlyBreakdown} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                                         <XAxis dataKey="year" tick={CHART_STYLE} tickLine={false} />
-                                        <YAxis tick={CHART_STYLE} tickLine={false} width={60} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                                        <YAxis tick={CHART_STYLE} tickLine={false} width={60} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
                                         <Tooltip formatter={v => F(v, currency)} contentStyle={TOOLTIP_STYLE} />
                                         <Line type="monotone" dataKey="amount" stroke="#f59e0b" strokeWidth={2.5} dot={false} name="Maturity" />
                                         <Line type="monotone" dataKey="interest" stroke="#f97316" strokeWidth={2} dot={false} name="Interest" strokeDasharray="4 2" />
@@ -364,7 +352,7 @@ const Calculators = () => {
                                     <LineChart data={ciRes.yearlyBreakdown} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                                         <XAxis dataKey="year" tick={CHART_STYLE} tickLine={false} />
-                                        <YAxis tick={CHART_STYLE} tickLine={false} width={60} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                                        <YAxis tick={CHART_STYLE} tickLine={false} width={60} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
                                         <Tooltip formatter={v => F(v, currency)} contentStyle={TOOLTIP_STYLE} />
                                         <Line type="monotone" dataKey="amount" stroke="#a855f7" strokeWidth={2.5} dot={false} name="Total Amount" />
                                         <Line type="monotone" dataKey="interest" stroke="#ec4899" strokeWidth={2} dot={false} name="Interest" strokeDasharray="4 2" />
@@ -414,7 +402,7 @@ const Calculators = () => {
                                     <LineChart data={retRes.yearlyGrowth} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                                         <XAxis dataKey="year" tick={CHART_STYLE} tickLine={false} interval={Math.floor(retRes.yearlyGrowth.length / 5)} />
-                                        <YAxis tick={CHART_STYLE} tickLine={false} width={65} tickFormatter={v => `${(v/100000).toFixed(0)}L`} />
+                                        <YAxis tick={CHART_STYLE} tickLine={false} width={65} tickFormatter={v => `${(v / 100000).toFixed(0)}L`} />
                                         <Tooltip formatter={v => F(v, currency)} contentStyle={TOOLTIP_STYLE} />
                                         <Line type="monotone" dataKey="corpus" stroke="#f43f5e" strokeWidth={2.5} dot={false} name="Corpus" />
                                     </LineChart>
@@ -455,7 +443,7 @@ const Calculators = () => {
                                     <LineChart data={goalRes.yearlyProgress} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                                         <XAxis dataKey="year" tick={CHART_STYLE} tickLine={false} />
-                                        <YAxis tick={CHART_STYLE} tickLine={false} width={60} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                                        <YAxis tick={CHART_STYLE} tickLine={false} width={60} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
                                         <Tooltip formatter={v => F(v, currency)} contentStyle={TOOLTIP_STYLE} />
                                         <Line type="monotone" dataKey="saved" stroke="#14b8a6" strokeWidth={2.5} dot={false} name="Saved" />
                                         <Line type="monotone" dataKey="target" stroke="#6366f1" strokeWidth={1.5} dot={false} name="Target" strokeDasharray="6 3" />
@@ -468,66 +456,6 @@ const Calculators = () => {
                 </div>
             )}
 
-            {/* ── Tax Estimator ──────────────────────────────────────────────── */}
-            {activeTab === 'tax' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <Card>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Income Tax Estimator</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">India — New &amp; Old Regime FY 2024-25 (with 4% cess)</p>
-                        <div className="space-y-4">
-                            <Input label="Gross Annual Income" type="number" placeholder="e.g. 1200000" value={tax.income} onChange={e => setTax({ ...tax, income: e.target.value })} />
-                            <Select label="Tax Regime" value={tax.regime} onChange={e => setTax({ ...tax, regime: e.target.value })} options={[{ value: 'new', label: 'New Regime (default — ₹75k std. deduction)' }, { value: 'old', label: 'Old Regime (₹50k std. deduction)' }]} />
-                            <div className="p-4 bg-gray-50 dark:bg-dark-300 rounded-xl text-xs text-gray-500 dark:text-gray-400 space-y-1">
-                                <p className="font-semibold text-gray-700 dark:text-gray-300">New Regime Slabs</p>
-                                <p>Up to ₹3L — Nil | ₹3-7L — 5% | ₹7-10L — 10% | ₹10-12L — 15% | ₹12-15L — 20% | Above ₹15L — 30%</p>
-                            </div>
-                            <Button onClick={calcTax} fullWidth icon={ReceiptText}>Estimate Tax</Button>
-                        </div>
-                    </Card>
-                    {taxRes && (
-                        <div className="space-y-4">
-                            <div className={`rounded-2xl p-5 bg-gradient-to-br ${GRAD.danger} text-white`}>
-                                <h4 className="font-semibold mb-4">Tax Summary</h4>
-                                <div className="grid grid-cols-2 gap-3 mb-3">
-                                    <Stat label="Total Tax Payable" value={F(taxRes.totalTax, currency)} sub={`Effective rate: ${taxRes.effectiveRate}%`} />
-                                    <Stat label="In-Hand Income" value={F(taxRes.inHand, currency)} sub="After tax (annual)" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <Stat label="Monthly In-Hand" value={F(Math.round(taxRes.inHand / 12), currency)} />
-                                    <Stat label="Taxable Income" value={F(taxRes.taxable, currency)} sub="After std. deduction" />
-                                </div>
-                            </div>
-                            <Card padding={false} className="px-4 py-4">
-                                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Income Breakdown</p>
-                                <ResponsiveContainer width="100%" height={180}>
-                                    <PieChart>
-                                        <Pie
-                                            data={[
-                                                { name: 'In-Hand', value: taxRes.inHand },
-                                                { name: 'Tax + Cess', value: taxRes.totalTax },
-                                            ]}
-                                            cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value"
-                                        >
-                                            <Cell fill="#10b981" />
-                                            <Cell fill="#ef4444" />
-                                        </Pie>
-                                        <Tooltip formatter={v => F(v, currency)} contentStyle={TOOLTIP_STYLE} />
-                                        <Legend wrapperStyle={{ fontSize: 12 }} />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            </Card>
-                            {/* Regime comparison tip */}
-                            <Card padding={false} className="px-4 py-4 bg-primary-50 dark:bg-primary-900/10 border border-primary-100 dark:border-primary-800">
-                                <p className="text-xs font-semibold text-primary-700 dark:text-primary-400 mb-1">💡 Regime Tip</p>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">
-                                    New regime is better if you have fewer deductions (&lt;₹1.5L in 80C etc.). Old regime benefits those with HRA, home loan interest &amp; 80C deductions.
-                                    Switch calculation to compare both.
-                                </p>
-                            </Card>
-                        </div>
-                    )}
-                </div>
-            )}
         </div>
     );
 };

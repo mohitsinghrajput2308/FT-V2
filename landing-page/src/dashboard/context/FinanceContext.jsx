@@ -321,6 +321,11 @@ export const FinanceProvider = ({ children }) => {
             ...prev,
             [type]: [...(prev[type] || []), result.data]
         }));
+        // Reflect lifetime counter increment immediately in local state
+        setSettings(prev => ({
+            ...prev,
+            customCategoriesCreated: (prev.customCategoriesCreated || 0) + 1
+        }));
         success?.('Category added');
     }, [userId, success, notifyError]);
 
@@ -338,18 +343,22 @@ export const FinanceProvider = ({ children }) => {
         success?.('Category updated');
     }, [userId, success, notifyError]);
 
-    const deleteCategory = useCallback(async (type, id) => {
+    const deleteCategory = useCallback(async (type, id, categoryName) => {
         if (id.startsWith('cat_') || id.startsWith('inc_')) {
             notifyError?.("Cannot delete built-in categories");
             return;
         }
-        const result = await SecureAPI.categories.delete(id, userId);
+        const result = await SecureAPI.categories.delete(id, categoryName, userId);
         if (result.error) { notifyError?.(result.error); return; }
         setCategories(prev => ({
             ...prev,
             [type]: prev[type].filter(c => c.id !== id)
         }));
-        success?.('Category deleted');
+        // Cascade: remove linked transactions from local state
+        if (categoryName) {
+            setTransactions(prev => prev.filter(t => t.category !== categoryName));
+        }
+        success?.('Category and linked records deleted');
     }, [userId, success, notifyError]);
 
     // ─── SETTINGS (localStorage OK — non-sensitive) ───────────

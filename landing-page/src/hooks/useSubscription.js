@@ -7,8 +7,29 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { openPaddleCheckout, openPaddlePortal, PADDLE_PRICE_IDS, initPaddle } from '../utils/paddle';
 
+// ── localStorage cache helpers ────────────────────────────────────────────────
+// Caches the resolved subscription + user email so badges and plan-gates render
+// instantly on every re-mount (tab focus, navigation) with no Supabase flash.
+const CACHE_KEY = 'ft_sub_v1';
+function readCache() {
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY)) ?? null; } catch { return null; }
+}
+function writeCache(data, email) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ...data, _email: email ?? '' })); } catch { /* storage unavailable */ }
+}
+function clearCache() {
+  try { localStorage.removeItem(CACHE_KEY); } catch { /* ignore */ }
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function useSubscription() {
-  const [subscription, setSubscription] = useState(null);  // null = loading
+  // Read cache once on init — extract sub data and the stored email separately
+  const _cached = readCache();
+  const _cachedSub = _cached ? (({ _email, ...rest }) => rest)(_cached) : null;
+  const _cachedEmail = _cached?._email ?? '';
+
+  // Initialise from cache so the plan is correct on first render
+  const [subscription, setSubscription] = useState(() => _cachedSub);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
 
@@ -22,7 +43,13 @@ export function useSubscription() {
       const { data: { session } } = await supabase.auth.getSession();
       const u = session?.user ?? null;
       setUser(u);
-      if (!u) { setLoading(false); return; }
+      if (!u) {
+        // Logged out — clear cache so a subsequent login starts fresh
+        clearCache();
+        setSubscription({ plan: 'free', status: 'active' });
+        setLoading(false);
+        return;
+      }
 
       const { data } = await supabase
         .from('subscriptions')
@@ -30,7 +57,9 @@ export function useSubscription() {
         .eq('user_id', u.id)
         .maybeSingle();
 
-      setSubscription(data ?? { plan: 'free', status: 'active' });
+      const resolved = data ?? { plan: 'free', status: 'active' };
+      setSubscription(resolved);
+      writeCache(resolved, u.email);   // persist sub + email for instant display on next mount
       setLoading(false);
     };
 
@@ -41,11 +70,22 @@ export function useSubscription() {
     return () => authSub.unsubscribe();
   }, []);
 
+  // ── Tester bypass (dev/QA only) ───────────────────────────────────────────
+  // These two accounts always receive a forced plan regardless of DB state.
+  // Fall back to _cachedEmail so the bypass fires on first render before
+  // getSession() resolves — eliminates the "free" flash for tester accounts.
+  const TESTER_PRO_EMAIL = 'storagearea7070707070@gmail.com';
+  const TESTER_BUSINESS_EMAIL = 'storagearea1010101010@gmail.com';
+  const testerEmail = user?.email ?? _cachedEmail;
+  const isTesterPro = testerEmail === TESTER_PRO_EMAIL;
+  const isTesterBusiness = testerEmail === TESTER_BUSINESS_EMAIL;
+  // ─────────────────────────────────────────────────────────────────────────
+
   /** Is the user on a paid active plan? */
-  const isPro = subscription?.plan === 'pro' && ['active', 'trialing'].includes(subscription?.status);
-  const isBusiness = subscription?.plan === 'business' && ['active', 'trialing'].includes(subscription?.status);
+  const isPro = isTesterPro || (subscription?.plan === 'pro' && ['active', 'trialing'].includes(subscription?.status));
+  const isBusiness = isTesterBusiness || (subscription?.plan === 'business' && ['active', 'trialing'].includes(subscription?.status));
   const isPaid = isPro || isBusiness;
-  const isTrialing = subscription?.status === 'trialing';
+  const isTrialing = !isTesterPro && !isTesterBusiness && subscription?.status === 'trialing';
 
   /**
    * Open Paddle checkout for a plan.
@@ -67,13 +107,15 @@ export function useSubscription() {
       userId: user.id,
       email: user.email,
       onSuccess: async () => {
-        // Re-fetch subscription after checkout
+        // Re-fetch subscription after checkout and update cache
         const { data } = await supabase
           .from('subscriptions')
           .select('*')
           .eq('user_id', user.id)
           .maybeSingle();
-        setSubscription(data);
+        const resolved = data ?? { plan: 'free', status: 'active' };
+        setSubscription(resolved);
+        writeCache(resolved);
       },
     });
   }, [user]);
@@ -91,8 +133,8 @@ export function useSubscription() {
     isPro,
     isBusiness,
     isTrialing,
-    plan: subscription?.plan ?? 'free',
-    status: subscription?.status ?? 'active',
+    plan: isTesterBusiness ? 'business' : isTesterPro ? 'pro' : (subscription?.plan ?? 'free'),
+    status: (isTesterPro || isTesterBusiness) ? 'active' : (subscription?.status ?? 'active'),
     subscribe,
     manageSubscription,
   };

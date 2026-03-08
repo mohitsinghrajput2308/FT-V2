@@ -274,7 +274,7 @@ export const Showcase3DSection = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style dangerouslySetInnerHTML={{__html: `
         @keyframes grid-move {
           0% { transform: translate(0, 0); }
           100% { transform: translate(50px, 50px); }
@@ -284,7 +284,7 @@ export const Showcase3DSection = () => {
           50% { opacity: 1; }
           100% { transform: translateY(200%); opacity: 0; }
         }
-      `}</style>
+      `}} />
     </section>
   );
 };

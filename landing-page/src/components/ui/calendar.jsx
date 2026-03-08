@@ -4,6 +4,13 @@ import { DayPicker } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 function Calendar({
   className,
@@ -62,6 +69,35 @@ function Calendar({
         IconRight: ({ className, ...props }) => (
           <ChevronRight className={cn("h-4 w-4", className)} {...props} />
         ),
+        Dropdown: ({ value, onChange, children, ...props }) => {
+          const options = React.Children.toArray(children)
+          const selected = options.find((child) => child.props.value === value)
+          const handleChange = (value) => {
+            const changeEvent = {
+              target: { value },
+            }
+            onChange?.(changeEvent)
+          }
+          return (
+            <Select
+              value={value?.toString()}
+              onValueChange={(value) => {
+                handleChange(value)
+              }}
+            >
+              <SelectTrigger className={cn("pl-2 pr-1 py-1 h-8 border-none bg-transparent focus:ring-0 font-medium text-sm focus:border-none focus:shadow-none hover:bg-white/5", props.className)}>
+                <SelectValue>{selected?.props?.children}</SelectValue>
+              </SelectTrigger>
+              <SelectContent position="popper" className="bg-[#1A1A1B] text-white border-white/10 z-[200] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/20">
+                {options.map((option, id) => (
+                  <SelectItem key={`${option.props.value}-${id}`} value={option.props.value?.toString() ?? ""} className="focus:bg-blue-600 focus:text-white cursor-pointer transition-colors">
+                    {option.props.children}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )
+        },
       }}
       {...props} />
   );

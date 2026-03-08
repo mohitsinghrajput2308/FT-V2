@@ -65,7 +65,7 @@ export const ReviewSection = () => {
     };
 
     return (
-        <section className="py-24 bg-[#0A0A0B] relative overflow-hidden transition-colors duration-1000">
+        <section id="community" className="py-24 bg-[#0A0A0B] relative overflow-hidden transition-colors duration-1000">
             {/* Cinematic Video Background */}
             <div className="absolute inset-0 z-0 overflow-hidden">
                 {/* Shutter Layer (Fades Out) */}

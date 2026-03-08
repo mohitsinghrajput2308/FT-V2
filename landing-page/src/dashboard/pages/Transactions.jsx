@@ -10,11 +10,12 @@ import Input from '../components/Common/Input';
 import Select from '../components/Common/Select';
 import EmptyState from '../components/Common/EmptyState';
 import UpgradeModal from '../components/Common/UpgradeModal';
-import { useAuth } from '../../context/AuthContext';
+import { useSubscription } from '../../hooks/useSubscription';
 
 const Transactions = () => {
     const { transactions, currency, dateFormat } = useFinance();
-    const { currentUser } = useAuth();
+    const { isPro, isBusiness } = useSubscription();
+    const isPaid = isPro || isBusiness;
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [filterType, setFilterType] = useState('');
@@ -75,7 +76,7 @@ const Transactions = () => {
     }, [transactions, filterType]);
 
     const handleExportCSV = () => {
-        if (!currentUser?.isPro) {
+        if (!isPaid) {
             setIsUpgradeModalOpen(true);
             return;
         }
@@ -83,7 +84,7 @@ const Transactions = () => {
     };
 
     const handleExportPDF = () => {
-        if (!currentUser?.isPro) {
+        if (!isPaid) {
             setIsUpgradeModalOpen(true);
             return;
         }

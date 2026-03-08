@@ -192,20 +192,27 @@ const DashboardPricing = () => {
       {/* Plan Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {plans.map((plan) => {
-          const isCurrent = plan.key === 'free' ? currentPlan === 'free' : currentPlan === plan.key;
+          const isCurrent = currentPlan === plan.key || (plan.key === 'free' && !isPro && !isBusiness);
           const price = yearly ? plan.price.yearly : plan.price.monthly;
+
+          // Tier ranks: free=0, pro=1, business=2
+          const tierRank = { free: 0, pro: 1, business: 2 };
+          const userTier = isBusiness ? 2 : isPro ? 1 : 0;
+          const planTier = tierRank[plan.key] ?? 0;
+          const isLowerTier = planTier < userTier;
+          const isHigherTier = planTier > userTier;
 
           return (
             <div
               key={plan.key}
-              className={`relative rounded-2xl border-2 p-6 flex flex-col gap-5 bg-white dark:bg-dark-200 transition-shadow ${plan.border} ${plan.highlight ? 'shadow-xl shadow-amber-500/10' : 'shadow-sm'}`}
+              className={`relative rounded-2xl border-2 p-6 flex flex-col gap-5 bg-white dark:bg-dark-200 transition-shadow ${plan.border} ${plan.highlight && !isCurrent ? 'shadow-xl shadow-amber-500/10' : 'shadow-sm'} ${isLowerTier ? 'opacity-70' : ''}`}
             >
               {isCurrent && (
                 <span className="absolute -top-3.5 left-4 text-[11px] font-black bg-primary-500 text-white px-3 py-0.5 rounded-full uppercase tracking-widest">
                   Current Plan
                 </span>
               )}
-              {plan.badge && !isCurrent && (
+              {plan.badge && !isCurrent && !isLowerTier && (
                 <span className="absolute -top-3.5 right-4 text-[11px] font-black bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 border border-amber-300 dark:border-amber-700 px-2 py-0.5 rounded-full">
                   {plan.badge}
                 </span>
@@ -235,11 +242,17 @@ const DashboardPricing = () => {
                 <div className="text-xs text-center font-semibold py-2.5 border border-gray-200 dark:border-dark-400 rounded-xl text-gray-400">
                   ✓ Your Current Plan
                 </div>
+              ) : isLowerTier ? (
+                <div className="text-xs text-center font-semibold py-2.5 border border-gray-200 dark:border-dark-400 rounded-xl text-gray-400 dark:text-gray-500">
+                  {plan.key === 'free'
+                    ? 'Included in your plan'
+                    : `Included in your ${isBusiness ? 'Business' : 'Pro'} Plan`}
+                </div>
               ) : plan.key === 'free' ? (
                 <div className="text-xs text-center text-gray-400 py-2.5 border border-gray-200 dark:border-dark-400 rounded-xl">
                   Free forever
                 </div>
-              ) : (
+              ) : isHigherTier ? (
                 <button
                   onClick={() => handleUpgrade(plan.key)}
                   className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-black transition-all ${plan.key === 'pro'
@@ -250,7 +263,7 @@ const DashboardPricing = () => {
                   {plan.key === 'pro' ? <Zap className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
                   {plan.key === 'pro' ? 'Upgrade to Pro' : 'Get Business'}
                 </button>
-              )}
+              ) : null}
             </div>
           );
         })}

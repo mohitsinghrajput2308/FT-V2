@@ -427,14 +427,16 @@ export const SecureCategoryAPI = {
         return CategoryService.update(idCheck.value, sanitized);
     },
 
-    async delete(id, userId) {
+    async delete(id, categoryName, userId) {
         const blocked = checkRate(userId, 'categories.delete');
         if (blocked) return { error: blocked.error.message };
 
         const idCheck = validateUUID(id);
         if (!idCheck.valid) return validationError(idCheck.error);
 
-        return CategoryService.delete(idCheck.value);
+        // Sanitize category name before passing to cascade delete
+        const safeName = categoryName ? sanitizeString(categoryName).slice(0, 100) : null;
+        return CategoryService.delete(idCheck.value, safeName, userId);
     },
 };
 

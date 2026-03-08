@@ -4,11 +4,13 @@ import { Menu, Sun, Moon, Bell, User, LogOut, Settings, ChevronDown, Cloud, Clou
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useFinance } from '../../context/FinanceContext';
+import { useSubscription } from '../../../hooks/useSubscription';
 
 const Navbar = ({ onMenuClick }) => {
     const { theme, toggleTheme } = useTheme();
     const { currentUser, logout } = useAuth();
     const { pendingBillsCount, syncStatus } = useFinance();
+    const { plan } = useSubscription();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
@@ -95,23 +97,49 @@ const Navbar = ({ onMenuClick }) => {
                         onClick={() => setDropdownOpen(!dropdownOpen)}
                         className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-300 transition-colors"
                     >
-                        <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-success-500 rounded-full flex items-center justify-center">
-                            <span className="text-white font-medium text-sm">
-                                {currentUser?.name?.charAt(0).toUpperCase() || 'U'}
-                            </span>
-                        </div>
+                        {currentUser?.avatar ? (
+                            <img src={currentUser.avatar} alt="Profile" className="w-8 h-8 rounded-full object-cover ring-2 ring-primary-500/20" />
+                        ) : (
+                            <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-success-500 rounded-full flex items-center justify-center">
+                                <span className="text-white font-medium text-sm">
+                                    {currentUser?.name?.charAt(0).toUpperCase() || 'U'}
+                                </span>
+                            </div>
+                        )}
                         <span className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-300">
                             {currentUser?.name || 'User'}
                         </span>
+                        {plan === 'pro' && (
+                            <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold rounded-full border-2 border-amber-400 text-amber-500 dark:border-amber-400 dark:text-amber-400 whitespace-nowrap">
+                                ⭐ Pro
+                            </span>
+                        )}
+                        {plan === 'business' && (
+                            <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold rounded-full border-2 border-amber-400 text-amber-500 dark:border-amber-400 dark:text-amber-400 whitespace-nowrap">
+                                🏢 Business
+                            </span>
+                        )}
                         <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
 
                     {dropdownOpen && (
                         <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-dark-200 rounded-lg shadow-lg border border-gray-200 dark:border-dark-300 py-1 animate-fade-in">
                             <div className="px-4 py-2 border-b border-gray-200 dark:border-dark-300">
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {currentUser?.name}
-                                </p>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                        {currentUser?.name}
+                                    </p>
+                                    {plan === 'pro' && (
+                                        <span className="inline-flex items-center gap-0.5 px-2 py-0.5 text-xs font-bold rounded-full border-2 border-amber-400 text-amber-500 dark:border-amber-400 dark:text-amber-400">
+                                            ⭐ Pro
+                                        </span>
+                                    )}
+                                    {plan === 'business' && (
+                                        <span className="inline-flex items-center gap-0.5 px-2 py-0.5 text-xs font-bold rounded-full border-2 border-amber-400 text-amber-500 dark:border-amber-400 dark:text-amber-400">
+                                            🏢 Business
+                                        </span>
+                                    )}
+                                </div>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">
                                     {currentUser?.email}
                                 </p>

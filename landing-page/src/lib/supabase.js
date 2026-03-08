@@ -22,6 +22,11 @@ export const supabase = createClient(
         auth: {
             persistSession: true,
             autoRefreshToken: true,
+            // Pass-through lock: bypasses both navigator.locks (prevents
+            // NavigatorLockAcquireTimeoutError in multi-tab scenarios) and
+            // the Promise-queue approach (which deadlocks when a network
+            // error leaves a queued operation permanently pending).
+            lock: (_name, _acquireTimeout, fn) => fn(),
         },
     }
 );

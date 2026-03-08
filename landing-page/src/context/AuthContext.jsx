@@ -74,6 +74,10 @@ export const AuthProvider = ({ children }) => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
             setUser(session?.user ?? null);
+            // Re-enable auto-refresh when a new session is established after sign-out
+            if (_event === 'SIGNED_IN') {
+                try { supabase.auth.startAutoRefresh(); } catch { /* not critical */ }
+            }
             // When user clicks password reset email link, open the reset view
             if (_event === 'PASSWORD_RECOVERY') {
                 setModalState({ isOpen: true, view: 'resetPassword' });
@@ -107,6 +111,22 @@ export const AuthProvider = ({ children }) => {
         return { data, error };
     };
 
+    // ── Profile identity state (DOB, gender, username, change-limit info) ──
+    const [profileIdentity, setProfileIdentity] = useState(null);
+
+    const fetchProfileIdentity = useCallback(async () => {
+        try {
+            const { data, error } = await supabase.rpc('get_profile_identity');
+            if (!error && data) setProfileIdentity(data);
+        } catch { /* silent */ }
+    }, []);
+
+    // Fetch whenever user logs in / changes
+    useEffect(() => {
+        if (user) fetchProfileIdentity();
+        else setProfileIdentity(null);
+    }, [user, fetchProfileIdentity]);
+
     // ── Dashboard user mapping (replaces the old bridge AuthContext) ──
     // Maps the raw Supabase user to the shape dashboard components expect.
     const currentUser = useMemo(() => {
@@ -126,8 +146,15 @@ export const AuthProvider = ({ children }) => {
             lastSignIn: user.last_sign_in_at || null,
             avatar: user.user_metadata?.avatar_url || null,
             isPro: user.user_metadata?.is_pro || localIsPro,
+            // Identity fields — from DB (authoritative) or metadata fallback
+            username: profileIdentity?.username || user.user_metadata?.username || user.email?.split('@')[0] || '',
+            date_of_birth: profileIdentity?.date_of_birth || user.user_metadata?.date_of_birth || null,
+            gender: profileIdentity?.gender || user.user_metadata?.gender || null,
+            changesRemaining: profileIdentity?.changes_remaining ?? null,
+            changeCount: profileIdentity?.change_count ?? null,
+            windowEnd: profileIdentity?.window_end || null,
         };
-    }, [user, localIsPro]);
+    }, [user, localIsPro, profileIdentity]);
 
     // ── Dashboard-compatible aliases ──
     const logout = signOut;
@@ -147,12 +174,36 @@ export const AuthProvider = ({ children }) => {
             const { error: metaError } = await supabase.auth.updateUser({ data: updates });
             if (metaError) return { success: false, error: metaError.message };
 
-            // Sync to profiles table (only supported columns)
-            const profileUpdates = { updated_at: new Date().toISOString() };
+            // Sync to profiles table — includes security Q&A so forgot-password flow
+            // always reads the latest values (get_security_question / verify_security_answer_get_email
+            // both query the profiles table, not auth metadata).
+            const profileUpdates = {};
             if (full_name !== undefined) profileUpdates.full_name = full_name;
             if (avatar_url !== undefined) profileUpdates.avatar_url = avatar_url;
-            await supabase.from('profiles').update(profileUpdates).eq('id', user.id);
+            // Store answer lowercase — matches the case-insensitive compare used at signup
+            if (security_question !== undefined) profileUpdates.security_question = security_question;
+            if (security_answer !== undefined) profileUpdates.security_answer = security_answer.trim().toLowerCase();
+            if (Object.keys(profileUpdates).length > 0) {
+                await supabase.from('profiles').update(profileUpdates).eq('id', user.id);
+            }
 
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    };
+
+    // ── Update Date of Birth and Gender (DB rate-limited to 3/30 days) ──
+    const updateDobGender = async ({ date_of_birth, gender } = {}) => {
+        try {
+            const { data, error } = await supabase.rpc('update_dob_gender', {
+                p_dob:    date_of_birth || null,
+                p_gender: gender || null,
+            });
+            if (error) return { success: false, error: error.message };
+            if (!data?.ok) return { success: false, error: 'Update failed' };
+            // Refresh identity so UI reflects new count and values
+            await fetchProfileIdentity();
             return { success: true };
         } catch (err) {
             return { success: false, error: err.message };
@@ -222,6 +273,7 @@ export const AuthProvider = ({ children }) => {
             register: signUp,
             logout,
             updateProfile,
+            updateDobGender,
             changePassword,
             deleteAccount,
             upgradeToPro,

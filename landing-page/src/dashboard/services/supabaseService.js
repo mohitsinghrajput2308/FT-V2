@@ -16,18 +16,19 @@ import { supabase } from '../../lib/supabase';
 // These functions translate between the two.
 
 const toSupabaseTransaction = (t) => {
-    const meta = {
-        name: t.name || t.category || 'Transaction',
-        notes: t.description || '',
-        paymentMethod: t.paymentMethod || 'Cash',
-    };
+    // Store metadata as a pipe-delimited string to avoid {} chars
+    // (blocked by description_no_html DB constraint)
+    const name = (t.name || '').replace(/~/g, '-').slice(0, 100);
+    // Limit notes to 280 chars so FT:name~notes~pm stays under the 500-char DB constraint
+    const notes = (t.description || '').replace(/~/g, '-').slice(0, 280);
+    const pm = (t.paymentMethod || 'Cash').replace(/~/g, '-').slice(0, 50);
 
     return {
         user_id: t.userId,
         type: t.type,
         amount: Number(t.amount),
         category: t.category,
-        description: JSON.stringify(meta),
+        description: `FT:${name}~${notes}~${pm}`,
         transaction_date: t.date || new Date().toISOString().split('T')[0],
     };
 };
@@ -38,7 +39,16 @@ const fromSupabaseTransaction = (row) => {
     let paymentMethod = 'Cash';
 
     try {
-        if (row.description && row.description.startsWith('{')) {
+        if (row.description && row.description.startsWith('FT:')) {
+            // New pipe-delimited format: FT:name~notes~paymentMethod
+            const raw = row.description.slice(3);
+            const tilde = raw.indexOf('~');
+            const tilde2 = raw.indexOf('~', tilde + 1);
+            name = (tilde > -1 ? raw.slice(0, tilde) : raw) || row.category || 'Transaction';
+            description = tilde > -1 && tilde2 > -1 ? raw.slice(tilde + 1, tilde2) : '';
+            paymentMethod = tilde2 > -1 ? raw.slice(tilde2 + 1) : 'Cash';
+        } else if (row.description && row.description.startsWith('{')) {
+            // Legacy JSON format
             const parsed = JSON.parse(row.description);
             name = parsed.name || name;
             description = parsed.notes || '';
@@ -87,16 +97,21 @@ const toSupabaseBudget = (b) => {
         month = b.month || (now.getMonth() + 1);
         year = b.year || now.getFullYear();
     }
-    return {
+    const budgetPayload = {
         user_id: b.userId,
         category: b.category,
         amount: Number(b.amount),
-        spent_amount: Number(b.spent || 0),
         month,
         year,
-        period,
-        period_type
     };
+    // Only include migration-added columns when they have values
+    // (avoids column-not-found errors on fresh DB setups)
+    if (Number(b.spent) > 0) budgetPayload.spent_amount = Number(b.spent);
+    if (period_type === 'weekly' && period) {
+        budgetPayload.period = period;
+        budgetPayload.period_type = period_type;
+    }
+    return budgetPayload;
 };
 
 const fromSupabaseBudget = (row) => ({
@@ -109,16 +124,20 @@ const fromSupabaseBudget = (row) => ({
     createdAt: row.created_at,
 });
 
-const toSupabaseGoal = (g) => ({
-    user_id: g.userId,
-    name: g.name,
-    target_amount: Number(g.targetAmount),
-    current_amount: Number(g.currentAmount || 0),
-    deadline: g.deadline || null,
-    category: g.category || null,
-    priority: g.priority || 'Medium',
-    description: g.description || null,
-});
+const toSupabaseGoal = (g) => {
+    const base = {
+        user_id: g.userId,
+        name: g.name,
+        target_amount: Number(g.targetAmount),
+        current_amount: Number(g.currentAmount || 0),
+        deadline: g.deadline || null,
+        category: g.category || null,
+    };
+    // Only include migration_007 columns when explicitly provided
+    if (g.priority) base.priority = g.priority;
+    if (g.description != null) base.description = g.description || null;
+    return base;
+};
 
 const fromSupabaseGoal = (row) => ({
     id: row.id,
@@ -174,19 +193,23 @@ const fromSupabaseInvestment = (row) => {
     };
 };
 
-const toSupabaseBill = (b) => ({
-    user_id: b.userId,
-    name: b.name,
-    amount: Number(b.amount),
-    due_date: b.dueDate,
-    category: b.category || null,
-    is_paid: b.isPaid || false,
-    paid_date: b.paidDate || null,
-    is_recurring: b.isRecurring || false,
-    recurrence: b.recurrence || null,
-    recurring: b.recurring || 'Monthly',
-    priority: b.priority || 'Medium',
-});
+const toSupabaseBill = (b) => {
+    const base = {
+        user_id: b.userId,
+        name: b.name,
+        amount: Number(b.amount),
+        due_date: b.dueDate,
+        category: b.category || null,
+        is_paid: b.isPaid || false,
+        paid_date: b.paidDate || null,
+        is_recurring: b.isRecurring || false,
+        recurrence: b.recurrence || null,
+    };
+    // Only include migration_008 columns when non-default (avoids errors on fresh DB)
+    if (b.recurring && b.recurring !== 'Monthly') base.recurring = b.recurring;
+    if (b.priority && b.priority !== 'Medium') base.priority = b.priority;
+    return base;
+};
 
 const fromSupabaseBill = (row) => ({
     id: row.id,
@@ -247,14 +270,12 @@ export const TransactionService = {
             if (updates.category !== undefined) payload.category = updates.category;
             if (updates.date !== undefined) payload.transaction_date = updates.date;
 
-            // Handle composite JSON field if any of the meta fields are being updated
+            // Use same FT: pipe format as create — avoids {} chars that may trip DB constraints
             if (updates.name !== undefined || updates.description !== undefined || updates.paymentMethod !== undefined) {
-                const meta = {
-                    name: updates.name || updates.category || 'Transaction',
-                    notes: updates.description || '',
-                    paymentMethod: updates.paymentMethod || 'Cash',
-                };
-                payload.description = JSON.stringify(meta);
+                const name = (updates.name || updates.category || 'Transaction').replace(/~/g, '-');
+                const notes = (updates.description || '').replace(/~/g, '-').slice(0, 280);
+                const pm = (updates.paymentMethod || 'Cash').replace(/~/g, '-');
+                payload.description = `FT:${name}~${notes}~${pm}`;
             }
 
             const { data, error } = await supabase
@@ -570,6 +591,8 @@ export const CategoryService = {
                 .select()
                 .single();
             if (error) return handleError('create category', error);
+            // Increment lifetime counter atomically — never decremented, prevents delete+recreate bypass
+            supabase.rpc('increment_category_count', { p_user_id: userId }).catch(() => {});
             return { data: { id: data.id, name: data.name, icon: data.icon, color: data.color } };
         } catch (err) { return handleError('create category', err); }
     },
@@ -592,8 +615,17 @@ export const CategoryService = {
         } catch (err) { return handleError('update category', err); }
     },
 
-    async delete(id) {
+    async delete(id, categoryName, userId) {
         try {
+            // Cascade: hard-delete all transactions that reference this category name
+            if (categoryName && userId) {
+                const { error: txError } = await supabase
+                    .from('transactions')
+                    .delete()
+                    .eq('user_id', userId)
+                    .eq('category', categoryName);
+                if (txError) console.warn('[CategoryService] Cascade tx delete failed:', txError);
+            }
             const { error } = await supabase.from('categories').delete().eq('id', id);
             if (error) return handleError('delete category', error);
             return { data: true };
@@ -622,6 +654,7 @@ export const SettingsService = {
                     language: data.language,
                     totalBudget: data.total_budget || 0,
                     onboarding_completed: data.onboarding_completed || false,
+                    customCategoriesCreated: data.custom_categories_created || 0,
                 }
             };
         } catch (err) { return handleError('get settings', err); }

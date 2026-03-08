@@ -2,7 +2,6 @@ import React from 'react';
 import { Button } from './ui/button';
 import { ArrowRight, Play, TrendingUp, Wallet, PiggyBank } from 'lucide-react';
 import { ParticleSystem } from './ParticleSystem';
-import { WireframeMesh } from './WireframeMesh';
 import { useAuthModal } from '../context/AuthContext';
 import { VIDEO_URLS } from '../config/videos';
 import logo from '../assets/logo.png';
@@ -86,10 +85,6 @@ export const HeroSection = () => {
       {/* Particle System */}
       <ParticleSystem />
 
-      {/* Wireframe Meshes */}
-      <WireframeMesh position="top-right" color="blue" />
-      <WireframeMesh position="bottom-left" color="teal" />
-
       {/* Floating 3D Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="floating-coin absolute top-1/4 left-1/4 w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full shadow-2xl animate-float-3d">
@@ -104,7 +99,7 @@ export const HeroSection = () => {
 
         {/* 3D Credit Card - Private Graphic Edition */}
         <div
-          className="absolute top-1/2 right-0 md:right-2 lg:right-8 xl:right-12 w-80 h-48 hidden lg:block transition-transform duration-300 ease-out will-change-transform z-20"
+          className="absolute top-[68%] right-0 md:right-2 lg:right-8 xl:right-12 w-80 h-48 hidden lg:block transition-transform duration-300 ease-out will-change-transform z-20"
           style={{
             transform: `perspective(1200px) rotateY(${mousePos.x - 18}deg) rotateX(${mousePos.y + 12}deg) rotateZ(-2deg)`,
             transformStyle: 'preserve-3d'
@@ -219,10 +214,6 @@ export const HeroSection = () => {
               >
                 Get Started Free
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-              <Button variant="outline" className="px-8 py-6 text-lg border-2 border-gray-300 dark:border-gray-700 hover:border-blue-600 dark:bg-gray-800/50 group text-gray-900 dark:text-white">
-                <Play className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform" />
-                Watch Demo
               </Button>
             </div>
 

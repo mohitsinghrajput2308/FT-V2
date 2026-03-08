@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Plus, Edit2, Trash2, Tags, Palette } from 'lucide-react';
+import { Plus, Edit2, Trash2, Tags, Palette, Lock, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useFinance } from '../context/FinanceContext';
+import { useSubscription } from '../../hooks/useSubscription';
 import Card from '../components/Common/Card';
 import Button from '../components/Common/Button';
 import Input from '../components/Common/Input';
@@ -25,13 +27,30 @@ const colorOptions = [
     { value: '#6b7280', label: 'Gray' }
 ];
 
+const PRO_CUSTOM_LIMIT = 3;
+
 const Categories = () => {
-    const { categories, addCategory, updateCategory, deleteCategory } = useFinance();
+    const { categories, transactions, addCategory, updateCategory, deleteCategory, settings } = useFinance();
+    const { isPro, isBusiness } = useSubscription();
+    const navigate = useNavigate();
     const [modalOpen, setModalOpen] = useState(false);
+    const [upgradeModal, setUpgradeModal] = useState(false);
+    const [limitModal, setLimitModal] = useState(false);
+    const [deleteModal, setDeleteModal] = useState({ open: false, type: null, item: null, linkedCount: 0 });
     const [editingItem, setEditingItem] = useState(null);
     const [categoryType, setCategoryType] = useState('expense');
     const [formData, setFormData] = useState({ name: '', color: '#3b82f6' });
     const [errors, setErrors] = useState({});
+
+    // Count active custom (non-predefined) categories across both types
+    const customCategoryCount = [
+        ...(categories.expense || []),
+        ...(categories.income || [])
+    ].filter(c => !c.id.startsWith('cat_') && !c.id.startsWith('inc_')).length;
+    // Lifetime counter from DB — only ever increments, never decrements on delete
+    const lifetimeCategoryCount = settings?.customCategoriesCreated || 0;
+    // Use the higher of the two: protects against bypass AND covers pre-migration users
+    const effectiveCategoryCount = Math.max(customCategoryCount, lifetimeCategoryCount);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -59,14 +78,29 @@ const Categories = () => {
     };
 
     const openModal = (type, item = null) => {
-        setCategoryType(type);
+        // Editing an existing item — always allowed
         if (item) {
+            setCategoryType(type);
             setEditingItem(item);
             setFormData({ name: item.name, color: item.color });
-        } else {
-            setEditingItem(null);
-            setFormData({ name: '', color: '#3b82f6' });
+            setErrors({});
+            setModalOpen(true);
+            return;
         }
+
+        // Adding new — check plan
+        if (!isPro && !isBusiness) {
+            setUpgradeModal(true);
+            return;
+        }
+        if (isPro && !isBusiness && effectiveCategoryCount >= PRO_CUSTOM_LIMIT) {
+            setLimitModal(true);
+            return;
+        }
+
+        setCategoryType(type);
+        setEditingItem(null);
+        setFormData({ name: '', color: '#3b82f6' });
         setErrors({});
         setModalOpen(true);
     };
@@ -76,10 +110,15 @@ const Categories = () => {
         setEditingItem(null);
     };
 
-    const handleDelete = (type, id) => {
-        if (window.confirm('Delete this category?')) {
-            deleteCategory(type, id);
-        }
+    const openDeleteModal = (type, cat) => {
+        const linkedCount = transactions.filter(t => t.category === cat.name).length;
+        setDeleteModal({ open: true, type, item: cat, linkedCount });
+    };
+
+    const confirmDelete = async () => {
+        const { type, item } = deleteModal;
+        setDeleteModal({ open: false, type: null, item: null, linkedCount: 0 });
+        await deleteCategory(type, item.id, item.name);
     };
 
     const isPreDefined = (id) => {
@@ -120,7 +159,7 @@ const Categories = () => {
                                 </button>
                                 {!isPreDefined(cat.id) && (
                                     <button
-                                        onClick={() => handleDelete(type, cat.id)}
+                                        onClick={() => openDeleteModal(type, cat)}
                                         className="p-1.5 rounded-lg hover:bg-danger-50 text-danger-500"
                                     >
                                         <Trash2 className="w-4 h-4" />
@@ -150,7 +189,92 @@ const Categories = () => {
                 <CategoryCard type="income" title="Income Categories" />
             </div>
 
-            {/* Modal */}
+            {/* Upgrade Modal — Free users */}
+            <Modal isOpen={upgradeModal} onClose={() => setUpgradeModal(false)} title="" size="sm">
+                <div className="text-center space-y-5 py-2">
+                    <div className="flex justify-center">
+                        <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
+                            <Lock className="w-8 h-8 text-amber-500" />
+                        </div>
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Upgrade to Add Categories</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Custom categories are available on the <span className="font-semibold text-amber-500">Pro</span> and <span className="font-semibold text-blue-400">Business</span> plans.
+                        </p>
+                    </div>
+                    <div className="flex flex-col gap-3 pt-1">
+                        <Button
+                            onClick={() => { setUpgradeModal(false); navigate('/dashboard/pricing'); }}
+                            icon={Zap}
+                            fullWidth
+                        >
+                            Upgrade Plan
+                        </Button>
+                        <Button variant="secondary" onClick={() => setUpgradeModal(false)} fullWidth>
+                            Maybe Later
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Delete Confirmation Modal — warns about cascade deletion */}
+            <Modal isOpen={deleteModal.open} onClose={() => setDeleteModal({ open: false, type: null, item: null, linkedCount: 0 })} title="Delete Category" size="sm">
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                        {deleteModal.linkedCount > 0
+                            ? `This category is currently used in ${deleteModal.linkedCount} record${deleteModal.linkedCount !== 1 ? 's' : ''}. Upon deleting it, all related records will also be removed from the system.`
+                            : `Are you sure you want to delete "${deleteModal.item?.name}"? This action cannot be undone.`
+                        }
+                    </p>
+                    {deleteModal.linkedCount > 0 && (
+                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-3">
+                            <p className="text-xs text-red-700 dark:text-red-300 font-medium">
+                                ⚠ This will permanently delete {deleteModal.linkedCount} linked transaction{deleteModal.linkedCount !== 1 ? 's' : ''} and cannot be undone.
+                            </p>
+                        </div>
+                    )}
+                    <div className="flex gap-3 pt-1">
+                        <Button variant="secondary" onClick={() => setDeleteModal({ open: false, type: null, item: null, linkedCount: 0 })} fullWidth>
+                            Cancel
+                        </Button>
+                        <Button variant="danger" onClick={confirmDelete} icon={Trash2} fullWidth>
+                            Delete
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Limit Modal — Pro users at 3 custom categories */}
+            <Modal isOpen={limitModal} onClose={() => setLimitModal(false)} title="" size="sm">
+                <div className="text-center space-y-5 py-2">
+                    <div className="flex justify-center">
+                        <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                            <Tags className="w-8 h-8 text-blue-500" />
+                        </div>
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Pro Limit Reached</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Pro plan allows up to <span className="font-semibold text-amber-500">{PRO_CUSTOM_LIMIT} custom categories</span>. Upgrade to <span className="font-semibold text-blue-400">Business</span> for unlimited custom categories.
+                        </p>
+                    </div>
+                    <div className="flex flex-col gap-3 pt-1">
+                        <Button
+                            onClick={() => { setLimitModal(false); navigate('/dashboard/pricing'); }}
+                            icon={Zap}
+                            fullWidth
+                        >
+                            Upgrade to Business
+                        </Button>
+                        <Button variant="secondary" onClick={() => setLimitModal(false)} fullWidth>
+                            Maybe Later
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Add / Edit Modal */}
             <Modal isOpen={modalOpen} onClose={closeModal} title={editingItem ? 'Edit Category' : 'Add Category'} size="sm">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <Input

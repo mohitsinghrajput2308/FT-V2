@@ -1,7 +1,7 @@
-﻿import { useMemo, useState } from 'react';
+﻿import { useMemo, useState, useRef } from 'react';
 import {
     TrendingUp, TrendingDown, Activity, Award, Download,
-    Calendar, DollarSign, Percent, Target, BarChart2, Wallet
+    Calendar, DollarSign, Percent, Target, BarChart2, Wallet, Loader2
 } from 'lucide-react';
 import {
     BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -10,13 +10,16 @@ import {
 import { useFinance } from '../context/FinanceContext';
 import {
     formatCurrency, groupByCategory, groupByMonth, getShortMonthName,
-    calculateFinancialHealthScore, calculatePercentage,
-    convertToCSV, downloadFile
+    calculateFinancialHealthScore, calculatePercentage
 } from '../utils/helpers';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import Card from '../components/Common/Card';
 import ExpensePieChart from '../components/Charts/ExpensePieChart';
 import IncomeExpenseChart from '../components/Charts/IncomeExpenseChart';
 import TrendLineChart from '../components/Charts/TrendLineChart';
+import UpgradeModal from '../components/Common/UpgradeModal';
+import { useSubscription } from '../../hooks/useSubscription';
 
 const RANGE_OPTIONS = [
     { label: 'This Month', value: 'this_month' },
@@ -32,6 +35,7 @@ const BAR_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#f97316', '#8b5cf6', '#06b
 const Reports = () => {
     const { transactions, budgets, goals, currency } = useFinance();
     const [range, setRange] = useState('6m');
+    const reportRef = useRef(null);
 
     // ── Filter transactions by selected range ────────────────────────────────
     const filteredTxs = useMemo(() => {
@@ -139,14 +143,48 @@ const Reports = () => {
         })).sort((a, b) => b.pct - a.pct).slice(0, 8);
     }, [budgets]);
 
-    // ── Export CSV ───────────────────────────────────────────────────────────
-    const handleExport = () => {
-        const headers = ['Date', 'Type', 'Category', 'Description', 'Amount'];
-        const rows = filteredTxs.map(t => [
-            t.date, t.type, t.category || '', t.description || t.name || '', t.amount
-        ]);
-        const csv = convertToCSV(rows, headers);
-        downloadFile(csv, `fintrack-report-${range}.csv`, 'text/csv');
+    // ── Export PDF (Pro/Business only) ───────────────────────────────────────
+    const { isPro, isBusiness } = useSubscription();
+    const isPaid = isPro || isBusiness;
+    const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
+
+    const handleExport = async () => {
+        if (!isPaid) {
+            setIsUpgradeModalOpen(true);
+            return;
+        }
+
+        if (!reportRef.current) return;
+
+        setIsExporting(true);
+        try {
+            // Capture the entire dashboard element containing the reports
+            const canvas = await html2canvas(reportRef.current, {
+                scale: 2, // higher resolution
+                useCORS: true,
+                backgroundColor: document.documentElement.classList.contains('dark') ? '#0A0A0B' : '#F9FAFB'
+            });
+
+            // Calculate PDF dimensions mapping canvas to A4 aspect
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+            // Optional styling for PDF header
+            pdf.setFontSize(16);
+            pdf.text(`FinTrack Report: ${range === 'all' ? 'All Time' : range.replace('_', ' ').toUpperCase()}`, 10, 10);
+
+            // Adding image starting heavily off the top due to the title text above
+            pdf.addImage(imgData, 'PNG', 0, 15, pdfWidth, pdfHeight);
+
+            pdf.save(`fintrack_report_${range}.pdf`);
+        } catch (error) {
+            console.error('Failed to export PDF:', error);
+        } finally {
+            setIsExporting(false);
+        }
     };
 
     const getHealthColor = (s) => s >= 80 ? 'text-success-500' : s >= 60 ? 'text-primary-500' : s >= 40 ? 'text-warning-500' : 'text-danger-500';
@@ -154,7 +192,7 @@ const Reports = () => {
     const getBudgetBarColor = (pct) => pct >= 90 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#10b981';
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6" ref={reportRef}>
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
@@ -168,11 +206,10 @@ const Reports = () => {
                             <button
                                 key={opt.value}
                                 onClick={() => setRange(opt.value)}
-                                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                                    range === opt.value
+                                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${range === opt.value
                                         ? 'bg-white dark:bg-dark-100 text-primary-600 dark:text-primary-400 shadow-sm'
                                         : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-                                }`}
+                                    }`}
                             >
                                 {opt.label}
                             </button>
@@ -180,10 +217,18 @@ const Reports = () => {
                     </div>
                     <button
                         onClick={handleExport}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold transition-colors"
+                        disabled={isExporting}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold transition-colors ${isExporting ? 'bg-primary-400 cursor-not-allowed' : 'bg-primary-500 hover:bg-primary-600'
+                            }`}
+                        title={!isPaid ? 'Pro feature — upgrade to export' : 'Export PDF'}
                     >
-                        <Download className="w-4 h-4" />
-                        Export CSV
+                        {!isPaid && !isExporting && <span className="text-xs">🔒</span>}
+                        {isExporting ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Download className="w-4 h-4" />
+                        )}
+                        {isExporting ? 'Exporting...' : 'Export PDF'}
                     </button>
                 </div>
             </div>
@@ -425,6 +470,12 @@ const Reports = () => {
                     </div>
                 )}
             </Card>
+
+            <UpgradeModal
+                isOpen={isUpgradeModalOpen}
+                onClose={() => setIsUpgradeModalOpen(false)}
+                onUpgrade={() => setIsUpgradeModalOpen(false)}
+            />
         </div>
     );
 };

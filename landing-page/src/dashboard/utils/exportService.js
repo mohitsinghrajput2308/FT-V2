@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import Papa from 'papaparse';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 /**
  * Downloads a string or blob to the user's computer.
@@ -86,7 +86,7 @@ export const exportTransactionsToPDF = (transactions, currency = 'USD') => {
     const tableColumn = Object.keys(data[0]);
     const tableRows = data.map(obj => Object.values(obj));
 
-    doc.autoTable({
+    autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
         startY: 45,

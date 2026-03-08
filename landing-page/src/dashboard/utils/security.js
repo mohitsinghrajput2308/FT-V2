@@ -39,7 +39,7 @@ export const VALIDATION_RULES = {
     },
     category: {
         maxLength: 50,
-        pattern: /^[a-zA-Z0-9\s&-]+$/,
+        pattern: /^[^<>{}]+$/,
     },
 
     // Stock symbols
@@ -89,16 +89,17 @@ export function sanitizeString(input) {
     if (typeof input !== 'string') return '';
 
     return input
-        // Remove null bytes
+        // Remove null bytes and control characters
         .replace(/\0/g, '')
-        // Encode HTML entities to prevent XSS
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#x27;')
-        // Remove potential SQL injection patterns
-        .replace(/(['";])/g, '')
+        // Strip actual HTML tags and script injection patterns (XSS prevention)
+        // React already escapes rendered text; we strip the raw chars here so
+        // they never reach the DB with dangerous intent.
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<[^>]+>/g, '')
+        // Strip SQL comment sequences that could mess up queries
+        .replace(/--/g, '')
+        .replace(/\/\*/g, '')
+        .replace(/\*\//g, '')
         // Trim whitespace
         .trim();
 }
@@ -335,8 +336,14 @@ export function validateTransactionData(data) {
         }
     }
 
+    // Handle customPaymentMethod — resolve it into paymentMethod
+    if (data.customPaymentMethod && typeof data.customPaymentMethod === 'string') {
+        const custom = sanitizeString(data.customPaymentMethod).slice(0, 50);
+        if (custom) sanitizedData.paymentMethod = custom;
+    }
+
     // Reject unexpected fields (whitelist approach)
-    const allowedFields = ['amount', 'type', 'category', 'description', 'date', 'is_recurring', 'recurrence', 'next_occurrence', 'name', 'paymentMethod'];
+    const allowedFields = ['amount', 'type', 'category', 'description', 'date', 'is_recurring', 'recurrence', 'next_occurrence', 'name', 'paymentMethod', 'customPaymentMethod', 'userId'];
     Object.keys(data).forEach(key => {
         if (!allowedFields.includes(key)) {
             console.warn(`[SECURITY] Unexpected field rejected: ${key}`);
@@ -557,7 +564,24 @@ export function validateGoalData(data) {
         sanitizedData.category = sanitizeString(data.category).slice(0, VALIDATION_RULES.category.maxLength);
     }
 
-    const allowedFields = ['name', 'targetAmount', 'currentAmount', 'deadline', 'category', 'userId'];
+    // Validate priority (optional)
+    if (data.priority !== undefined) {
+        if (['High', 'Medium', 'Low'].includes(data.priority)) {
+            sanitizedData.priority = data.priority;
+        } else {
+            sanitizedData.priority = 'Medium';
+        }
+    }
+
+    // Validate description (optional)
+    if (data.description !== undefined && data.description !== null) {
+        const desc = sanitizeString(String(data.description)).slice(0, 500);
+        if (!/[<>{}]/.test(desc)) {
+            sanitizedData.description = desc || null;
+        }
+    }
+
+    const allowedFields = ['name', 'targetAmount', 'currentAmount', 'deadline', 'category', 'userId', 'priority', 'description'];
     Object.keys(data).forEach(key => {
         if (!allowedFields.includes(key)) {
             console.warn(`[SECURITY] Goal: unexpected field rejected: ${key}`);

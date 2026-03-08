@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import SwaggerUI from 'swagger-ui-react';
 import 'swagger-ui-react/swagger-ui.css';
 import { useAuth } from '../../../context/AuthContext';
+import { useSubscription } from '../../../hooks/useSubscription';
 import UpgradeModal from '../../components/Common/UpgradeModal';
 
 // Require the actual swagger file or serve it
@@ -64,10 +65,12 @@ components:
 `;
 
 const ApiDocs = () => {
-    const { currentUser, upgradeToPro } = useAuth();
+    const { upgradeToPro } = useAuth();
+    const { isPro, isBusiness, loading } = useSubscription();
     const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
-    if (!currentUser?.isPro) {
+    // While subscription is loading from cache/network, don't flash the upgrade wall
+    if (!loading && !isPro && !isBusiness) {
         return (
             <div className="space-y-6">
                 <div>

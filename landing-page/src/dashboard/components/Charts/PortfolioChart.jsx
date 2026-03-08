@@ -46,7 +46,7 @@ const PortfolioChart = ({ data = [], height = 300, currency = '$' }) => {
                         <Cell
                             key={`cell-${index}`}
                             fill={COLORS[index % COLORS.length]}
-                            stroke={isDark ? '#1e1e1e' : '#ffffff'}
+                            stroke="#ffffff"
                             strokeWidth={2}
                         />
                     ))}
