@@ -100,7 +100,7 @@ export const VALIDATION_RULES = {
  * and C-style comment delimiters "/*" / "*\/" are 100% harmless and must NOT
  * be stripped. Stripping them:
  *   • Changes user-entered text (what they type ≠ what gets saved)
- *   • Breaks names like "Cost -- Benefit" or "Jan/*Feb*/Mar"
+ *   • Breaks names like "Cost -- Benefit" or "Jan/ *Feb* /Mar"
  *   • Can produce an empty string from a valid short name, causing every
  *     length/pattern validator in the app to hard-fail simultaneously
  *     (this IS the root cause of the recurring "all inputs broken" bug).
