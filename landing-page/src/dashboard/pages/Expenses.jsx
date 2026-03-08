@@ -105,7 +105,7 @@ const Expenses = () => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validate()) return;
 
@@ -123,11 +123,13 @@ const Expenses = () => {
         };
 
         if (editingItem) {
-            updateTransaction(editingItem.id, data);
+            await updateTransaction(editingItem.id, data);
+            closeModal();
         } else {
-            addTransaction(data);
+            const result = await addTransaction(data);
+            // Only close modal on success; null means an error was shown as toast
+            if (result !== null && result !== undefined) closeModal();
         }
-        closeModal();
     };
 
     const openModal = (item = null) => {

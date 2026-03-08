@@ -34,12 +34,21 @@ export const VALIDATION_RULES = {
     },
     description: {
         maxLength: 500,
-        // Prevent XSS: no script tags or event handlers
-        blacklist: /<script|javascript:|on\w+=/gi,
+        // IMPORTANT: No 'g' flag.
+        // Using the 'g' flag with a module-level regex + .test() is a well-known
+        // JavaScript footgun: after a successful match, lastIndex is advanced, so
+        // the very next .test() call on ANY string starts from the wrong position
+        // and may return incorrect results (false-negative XSS detection OR
+        // false-positive rejection of completely safe text).
+        blacklist: /<script|javascript:|on\w+=/i,
     },
     category: {
         maxLength: 50,
-        pattern: /^[^<>{}]+$/,
+        // IMPORTANT: Pattern allows any char except literal < > { }
+        // The * (zero-or-more) is intentional — null/empty check is done BEFORE
+        // this pattern, so a post-sanitize empty string correctly maps to
+        // the "required" error rather than "invalid format" error.
+        pattern: /^[^<>{}]*$/,
     },
 
     // Stock symbols
@@ -81,7 +90,24 @@ export const VALIDATION_RULES = {
 // ============================================
 
 /**
- * Sanitize string input - Remove dangerous characters
+ * Sanitize string input — strip only genuine attack vectors.
+ *
+ * PERMANENT DESIGN RULE (do not revert):
+ * ─────────────────────────────────────────────────────────────────────────────
+ * This function must ONLY remove content that can cause actual harm.
+ * We use Supabase's JavaScript SDK which sends PARAMETERIZED queries — the SDK
+ * never concatenates raw strings into SQL, so SQL-comment sequences like "--"
+ * and C-style comment delimiters "/*" / "*\/" are 100% harmless and must NOT
+ * be stripped. Stripping them:
+ *   • Changes user-entered text (what they type ≠ what gets saved)
+ *   • Breaks names like "Cost -- Benefit" or "Jan/*Feb*/Mar"
+ *   • Can produce an empty string from a valid short name, causing every
+ *     length/pattern validator in the app to hard-fail simultaneously
+ *     (this IS the root cause of the recurring "all inputs broken" bug).
+ *
+ * React's JSX already escapes rendered text, so the only genuine XSS vectors
+ * that need stripping are raw HTML tags that leak into DB-stored strings.
+ * ─────────────────────────────────────────────────────────────────────────────
  * @param {string} input - Raw user input
  * @returns {string} - Sanitized string
  */
@@ -89,18 +115,13 @@ export function sanitizeString(input) {
     if (typeof input !== 'string') return '';
 
     return input
-        // Remove null bytes and control characters
+        // Remove null bytes (binary safety — can corrupt DB text fields)
         .replace(/\0/g, '')
-        // Strip actual HTML tags and script injection patterns (XSS prevention)
-        // React already escapes rendered text; we strip the raw chars here so
-        // they never reach the DB with dangerous intent.
-        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        // Remove complete <script>…</script> blocks (XSS prevention)
+        .replace(/<script\b[\s\S]*?<\/script>/gi, '')
+        // Remove any remaining HTML / XML tags (belt-and-suspenders vs XSS)
         .replace(/<[^>]+>/g, '')
-        // Strip SQL comment sequences that could mess up queries
-        .replace(/--/g, '')
-        .replace(/\/\*/g, '')
-        .replace(/\*\//g, '')
-        // Trim whitespace
+        // Trim surrounding whitespace
         .trim();
 }
 
@@ -289,7 +310,9 @@ export function validateTransactionData(data) {
         errors.category = 'Category is required';
     } else {
         const sanitizedCategory = sanitizeString(data.category).slice(0, VALIDATION_RULES.category.maxLength);
-        if (!VALIDATION_RULES.category.pattern.test(sanitizedCategory)) {
+        if (!sanitizedCategory) {
+            errors.category = 'Category is required';
+        } else if (!VALIDATION_RULES.category.pattern.test(sanitizedCategory)) {
             errors.category = 'Invalid category format';
         } else {
             sanitizedData.category = sanitizedCategory;
@@ -297,9 +320,11 @@ export function validateTransactionData(data) {
     }
 
     // Validate description (optional)
+    // Note: test against SANITIZED content, not raw — raw test was wrong anyway
+    // (sanitizeString already strips the actual dangerous sequences)
     if (data.description) {
         const sanitizedDesc = sanitizeString(data.description).slice(0, VALIDATION_RULES.description.maxLength);
-        if (VALIDATION_RULES.description.blacklist.test(data.description)) {
+        if (VALIDATION_RULES.description.blacklist.test(sanitizedDesc)) {
             errors.description = 'Description contains invalid content';
         } else {
             sanitizedData.description = sanitizedDesc;
@@ -468,7 +493,9 @@ export function validateBudgetData(data) {
         errors.category = 'Category is required';
     } else {
         const sanitizedCategory = sanitizeString(data.category).slice(0, VALIDATION_RULES.category.maxLength);
-        if (!VALIDATION_RULES.category.pattern.test(sanitizedCategory)) {
+        if (!sanitizedCategory) {
+            errors.category = 'Category is required';
+        } else if (!VALIDATION_RULES.category.pattern.test(sanitizedCategory)) {
             errors.category = 'Invalid category format';
         } else {
             sanitizedData.category = sanitizedCategory;
@@ -710,7 +737,9 @@ export function validateCategoryData(type, data) {
         errors.name = 'Category name is required';
     } else {
         const name = sanitizeString(data.name).slice(0, VALIDATION_RULES.category.maxLength);
-        if (!VALIDATION_RULES.category.pattern.test(name)) {
+        if (!name) {
+            errors.name = 'Category name is required';
+        } else if (!VALIDATION_RULES.category.pattern.test(name)) {
             errors.name = 'Invalid category name format';
         } else {
             sanitizedData.name = name;
