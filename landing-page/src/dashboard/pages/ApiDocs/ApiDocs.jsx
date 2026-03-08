@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import SwaggerUI from 'swagger-ui-react';
 import 'swagger-ui-react/swagger-ui.css';
-import { useAuth } from '../../../context/AuthContext';
+import './swagger-dark.css';
+import { Lock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useSubscription } from '../../../hooks/useSubscription';
-import UpgradeModal from '../../components/Common/UpgradeModal';
 
 // Require the actual swagger file or serve it
 // Normally you'd host this yaml publicly or fetch it.
@@ -65,12 +66,26 @@ components:
 `;
 
 const ApiDocs = () => {
-    const { upgradeToPro } = useAuth();
+    const navigate = useNavigate();
     const { isPro, isBusiness, loading } = useSubscription();
-    const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
-    // While subscription is loading from cache/network, don't flash the upgrade wall
-    if (!loading && !isPro && !isBusiness) {
+    // ── Loading state: show skeleton, never flash SwaggerUI to free users ──
+    if (loading) {
+        return (
+            <div className="space-y-6">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">API Documentation</h1>
+                    <p className="text-gray-500 dark:text-gray-400">Integrate FinTrack directly into your apps.</p>
+                </div>
+                <div className="flex items-center justify-center h-64">
+                    <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+            </div>
+        );
+    }
+
+    // ── Free plan wall ──
+    if (!isPro && !isBusiness) {
         return (
             <div className="space-y-6">
                 <div>
@@ -78,36 +93,40 @@ const ApiDocs = () => {
                     <p className="text-gray-500 dark:text-gray-400">Integrate FinTrack directly into your apps.</p>
                 </div>
 
-                <div className="card p-12 text-center bg-gray-50 dark:bg-dark-300">
-                    <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg className="w-8 h-8 text-primary-600 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                        </svg>
+                <div className="flex flex-col items-center justify-center text-center py-20 px-6 rounded-2xl border-2 border-dashed border-gray-200 dark:border-dark-400 bg-gray-50 dark:bg-dark-200">
+                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-500 to-indigo-600 flex items-center justify-center mb-6 shadow-xl shadow-primary-500/30">
+                        <Lock className="w-10 h-10 text-white" />
                     </div>
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Pro Feature: External API Access</h2>
-                    <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
-                        Access our powerful REST API to automate entries from other banking platforms or build custom integrations.
+                    <span className="text-xs font-black uppercase tracking-widest text-amber-500 mb-3">Pro Feature</span>
+                    <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-3">
+                        API Access is a Pro Feature
+                    </h2>
+                    <p className="text-gray-500 dark:text-gray-400 max-w-md mb-8">
+                        Unlock our full REST API to automate transaction imports, build custom integrations, and connect FinTrack to any external tool or banking platform.
                     </p>
-                    <button
-                        onClick={() => setIsUpgradeModalOpen(true)}
-                        className="btn btn-primary"
-                    >
-                        Upgrade to Pro
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <button
+                            onClick={() => navigate('/dashboard/pricing')}
+                            className="px-8 py-3 rounded-xl bg-gradient-to-r from-primary-500 to-indigo-600 text-white font-black text-sm hover:from-primary-400 hover:to-indigo-500 transition-all shadow-lg shadow-primary-500/30"
+                        >
+                            Upgrade to Pro — $9.99/mo
+                        </button>
+                        <button
+                            onClick={() => navigate('/dashboard/pricing')}
+                            className="px-8 py-3 rounded-xl border border-gray-200 dark:border-dark-400 text-gray-600 dark:text-gray-300 font-semibold text-sm hover:bg-gray-100 dark:hover:bg-dark-300 transition-all"
+                        >
+                            View All Plans
+                        </button>
+                    </div>
+                    <p className="mt-6 text-xs text-gray-400 dark:text-gray-500">
+                        Already upgraded? Refresh the page or sign out and back in.
+                    </p>
                 </div>
-
-                <UpgradeModal
-                    isOpen={isUpgradeModalOpen}
-                    onClose={() => setIsUpgradeModalOpen(false)}
-                    onUpgrade={() => {
-                        upgradeToPro();
-                        setIsUpgradeModalOpen(false);
-                    }}
-                />
             </div>
         );
     }
 
+    // ── Paid user: render Swagger UI with dark theme ──
     return (
         <div className="space-y-6">
             <div>
@@ -115,7 +134,7 @@ const ApiDocs = () => {
                 <p className="text-gray-500 dark:text-gray-400">Integrate FinTrack directly into your apps.</p>
             </div>
 
-            <div className="card bg-white p-6 shadow-sm overflow-hidden" style={{ minHeight: '600px' }}>
+            <div className="rounded-2xl border border-gray-200 dark:border-dark-400 bg-[#0f172a] overflow-hidden" style={{ minHeight: '600px' }}>
                 <SwaggerUI spec={swaggerYaml} />
             </div>
         </div>
