@@ -14,9 +14,13 @@
  *   ✓ UUID validation for all record IDs
  *   ✓ Whitelist-based field filtering (rejects unexpected fields)
  *   ✓ Structured error responses (never leak internals)
+ *   ✓ Plan-based item limits (Free: 2, Pro: 5, Business: unlimited)
  *
  * Following OWASP Best Practices
  */
+
+// Plan-based item limits (budgets / goals / bills)
+const PLAN_ITEM_LIMITS = { free: 2, pro: 5 }; // 'business' is not present → unlimited
 
 import { config } from './config';
 import { mutationRateLimiter, apiRateLimiter, createRateLimitResponse } from './rateLimit';
@@ -151,9 +155,18 @@ export const SecureBudgetAPI = {
         return BudgetService.getAll();
     },
 
-    async create(data, userId) {
+    async create(data, userId, limitInfo = null) {
         const blocked = checkRate(userId, 'budgets.create');
         if (blocked) return { error: blocked.error.message };
+
+        // Plan-based limit enforcement
+        if (limitInfo) {
+            const { plan = 'free', existingCount = 0 } = limitInfo;
+            const limit = PLAN_ITEM_LIMITS[plan];
+            if (limit !== undefined && existingCount >= limit) {
+                return { error: `You have reached the maximum limit for your current plan. Delete an existing budget or upgrade your plan to create more.` };
+            }
+        }
 
         const validation = validateBudgetData(data);
         if (!validation.valid) return validationError('Invalid budget data', validation.errors);
@@ -207,9 +220,18 @@ export const SecureGoalAPI = {
         return GoalService.getAll();
     },
 
-    async create(data, userId) {
+    async create(data, userId, limitInfo = null) {
         const blocked = checkRate(userId, 'goals.create');
         if (blocked) return { error: blocked.error.message };
+
+        // Plan-based limit enforcement
+        if (limitInfo) {
+            const { plan = 'free', existingCount = 0 } = limitInfo;
+            const limit = PLAN_ITEM_LIMITS[plan];
+            if (limit !== undefined && existingCount >= limit) {
+                return { error: `You have reached the maximum limit for your current plan. Delete an existing goal or upgrade your plan to create more.` };
+            }
+        }
 
         const validation = validateGoalData(data);
         if (!validation.valid) return validationError('Invalid goal data', validation.errors);
@@ -335,9 +357,18 @@ export const SecureBillAPI = {
         return BillService.getAll();
     },
 
-    async create(data, userId) {
+    async create(data, userId, limitInfo = null) {
         const blocked = checkRate(userId, 'bills.create');
         if (blocked) return { error: blocked.error.message };
+
+        // Plan-based limit enforcement
+        if (limitInfo) {
+            const { plan = 'free', existingCount = 0 } = limitInfo;
+            const limit = PLAN_ITEM_LIMITS[plan];
+            if (limit !== undefined && existingCount >= limit) {
+                return { error: `You have reached the maximum limit for your current plan. Delete an existing bill or upgrade your plan to create more.` };
+            }
+        }
 
         const validation = validateBillData(data);
         if (!validation.valid) return validationError('Invalid bill data', validation.errors);

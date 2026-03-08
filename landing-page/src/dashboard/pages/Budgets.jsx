@@ -1,6 +1,7 @@
 ﻿import { useState, useMemo } from 'react';
 import { Plus, Edit2, Trash2, Settings, AlertTriangle, PiggyBank, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
+import { useSubscription } from '../../hooks/useSubscription';
 import { formatCurrency, calculatePercentage, getCurrentMonth } from '../utils/helpers';
 import Card from '../components/Common/Card';
 import Button from '../components/Common/Button';
@@ -63,8 +64,11 @@ const shiftWeek = (yw, delta) => {
     return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
 };
 
+const BUDGET_PLAN_LIMITS = { free: 2, pro: 5 }; // business = unlimited
+
 const Budgets = () => {
     const { budgets, addBudget, updateBudget, deleteBudget, transactions, currency, settings, updateSettings } = useFinance();
+    const { isPro, isBusiness, plan } = useSubscription();
 
     // ── Master total budget (envelope) ────────────────────────────
     const masterTotal = parseFloat(settings.totalBudget || 0);
@@ -94,6 +98,7 @@ const Budgets = () => {
     const [formData, setFormData] = useState({ category: '', customCategory: '', limit: '', spent: '' });
     const [formErrors, setFormErrors] = useState({});
     const [deletingId, setDeletingId] = useState(null);
+    const [limitModal, setLimitModal] = useState(false);
 
     // ── Master budget modal ───────────────────────────────────────
     const [masterModalOpen, setMasterModalOpen] = useState(false);
@@ -191,12 +196,25 @@ const Budgets = () => {
             spent: parseFloat(formData.spent) || 0,
             month: viewPeriod,
         };
-        if (editingItem) updateBudget(editingItem.id, data);
-        else addBudget(data);
+        if (editingItem) {
+            updateBudget(editingItem.id, data);
+        } else {
+            addBudget(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: viewBudgets.length });
+        }
         closeModal();
     };
 
     const openModal = (item = null) => {
+        if (!item) {
+            // Plan-based limit check for new budgets
+            if (!isBusiness) {
+                const limit = BUDGET_PLAN_LIMITS[isPro ? 'pro' : 'free'];
+                if (viewBudgets.length >= limit) {
+                    setLimitModal(true);
+                    return;
+                }
+            }
+        }
         if (item) {
             const isCustom = !defaultCategories.some(c => c.value === item.category);
             setEditingItem(item);
@@ -578,6 +596,34 @@ const Budgets = () => {
                         <Button type="submit" fullWidth>{editingItem ? 'Update' : 'Create'}</Button>
                     </div>
                 </form>
+            </Modal>
+
+            {/* ── Plan Limit Modal ── */}
+            <Modal isOpen={limitModal} onClose={() => setLimitModal(false)} title="Budget Limit Reached">
+                <div className="text-center py-4">
+                    <div className="w-14 h-14 bg-warning-100 dark:bg-warning-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <AlertTriangle className="w-7 h-7 text-warning-600 dark:text-warning-400" />
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300 mb-1 font-medium">
+                        You've reached your budget limit ({isBusiness ? '∞' : isPro ? 5 : 2}/{isBusiness ? '∞' : isPro ? 5 : 2})
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                        You have reached the maximum limit for your current plan. Delete an existing budget or upgrade your plan to create more.
+                    </p>
+                    <div className="flex gap-3">
+                        <Button variant="secondary" onClick={() => setLimitModal(false)} fullWidth>Close</Button>
+                        {!isPro && !isBusiness && (
+                            <Button onClick={() => { setLimitModal(false); window.location.href = '/pricing'; }} fullWidth>
+                                Upgrade Plan
+                            </Button>
+                        )}
+                        {isPro && !isBusiness && (
+                            <Button onClick={() => { setLimitModal(false); window.location.href = '/pricing'; }} fullWidth>
+                                Upgrade to Business
+                            </Button>
+                        )}
+                    </div>
+                </div>
             </Modal>
 
         </div>

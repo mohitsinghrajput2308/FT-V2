@@ -207,8 +207,8 @@ export const FinanceProvider = ({ children }) => {
     }, [userId, success, notifyError]);
 
     // ─── BUDGET CRUD ──────────────────────────────────────────
-    const addBudget = useCallback(async (data) => {
-        const result = await SecureAPI.budgets.create(data, userId);
+    const addBudget = useCallback(async (data, limitInfo = null) => {
+        const result = await SecureAPI.budgets.create(data, userId, limitInfo);
         if (result.error) { notifyError?.(result.error); return null; }
         setBudgets(prev => [...prev, result.data]);
         success?.('Budget created');
@@ -230,8 +230,8 @@ export const FinanceProvider = ({ children }) => {
     }, [userId, success, notifyError]);
 
     // ─── GOALS CRUD ───────────────────────────────────────────
-    const addGoal = useCallback(async (data) => {
-        const result = await SecureAPI.goals.create(data, userId);
+    const addGoal = useCallback(async (data, limitInfo = null) => {
+        const result = await SecureAPI.goals.create(data, userId, limitInfo);
         if (result.error) { notifyError?.(result.error); return null; }
         setGoals(prev => [...prev, result.data]);
         success?.('Goal created');
@@ -287,8 +287,8 @@ export const FinanceProvider = ({ children }) => {
     }, [userId, success, notifyError]);
 
     // ─── BILLS CRUD ───────────────────────────────────────────
-    const addBill = useCallback(async (data) => {
-        const result = await SecureAPI.bills.create(data, userId);
+    const addBill = useCallback(async (data, limitInfo = null) => {
+        const result = await SecureAPI.bills.create(data, userId, limitInfo);
         if (result.error) { notifyError?.(result.error); return null; }
         setBills(prev => [...prev, result.data]);
         success?.('Bill reminder added');

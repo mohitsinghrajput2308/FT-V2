@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Plus, Edit2, Trash2, Target, PlusCircle, Trophy } from 'lucide-react';
+import { Plus, Edit2, Trash2, Target, PlusCircle, Trophy, AlertTriangle } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
+import { useSubscription } from '../../hooks/useSubscription';
 import { formatCurrency, formatDate, calculatePercentage, daysUntil } from '../utils/helpers';
 import Card from '../components/Common/Card';
 import Button from '../components/Common/Button';
@@ -16,10 +17,14 @@ const priorities = [
     { value: 'Low', label: 'Low Priority' }
 ];
 
+const GOAL_PLAN_LIMITS = { free: 2, pro: 5 }; // business = unlimited
+
 const Goals = () => {
     const { goals, addGoal, updateGoal, deleteGoal, addToGoal, currency, dateFormat } = useFinance();
+    const { isPro, isBusiness } = useSubscription();
     const [modalOpen, setModalOpen] = useState(false);
     const [addMoneyModal, setAddMoneyModal] = useState(false);
+    const [limitModal, setLimitModal] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [selectedGoal, setSelectedGoal] = useState(null);
     const [addAmount, setAddAmount] = useState('');
@@ -78,7 +83,7 @@ const Goals = () => {
         if (editingItem) {
             updateGoal(editingItem.id, data);
         } else {
-            addGoal(data);
+            addGoal(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: goals.length });
         }
         closeModal();
     };
@@ -101,6 +106,16 @@ const Goals = () => {
     };
 
     const openModal = (item = null) => {
+        if (!item) {
+            // Plan-based limit check for new goals
+            if (!isBusiness) {
+                const limit = GOAL_PLAN_LIMITS[isPro ? 'pro' : 'free'];
+                if (goals.length >= limit) {
+                    setLimitModal(true);
+                    return;
+                }
+            }
+        }
         if (item) {
             setEditingItem(item);
             setFormData({
@@ -426,6 +441,34 @@ const Goals = () => {
                         <Button onClick={handleAddMoney} fullWidth>
                             Add Money
                         </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* ── Plan Limit Modal ── */}
+            <Modal isOpen={limitModal} onClose={() => setLimitModal(false)} title="Goal Limit Reached">
+                <div className="text-center py-4">
+                    <div className="w-14 h-14 bg-warning-100 dark:bg-warning-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <AlertTriangle className="w-7 h-7 text-warning-600 dark:text-warning-400" />
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300 mb-1 font-medium">
+                        You've reached your goal limit ({goals.length}/{isBusiness ? '∞' : isPro ? 5 : 2})
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                        You have reached the maximum limit for your current plan. Delete an existing goal or upgrade your plan to create more.
+                    </p>
+                    <div className="flex gap-3">
+                        <Button variant="secondary" onClick={() => setLimitModal(false)} fullWidth>Close</Button>
+                        {!isPro && !isBusiness && (
+                            <Button onClick={() => { setLimitModal(false); window.location.href = '/pricing'; }} fullWidth>
+                                Upgrade Plan
+                            </Button>
+                        )}
+                        {isPro && !isBusiness && (
+                            <Button onClick={() => { setLimitModal(false); window.location.href = '/pricing'; }} fullWidth>
+                                Upgrade to Business
+                            </Button>
+                        )}
                     </div>
                 </div>
             </Modal>
