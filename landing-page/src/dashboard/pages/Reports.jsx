@@ -1,4 +1,5 @@
 ﻿import { useMemo, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     TrendingUp, TrendingDown, Activity, Award, Download,
     Calendar, DollarSign, Percent, Target, BarChart2, Wallet, Loader2
@@ -33,6 +34,7 @@ const DOW_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f97316', '#eab308', '#10b
 const BAR_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#f97316', '#8b5cf6', '#06b6d4', '#ec4899'];
 
 const Reports = () => {
+    const navigate = useNavigate();
     const { transactions, budgets, goals, currency } = useFinance();
     const [range, setRange] = useState('6m');
     const reportRef = useRef(null);
@@ -474,7 +476,7 @@ const Reports = () => {
             <UpgradeModal
                 isOpen={isUpgradeModalOpen}
                 onClose={() => setIsUpgradeModalOpen(false)}
-                onUpgrade={() => setIsUpgradeModalOpen(false)}
+                onUpgrade={() => { setIsUpgradeModalOpen(false); navigate('/dashboard/pricing'); }}
             />
         </div>
     );

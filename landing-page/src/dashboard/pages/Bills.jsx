@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Edit2, Trash2, Bell, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -35,6 +36,7 @@ const recurringOptions = [
 const BILL_PLAN_LIMITS = { free: 2, pro: 5 }; // business = unlimited
 
 const Bills = () => {
+    const navigate = useNavigate();
     const { bills, addBill, updateBill, deleteBill, markBillPaid, currency, dateFormat } = useFinance();
     const { isPro, isBusiness } = useSubscription();
     const [modalOpen, setModalOpen] = useState(false);
@@ -424,12 +426,12 @@ const Bills = () => {
                     <div className="flex gap-3">
                         <Button variant="secondary" onClick={() => setLimitModal(false)} fullWidth>Close</Button>
                         {!isPro && !isBusiness && (
-                            <Button onClick={() => { setLimitModal(false); window.location.href = '/pricing'; }} fullWidth>
+                            <Button onClick={() => { setLimitModal(false); navigate('/dashboard/pricing'); }} fullWidth>
                                 Upgrade Plan
                             </Button>
                         )}
                         {isPro && !isBusiness && (
-                            <Button onClick={() => { setLimitModal(false); window.location.href = '/pricing'; }} fullWidth>
+                            <Button onClick={() => { setLimitModal(false); navigate('/dashboard/pricing'); }} fullWidth>
                                 Upgrade to Business
                             </Button>
                         )}

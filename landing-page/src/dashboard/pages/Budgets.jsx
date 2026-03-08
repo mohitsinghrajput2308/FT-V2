@@ -1,4 +1,5 @@
 ﻿import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Edit2, Trash2, Settings, AlertTriangle, PiggyBank, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -67,6 +68,7 @@ const shiftWeek = (yw, delta) => {
 const BUDGET_PLAN_LIMITS = { free: 2, pro: 5 }; // business = unlimited
 
 const Budgets = () => {
+    const navigate = useNavigate();
     const { budgets, addBudget, updateBudget, deleteBudget, transactions, currency, settings, updateSettings } = useFinance();
     const { isPro, isBusiness, plan } = useSubscription();
 
@@ -613,12 +615,12 @@ const Budgets = () => {
                     <div className="flex gap-3">
                         <Button variant="secondary" onClick={() => setLimitModal(false)} fullWidth>Close</Button>
                         {!isPro && !isBusiness && (
-                            <Button onClick={() => { setLimitModal(false); window.location.href = '/pricing'; }} fullWidth>
+                            <Button onClick={() => { setLimitModal(false); navigate('/dashboard/pricing'); }} fullWidth>
                                 Upgrade Plan
                             </Button>
                         )}
                         {isPro && !isBusiness && (
-                            <Button onClick={() => { setLimitModal(false); window.location.href = '/pricing'; }} fullWidth>
+                            <Button onClick={() => { setLimitModal(false); navigate('/dashboard/pricing'); }} fullWidth>
                                 Upgrade to Business
                             </Button>
                         )}

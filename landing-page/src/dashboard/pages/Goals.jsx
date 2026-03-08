@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Edit2, Trash2, Target, PlusCircle, Trophy, AlertTriangle } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -20,6 +21,7 @@ const priorities = [
 const GOAL_PLAN_LIMITS = { free: 2, pro: 5 }; // business = unlimited
 
 const Goals = () => {
+    const navigate = useNavigate();
     const { goals, addGoal, updateGoal, deleteGoal, addToGoal, currency, dateFormat } = useFinance();
     const { isPro, isBusiness } = useSubscription();
     const [modalOpen, setModalOpen] = useState(false);
@@ -460,12 +462,12 @@ const Goals = () => {
                     <div className="flex gap-3">
                         <Button variant="secondary" onClick={() => setLimitModal(false)} fullWidth>Close</Button>
                         {!isPro && !isBusiness && (
-                            <Button onClick={() => { setLimitModal(false); window.location.href = '/pricing'; }} fullWidth>
+                            <Button onClick={() => { setLimitModal(false); navigate('/dashboard/pricing'); }} fullWidth>
                                 Upgrade Plan
                             </Button>
                         )}
                         {isPro && !isBusiness && (
-                            <Button onClick={() => { setLimitModal(false); window.location.href = '/pricing'; }} fullWidth>
+                            <Button onClick={() => { setLimitModal(false); navigate('/dashboard/pricing'); }} fullWidth>
                                 Upgrade to Business
                             </Button>
                         )}
