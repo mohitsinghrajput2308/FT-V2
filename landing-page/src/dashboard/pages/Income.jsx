@@ -33,6 +33,7 @@ const Income = () => {
     const [editingItem, setEditingItem] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterCategory, setFilterCategory] = useState('');
+    const [filterPayment, setFilterPayment] = useState('');
     const [sortBy, setSortBy] = useState('date');
     const [formData, setFormData] = useState({
         name: '',
@@ -62,14 +63,28 @@ const Income = () => {
             filtered = filtered.filter(t => t.category === filterCategory);
         }
 
+        if (filterPayment) {
+            filtered = filtered.filter(t => t.paymentMethod === filterPayment);
+        }
+
         if (sortBy === 'amount') {
             return [...filtered].sort((a, b) => b.amount - a.amount);
         }
 
         return sortByDate(filtered, 'date', 'desc');
-    }, [transactions, searchQuery, filterCategory, sortBy]);
+    }, [transactions, searchQuery, filterCategory, filterPayment, sortBy]);
 
     const totalIncome = incomeTransactions.reduce((sum, t) => sum + t.amount, 0);
+
+    // Dynamically build payment method filter options from actual transactions
+    const dynamicPaymentOptions = useMemo(() => {
+        const allIncome = transactions.filter(t => t.type === 'income');
+        const unique = [...new Set(allIncome.map(t => t.paymentMethod).filter(Boolean))];
+        return [
+            { value: '', label: 'All Payment Methods' },
+            ...unique.map(m => ({ value: m, label: m }))
+        ];
+    }, [transactions]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -198,7 +213,7 @@ const Income = () => {
 
             {/* Filters */}
             <Card>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <Input
                         label="Search"
                         placeholder="Search income..."
@@ -211,6 +226,12 @@ const Income = () => {
                         options={[{ value: '', label: 'All Categories' }, ...activeIncomeCategories]}
                         value={filterCategory}
                         onChange={(e) => setFilterCategory(e.target.value)}
+                    />
+                    <Select
+                        label="Payment Method"
+                        options={dynamicPaymentOptions}
+                        value={filterPayment}
+                        onChange={(e) => setFilterPayment(e.target.value)}
                     />
                     <Select
                         label="Sort By"

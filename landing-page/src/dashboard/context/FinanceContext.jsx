@@ -313,6 +313,10 @@ export const FinanceProvider = ({ children }) => {
         await updateBill(id, { isPaid: true, paidDate: new Date().toISOString().split('T')[0] });
     }, [updateBill]);
 
+    const unmarkBillPaid = useCallback(async (id) => {
+        await updateBill(id, { isPaid: false, paidDate: null });
+    }, [updateBill]);
+
     // ─── CATEGORIES CRUD ──────────────────────────────────────
     const addCategory = useCallback(async (type, category) => {
         const result = await SecureAPI.categories.create(type, category, userId);
@@ -408,7 +412,7 @@ export const FinanceProvider = ({ children }) => {
         addBudget, updateBudget, deleteBudget,
         addGoal, updateGoal, deleteGoal, addToGoal,
         addInvestment, updateInvestment, deleteInvestment,
-        addBill, updateBill, deleteBill, markBillPaid,
+        addBill, updateBill, deleteBill, markBillPaid, unmarkBillPaid,
         addCategory, updateCategory, deleteCategory,
         updateSettings,
         monthlyIncome, monthlyExpenses, totalBalance,

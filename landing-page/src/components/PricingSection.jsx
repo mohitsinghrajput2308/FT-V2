@@ -18,12 +18,14 @@ export const PricingSection = () => {
       name: 'Free',
       monthlyPrice: 0,
       yearlyPrice: 0,
-      description: 'Perfect for getting started with basic finance tracking',
+      description: 'Perfect for getting started with personal finance tracking',
       features: [
-        'Track up to 3 accounts',
-        'Basic expense categorization',
-        'Monthly reports',
-        'Mobile app access',
+        'Unlimited transactions (income & expenses)',
+        'Unlimited investments tracking',
+        'Analytics dashboard & reports',
+        '2 budgets, 2 goals & 2 bill reminders',
+        'Default expense categories',
+        'All 7 financial calculators',
         'Email support'
       ],
       popular: false
@@ -34,13 +36,12 @@ export const PricingSection = () => {
       yearlyPrice: 7.99,
       description: 'Best for individuals serious about their finances',
       features: [
-        'Unlimited accounts',
-        'AI-powered insights',
-        'Custom budgets & goals',
-        'Bill reminders',
-        'Priority support',
-        'Export reports',
-        'Multi-currency support'
+        'Everything in Free',
+        '5 budgets, 5 goals & 5 bill reminders',
+        '3 custom categories (lifetime)',
+        'CSV & PDF data export',
+        'API documentation access',
+        'Priority support & live chat'
       ],
       popular: true
     },
@@ -51,12 +52,12 @@ export const PricingSection = () => {
       description: 'Ideal for small businesses and teams',
       features: [
         'Everything in Pro',
+        'Unlimited budgets, goals & bills',
+        'Unlimited custom categories',
         'Team collaboration (up to 5 users)',
-        'Business expense tracking',
-        'Tax preparation tools',
-        'API access',
-        'Dedicated account manager',
-        'Custom integrations'
+        'Tax preparation reports',
+        'Custom integrations & API access',
+        'Dedicated account manager'
       ],
       popular: false
     }

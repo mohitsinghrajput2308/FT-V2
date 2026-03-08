@@ -37,7 +37,7 @@ const BILL_PLAN_LIMITS = { free: 2, pro: 5 }; // business = unlimited
 
 const Bills = () => {
     const navigate = useNavigate();
-    const { bills, addBill, updateBill, deleteBill, markBillPaid, currency, dateFormat } = useFinance();
+    const { bills, addBill, updateBill, deleteBill, markBillPaid, unmarkBillPaid, currency, dateFormat } = useFinance();
     const { isPro, isBusiness } = useSubscription();
     const [modalOpen, setModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
@@ -251,10 +251,20 @@ const Bills = () => {
                     </Button>
                 )}
 
-                {bill.isPaid && bill.paidDate && (
-                    <p className="mt-4 text-sm text-center text-success-600">
-                        Paid on {formatDate(bill.paidDate, dateFormat)}
-                    </p>
+                {bill.isPaid && (
+                    <div className="mt-4 flex flex-col items-center gap-2">
+                        {bill.paidDate && (
+                            <p className="text-sm text-center text-success-600">
+                                Paid on {formatDate(bill.paidDate, dateFormat)}
+                            </p>
+                        )}
+                        <button
+                            onClick={() => unmarkBillPaid(bill.id)}
+                            className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline underline-offset-2 transition-colors px-2 py-1 rounded-md"
+                        >
+                            Mark as Unpaid (Reverse)
+                        </button>
+                    </div>
                 )}
             </Card>
         );
