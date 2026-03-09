@@ -126,7 +126,7 @@ const faqs = [
   },
   {
     q: 'Is there a refund policy?',
-    a: 'You can cancel during the 14-day trial at no charge. After the trial all payments are final and non-refundable per our Terms of Service.',
+    a: 'You can cancel during the 14-day trial at no charge. After the trial, all paid plans come with a 14-day money-back guarantee — contact us within 14 days of any charge for a full refund, no questions asked.',
   },
   {
     q: 'Can I use FinTrack on mobile?',
@@ -420,7 +420,7 @@ const PricingPage = () => {
 
       {/* ── Trust bar ── */}
       <div className="border-t border-white/10 py-6 text-center text-gray-500 text-sm px-4">
-        🔒 Secure payments powered by Paddle &nbsp;•&nbsp; Cancel during trial, no charge &nbsp;•&nbsp; All payments are non-refundable &nbsp;•&nbsp; No hidden fees &nbsp;•&nbsp; GST &amp; taxes handled automatically
+        🔒 Secure payments powered by Paddle &nbsp;•&nbsp; Cancel during trial, no charge &nbsp;•&nbsp; 14-day money-back guarantee &nbsp;•&nbsp; No hidden fees &nbsp;•&nbsp; GST &amp; taxes handled automatically
       </div>
       <Footer />
       {/* AuthModal is rendered globally in App.js — no duplicate needed here */}

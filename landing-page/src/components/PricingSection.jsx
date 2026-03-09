@@ -83,7 +83,7 @@ export const PricingSection = () => {
             </span>
           </h2>
           <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-8">
-            Start free, upgrade when you need more. Paid plans include a 14-day free trial — cancel anytime during the trial at no charge. All payments are final and non-refundable.
+            Start free, upgrade when you need more. Paid plans include a 14-day free trial — cancel anytime during the trial at no charge. All paid plans include a 14-day money-back guarantee.
           </p>
 
           {/* Monthly / Yearly Toggle */}
