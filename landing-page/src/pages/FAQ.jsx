@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { HelpCircle, Search, ChevronDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import {
   Accordion,
   AccordionContent,
@@ -13,6 +14,39 @@ import { AuthModal } from '../components/AuthModal';
 import { useAuthModal } from '../context/AuthContext';
 
 const faqs = [
+  {
+    category: 'Pricing & Plans',
+    items: [
+      {
+        question: 'Can I cancel anytime?',
+        answer: 'Yes. Cancel your subscription at any time from your account settings. Your access continues until the end of your current billing period. If you cancel during a 14-day trial, you\'re not charged.'
+      },
+      {
+        question: 'Is there a free trial?',
+        answer: 'Yes! Pro and Business plans include a 7-day free trial with full access to all features. No credit card required to start the trial — you\'re only charged when the trial ends. Cancel anytime during the trial and you won\'t be charged.'
+      },
+      {
+        question: 'Do I get a money-back guarantee?',
+        answer: 'Absolutely. All paid plans include a 14-day money-back guarantee. If you\'re unhappy for any reason, contact us within 14 days of any charge and we\'ll issue a full refund, no questions asked.'
+      },
+      {
+        question: 'How does the yearly discount work?',
+        answer: 'Choosing yearly billing gives you 20% off the monthly rate. You pay the full year upfront at the discounted price, which results in significant savings. You can still cancel anytime.'
+      },
+      {
+        question: 'What payment methods are accepted?',
+        answer: 'We accept all major credit and debit cards (Visa, Mastercard, Amex) via Paddle. Paddle supports 100+ payment methods globally including local options. All transactions are encrypted with PCI-DSS compliance.'
+      },
+      {
+        question: 'Can I switch plans later?',
+        answer: 'Yes. Upgrade or downgrade anytime from your account settings. Upgrades take effect immediately and you pay the difference. Downgrades apply at your next billing cycle, so you keep the current plan benefits through your current billing period.'
+      },
+      {
+        question: 'What\'s the difference between Free, Pro, and Business plans?',
+        answer: 'Free plan: 50 transactions, 3 investments, 2 budgets/goals/bills. Pro plan: Unlimited transactions, unlimited investments, 5 budgets/goals/bills, CSV & PDF export, priority support. Business plan: Everything in Pro plus unlimited budgets/goals/bills, team collaboration (up to 5 users), and dedicated support.'
+      },
+    ]
+  },
   {
     category: 'Account & Setup',
     items: [
@@ -72,7 +106,7 @@ const faqs = [
     items: [
       {
         question: 'Is my financial data safe with FinTrack?',
-        answer: 'Yes. We use industry-standard encryption to protect all your data in transit and at rest. Your passwords are hashed and never stored in plain text. With 2FA enabled, your account has an additional security layer that prevents unauthorized access even if your password is compromised. We also support Row Level Security on our database, meaning users can only access their own data — not anyone else\'s.'
+        answer: 'Absolutely. All data is encrypted in transit (TLS 1.3) and at rest (AES-256). Your transactions are stored securely in Supabase with Row Level Security — only you can access your data. We never sell or share your financial information.'
       },
       {
         question: 'What is the security question for and can I change it?',
@@ -102,6 +136,8 @@ const faqs = [
 const FAQ = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCategory, setExpandedCategory] = useState(null);
+  const navigate = useNavigate();
+  const { modalState, closeModal } = useAuthModal();
 
   // Flatten and filter FAQs based on search
   const filteredCategories = faqs.map(cat => ({
@@ -115,8 +151,6 @@ const FAQ = () => {
   })).filter(cat => cat.items.length > 0);
 
   const totalResults = filteredCategories.reduce((sum, cat) => sum + cat.items.length, 0);
-
-  const { modalState, closeModal } = useAuthModal();
 
   return (
     <div className="min-h-screen bg-[#050505] text-white overflow-hidden">
@@ -174,7 +208,7 @@ const FAQ = () => {
               transition={{ delay: 0.3 }}
               className="text-lg text-gray-400 max-w-2xl mx-auto mb-10"
             >
-              Everything you need to know about FinTrack — from setting up your account to securing it with 2FA.
+              Everything you need to know about FinTrack — pricing, plans, account setup, security, and more.
             </motion.p>
 
             {/* Search Bar */}
@@ -289,12 +323,12 @@ const FAQ = () => {
               <p className="text-gray-400 mb-4">
                 Can't find what you're looking for? Our support team is here to help.
               </p>
-              <a
-                href="mailto:support@fintrack.com"
+              <button
+                onClick={() => navigate('/contact')}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg shadow-blue-600/20"
               >
                 Contact Support
-              </a>
+              </button>
             </motion.div>
           </div>
         </section>

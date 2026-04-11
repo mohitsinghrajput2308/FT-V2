@@ -128,6 +128,8 @@ const Reports = () => {
             income: inc, expenses: exp, savings: inc - exp,
             budgetUtilization: budgetTotal > 0 ? (budgetSpent / budgetTotal) * 100 : 0,
             goalsProgress: goalsTotal > 0 ? (goalsCurrent / goalsTotal) * 100 : 0,
+            hasBudgets: budgets.length > 0,
+            hasGoals: goals.length > 0,
         });
     }, [transactions, budgets, goals]);
 

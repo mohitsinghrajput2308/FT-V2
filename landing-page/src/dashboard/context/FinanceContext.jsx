@@ -65,7 +65,10 @@ export const FinanceProvider = ({ children }) => {
     const [investments, setInvestments] = useState([]);
     const [bills, setBills] = useState([]);
     const [categories, setCategories] = useState({ expense: [], income: [] });
-    const [settings, setSettings] = useState({ currency: '$', dateFormat: 'MM/DD/YYYY' });
+    // Initialize settings from localStorage to restore user preferences on page reload
+    const [settings, setSettings] = useState(() => 
+        getFromStorage(STORAGE_KEYS.SETTINGS, { currency: '$', dateFormat: 'MM/DD/YYYY' })
+    );
     const [loading, setLoading] = useState(true);
     const [syncStatus, setSyncStatus] = useState('idle'); // 'idle' | 'syncing' | 'synced' | 'offline'
     const [fxRates, setFxRates] = useState(null);
@@ -109,11 +112,18 @@ export const FinanceProvider = ({ children }) => {
 
                 // Settings only: allow localStorage fallback (non-sensitive)
                 const resolveSettings = (result) => {
+                    const savedLocally = getFromStorage(STORAGE_KEYS.SETTINGS);
+                    
+                    // If we have successful Supabase data, merge with localStorage
+                    // (localStorage takes precedence to preserve user preferences)
                     if (result.status === 'fulfilled' && result.value.data && !result.value.error) {
-                        try { saveToStorage(STORAGE_KEYS.SETTINGS, result.value.data); } catch { /* silent */ }
-                        return result.value.data;
+                        const merged = { ...result.value.data, ...savedLocally };
+                        try { saveToStorage(STORAGE_KEYS.SETTINGS, merged); } catch { /* silent */ }
+                        return merged;
                     }
-                    return getFromStorage(STORAGE_KEYS.SETTINGS, { currency: '$', dateFormat: 'MM/DD/YYYY' });
+                    
+                    // Fall back to localStorage with default fallback
+                    return savedLocally || { currency: '$', dateFormat: 'MM/DD/YYYY' };
                 };
 
                 setTransactions(resolveSecure(txRes, []));
@@ -382,16 +392,20 @@ export const FinanceProvider = ({ children }) => {
 
     // ─── SETTINGS (localStorage OK — non-sensitive) ───────────
     const updateSettings = useCallback(async (newSettings) => {
-        const merged = { ...settings, ...newSettings };
-        setSettings(merged);
-        try { saveToStorage(STORAGE_KEYS.SETTINGS, merged); } catch { /* silent */ }
+        setSettings(prev => {
+            const merged = { ...prev, ...newSettings };
+            // Save to localStorage IMMEDIATELY (synchronous) before Supabase
+            try { saveToStorage(STORAGE_KEYS.SETTINGS, merged); } catch { /* silent */ }
+            return merged;
+        });
 
-        const result = await SecureAPI.settings.upsert(merged, userId);
+        // Then sync to Supabase asynchronously
+        const result = await SecureAPI.settings.upsert(newSettings, userId);
         if (result.error) {
             console.warn('[FinanceContext] Settings sync failed, local save preserved.');
         }
         success?.('Settings saved');
-    }, [settings, userId, success]);
+    }, [userId, success]);
 
     // ─── Computed values ──────────────────────────────────────
     const currentMonth = getCurrentMonth();

@@ -20,12 +20,11 @@ export const PricingSection = () => {
       yearlyPrice: 0,
       description: 'Perfect for getting started with personal finance tracking',
       features: [
-        'Unlimited transactions (income & expenses)',
-        'Unlimited investments tracking',
+        '50 transactions (income & expenses)',
+        '3 investments max',
         'Analytics dashboard & reports',
         '2 budgets, 2 goals & 2 bill reminders',
         'Default expense categories',
-        'All 7 financial calculators',
         'Email support'
       ],
       popular: false
@@ -40,7 +39,6 @@ export const PricingSection = () => {
         '5 budgets, 5 goals & 5 bill reminders',
         '3 custom categories (lifetime)',
         'CSV & PDF data export',
-        'API documentation access',
         'Priority support & live chat'
       ],
       popular: true
@@ -55,9 +53,6 @@ export const PricingSection = () => {
         'Unlimited budgets, goals & bills',
         'Unlimited custom categories',
         'Team collaboration (up to 5 users)',
-        'Tax preparation reports',
-        'Custom integrations & API access',
-        'Dedicated account manager'
       ],
       popular: false
     }

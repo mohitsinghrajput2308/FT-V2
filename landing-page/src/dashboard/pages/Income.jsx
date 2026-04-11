@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
-import { Plus, Edit2, Trash2, Search, Filter, ArrowUpCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Edit2, Trash2, Search, Filter, ArrowUpCircle, Lock } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
+import { useSubscription } from '../../hooks/useSubscription';
 import { formatCurrency, formatDate, sortByDate, calculateNextOccurrence } from '../utils/helpers';
 import Card from '../components/Common/Card';
 import Button from '../components/Common/Button';
@@ -18,7 +20,9 @@ const paymentMethods = [
 ];
 
 const Income = () => {
+    const navigate = useNavigate();
     const { transactions, categories, addTransaction, updateTransaction, deleteTransaction, currency, dateFormat } = useFinance();
+    const { isPro, isBusiness } = useSubscription();
 
     const activeIncomeCategories = useMemo(() => {
         const mappedCategories = (categories?.income || []).map(c => ({
@@ -30,6 +34,7 @@ const Income = () => {
     }, [categories]);
 
     const [modalOpen, setModalOpen] = useState(false);
+    const [limitModal, setLimitModal] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterCategory, setFilterCategory] = useState('');
@@ -149,6 +154,11 @@ const Income = () => {
                 recurrence: item.recurrence || 'monthly'
             });
         } else {
+            // Adding new income — check plan limit (count only income, not all transactions)
+            if (!isPro && !isBusiness && incomeTransactions.length >= 50) {
+                setLimitModal(true);
+                return;
+            }
             setEditingItem(null);
             setFormData({
                 name: '',
@@ -421,6 +431,44 @@ const Income = () => {
                         </Button>
                     </div>
                 </form>
+            </Modal>
+
+            {/* ── Transaction Limit Modal (Free Users) ────────────────────────── */}
+            <Modal isOpen={limitModal} onClose={() => setLimitModal(false)} title="Transaction Limit">
+                <div className="space-y-4">
+                    <div className="flex items-center justify-center w-12 h-12 mx-auto bg-amber-100 dark:bg-amber-900/30 rounded-full">
+                        <Lock className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div className="text-center">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">You've reached the transaction limit</h3>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">
+                            Free plan: <span className="font-semibold">50 transactions</span><br />
+                            Pro & Business: <span className="font-semibold">Unlimited</span>
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                            Upgrade your plan to track unlimited transactions.
+                        </p>
+                    </div>
+                    <div className="flex gap-3">
+                        <Button
+                            variant="secondary"
+                            onClick={() => setLimitModal(false)}
+                            fullWidth
+                        >
+                            Close
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                setLimitModal(false);
+                                navigate('/dashboard/pricing');
+                            }}
+                            fullWidth
+                            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                        >
+                            View Plans
+                        </Button>
+                    </div>
+                </div>
             </Modal>
         </div>
     );

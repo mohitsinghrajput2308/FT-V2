@@ -2,14 +2,18 @@ import { useState } from 'react';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import Toast from '../Common/Toast';
+import LiveChatBot from '../LiveChatBot';
+import { useSubscription } from '../../../hooks/useSubscription';
 
 const Layout = ({ children }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const { isPro, isBusiness } = useSubscription();
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-dark-100 transition-colors duration-300">
             <Toast />
+            {(isPro || isBusiness) && <LiveChatBot />}
             <div className="flex">
                 <Sidebar
                     isOpen={sidebarOpen}

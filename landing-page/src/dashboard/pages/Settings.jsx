@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Save, RefreshCw, Trash2, LogOut, AlertTriangle } from 'lucide-react';
-import { SUPPORTED_CURRENCIES, SYMBOL_TO_CODE, fetchFxRates } from '../utils/fxService';
+import { SUPPORTED_CURRENCIES, SYMBOL_TO_CODE } from '../utils/fxService';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useFinance } from '../context/FinanceContext';
 import { useNotification } from '../context/NotificationContext';
+import { getFromStorage, STORAGE_KEYS } from '../utils/localStorage';
 import { supabase } from '../../lib/supabase';
 
 import Card from '../components/Common/Card';
@@ -20,10 +21,10 @@ const Settings = () => {
     const { success, error, warning } = useNotification();
 
     const [loading, setLoading] = useState(false);
-    const [liveRate, setLiveRate] = useState(null);
     const [wipeModal, setWipeModal] = useState(false);
     const [deleteModal, setDeleteModal] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
+    const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
     const handleWipeData = async () => {
         setActionLoading(true);
@@ -49,6 +50,7 @@ const Settings = () => {
     };
 
     const handleDeleteAccount = async () => {
+        if (deleteConfirmText !== 'DELETE') return;
         setActionLoading(true);
         const { success: ok, error: err } = await deleteAccount();
         if (ok) {
@@ -61,29 +63,44 @@ const Settings = () => {
         setActionLoading(false);
     };
 
-    const [formData, setFormData] = useState({
-        currency: settings.currency || '$',
-        dateFormat: settings.dateFormat || 'MM/DD/YYYY',
-        theme: theme,
-        notifications: {
-            email: settings.notifications?.email ?? true,
-            push: settings.notifications?.push ?? true,
-            billReminders: settings.notifications?.billReminders ?? true,
-            budgetAlerts: settings.notifications?.budgetAlerts ?? true
-        }
+    const [formData, setFormData] = useState(() => {
+        // Read from localStorage on init to ensure we have the saved currency
+        const saved = getFromStorage(STORAGE_KEYS.SETTINGS);
+        return {
+            currency: saved?.currency || settings.currency || '$',
+            dateFormat: saved?.dateFormat || settings.dateFormat || 'MM/DD/YYYY',
+            theme: theme,
+            notifications: {
+                email: settings.notifications?.email ?? true,
+                push: settings.notifications?.push ?? true,
+                billReminders: settings.notifications?.billReminders ?? true,
+                budgetAlerts: settings.notifications?.budgetAlerts ?? true
+            }
+        };
     });
 
-    useEffect(() => {
-        fetchFxRates().then(rates => {
-            const code = SYMBOL_TO_CODE[formData.currency] ?? 'USD';
-            setLiveRate(rates?.[code] ?? null);
-        }).catch(() => {});
-    }, [formData.currency]);
+    // Live FX rates removed — feature disabled because it was unreliable
 
     // Keep the dropdown in sync if the theme is changed from the Navbar toggle
     useEffect(() => {
         setFormData(prev => ({ ...prev, theme }));
     }, [theme]);
+
+    // Sync formData when settings are loaded from FinanceContext
+    useEffect(() => {
+        const saved = getFromStorage(STORAGE_KEYS.SETTINGS);
+        setFormData(prev => ({
+            ...prev,
+            currency: saved?.currency || settings.currency || '$',
+            dateFormat: saved?.dateFormat || settings.dateFormat || 'MM/DD/YYYY',
+            notifications: {
+                email: settings.notifications?.email ?? true,
+                push: settings.notifications?.push ?? true,
+                billReminders: settings.notifications?.billReminders ?? true,
+                budgetAlerts: settings.notifications?.budgetAlerts ?? true
+            }
+        }));
+    }, [settings]);
 
     const handleChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -152,11 +169,6 @@ const Settings = () => {
                             onChange={(e) => handleChange('currency', e.target.value)}
                             options={SUPPORTED_CURRENCIES.map(c => ({ value: c.symbol, label: c.label }))}
                         />
-                        {liveRate !== null && formData.currency !== '$' && (
-                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                Live rate: 1 USD = {liveRate.toFixed(4)} {SYMBOL_TO_CODE[formData.currency]}
-                            </p>
-                        )}
                     </div>
                     <Select
                         label="Date Format"
@@ -200,15 +212,17 @@ const Settings = () => {
             {/* DATA MANAGEMENT */}
             <div className="pt-6">
                 <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Data Management</h3>
-                <Card className="border border-danger-200/50 dark:border-danger-900/30">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <Card className="border-2 border-red-500/60 dark:border-red-500/40 bg-red-50/3 dark:bg-red-950/3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-6">
                         <div>
-                            <h4 className="text-lg font-semibold text-danger-600 dark:text-danger-500">Wipe All Data</h4>
+                            <h4 className="text-lg font-semibold text-red-600 dark:text-red-400">Wipe All Data</h4>
                             <p className="text-sm text-gray-500 dark:text-gray-400">Permanently delete all your financial history</p>
                         </div>
-                        <Button variant="danger" onClick={() => setWipeModal(true)}>
-                            Wipe Data
-                        </Button>
+                        <div className="ml-auto">
+                            <Button variant="danger" onClick={() => setWipeModal(true)}>
+                                Wipe Data
+                            </Button>
+                        </div>
                     </div>
                 </Card>
             </div>
@@ -216,26 +230,30 @@ const Settings = () => {
             {/* ACCOUNT */}
             <div className="pt-2">
                 <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Account</h3>
-                <Card className="mb-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <Card className="mb-4 border-2 border-red-500/60 dark:border-red-500/40 bg-red-50/3 dark:bg-red-950/3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-6">
                         <div>
-                            <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Sign Out</h4>
+                            <h4 className="text-lg font-semibold text-red-600 dark:text-red-400">Sign Out</h4>
                             <p className="text-sm text-gray-500 dark:text-gray-400">Logout securely from your account</p>
                         </div>
-                        <Button variant="secondary" onClick={() => logout()}>
-                            Logout
-                        </Button>
+                        <div className="ml-auto">
+                            <Button variant="secondary" onClick={() => logout()}>
+                                Logout
+                            </Button>
+                        </div>
                     </div>
                 </Card>
-                <Card className="border border-danger-200/50 dark:border-danger-900/30">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <Card className="border-2 border-red-500/60 dark:border-red-500/40 bg-red-50/3 dark:bg-red-950/3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-6">
                         <div>
-                            <h4 className="text-lg font-semibold text-danger-600 dark:text-danger-500">Delete Account</h4>
+                            <h4 className="text-lg font-semibold text-red-600 dark:text-red-400">Delete Account</h4>
                             <p className="text-sm text-gray-500 dark:text-gray-400">Permanently delete your account and all associated data.</p>
                         </div>
-                        <Button variant="danger" onClick={() => setDeleteModal(true)}>
-                            Delete My Account
-                        </Button>
+                        <div className="ml-auto">
+                            <Button variant="danger" onClick={() => setDeleteModal(true)}>
+                                Delete My Account
+                            </Button>
+                        </div>
                     </div>
                 </Card>
             </div>
@@ -262,13 +280,22 @@ const Settings = () => {
                     <div className="w-16 h-16 bg-danger-100 dark:bg-danger-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Trash2 className="w-8 h-8 text-danger-600" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Delete everything?</h3>
-                    <p className="text-gray-500 dark:text-gray-400 mb-6">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Delete Account</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">This action is permanent and irreversible</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
                         This action <strong>cannot be undone</strong>. This will instantly delete your account profile, credentials, and all financial data from our servers.
+                        To confirm, type <strong className="text-red-600 dark:text-red-400">DELETE</strong> below.
                     </p>
+                    <input
+                        type="text"
+                        value={deleteConfirmText}
+                        onChange={e => setDeleteConfirmText(e.target.value)}
+                        placeholder="Type DELETE to confirm"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-dark-400 rounded-lg bg-white dark:bg-dark-200 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 mb-4"
+                    />
                     <div className="flex gap-3">
-                        <Button variant="secondary" onClick={() => setDeleteModal(false)} fullWidth disabled={actionLoading}>Cancel</Button>
-                        <Button variant="danger" onClick={handleDeleteAccount} loading={actionLoading} fullWidth>Delete Account</Button>
+                        <Button variant="secondary" onClick={() => { setDeleteModal(false); setDeleteConfirmText(''); }} fullWidth disabled={actionLoading}>Cancel</Button>
+                        <Button variant="danger" onClick={handleDeleteAccount} loading={actionLoading} fullWidth disabled={deleteConfirmText !== 'DELETE' || actionLoading}>Delete Account</Button>
                     </div>
                 </div>
             </Modal>

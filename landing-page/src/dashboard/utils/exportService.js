@@ -4,6 +4,41 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 /**
+ * Currency symbol to code mapping for PDF compatibility
+ * (jsPDF doesn't support all Unicode symbols like ₹)
+ */
+const CURRENCY_MAP = {
+    '$': 'USD',
+    '€': 'EUR',
+    '£': 'GBP',
+    '¥': 'JPY',
+    '₹': 'INR',
+    'C$': 'CAD',
+    'A$': 'AUD',
+    'CHF': 'CHF',
+    'kr': 'SEK',
+    'kr': 'NOK',
+    'R$': 'BRL',
+    '₽': 'RUB',
+    '฿': 'THB',
+    '₩': 'KRW',
+    'php': 'PHP',
+    'Rp': 'IDR',
+};
+
+/**
+ * Get PDF-safe currency representation
+ * Converts Unicode symbols to currency codes for better PDF compatibility
+ */
+const getPDFCurrency = (currency) => {
+    // If it's already a code (3+ chars), return as is
+    if (currency && currency.length > 1) return currency;
+    
+    // If it's a symbol, convert to code, otherwise return the currency
+    return CURRENCY_MAP[currency] || currency;
+};
+
+/**
  * Downloads a string or blob to the user's computer.
  */
 const triggerDownload = (content, filename, type = 'text/csv;charset=utf-8;') => {
@@ -45,8 +80,12 @@ export const exportTransactionsToCSV = (transactions, currency = 'USD') => {
     const data = prepDataForExport(transactions, currency);
     const csvContent = Papa.unparse(data);
 
-    // Create Blob URL for downloading
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    // Add BOM (Byte Order Mark) for UTF-8 to ensure proper character encoding
+    const BOM = '\uFEFF';
+    const csvWithBOM = BOM + csvContent;
+    
+    // Create Blob URL for downloading with UTF-8 encoding
+    const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
 
     const link = document.createElement('a');
@@ -65,6 +104,12 @@ export const exportTransactionsToPDF = (transactions, currency = 'USD') => {
 
     const doc = new jsPDF();
     const data = prepDataForExport(transactions, currency);
+    
+    // Get PDF-safe currency representation
+    const pdfCurrency = getPDFCurrency(currency);
+
+    // Set default font
+    doc.setFont('Helvetica');
 
     // Document header
     doc.setFontSize(20);
@@ -79,19 +124,27 @@ export const exportTransactionsToPDF = (transactions, currency = 'USD') => {
     const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
     const expenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
 
-    doc.text(`Total Income: ${currency} ${income.toFixed(2)}`, 140, 30);
-    doc.text(`Total Expenses: ${currency} ${expenses.toFixed(2)}`, 140, 36);
+    doc.setTextColor(0);
+    doc.text(`Total Income: ${pdfCurrency} ${income.toFixed(2)}`, 140, 30);
+    doc.text(`Total Expenses: ${pdfCurrency} ${expenses.toFixed(2)}`, 140, 36);
 
-    // Table
+    // Table - also use PDF-safe currency in table data
     const tableColumn = Object.keys(data[0]);
-    const tableRows = data.map(obj => Object.values(obj));
+    const tableRows = data.map(obj => {
+        const row = Object.values(obj);
+        // Replace currency symbol in the Currency column (index 5) with currency code
+        if (row[5] === currency) {
+            row[5] = pdfCurrency;
+        }
+        return row;
+    });
 
     autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
         startY: 45,
         theme: 'grid',
-        styles: { fontSize: 8, cellPadding: 2 },
+        styles: { fontSize: 8, cellPadding: 2, font: 'Helvetica' },
         headStyles: { fillColor: [59, 130, 246] }, // Tailwind blue-500
         alternateRowStyles: { fillColor: [249, 250, 251] } // Tailwind gray-50
     });

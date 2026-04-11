@@ -218,7 +218,12 @@ export const groupByMonth = (transactions) => {
  * @returns {number} Health score
  */
 export const calculateFinancialHealthScore = (data) => {
-    const { income, expenses, savings, budgetUtilization, goalsProgress } = data;
+    const { income, expenses, savings, budgetUtilization, goalsProgress, hasBudgets, hasGoals } = data;
+
+    // If no data exists, return 0
+    if (income === 0 && expenses === 0 && !hasBudgets && !hasGoals) {
+        return 0;
+    }
 
     let score = 50; // Base score
 
@@ -230,16 +235,20 @@ export const calculateFinancialHealthScore = (data) => {
     else if (savingsRatio >= 5) score += 5;
     else if (savingsRatio < 0) score -= 10;
 
-    // Budget adherence
-    if (budgetUtilization <= 80) score += 15;
-    else if (budgetUtilization <= 90) score += 10;
-    else if (budgetUtilization <= 100) score += 5;
-    else score -= 10;
+    // Budget adherence - only score if budgets exist
+    if (hasBudgets) {
+        if (budgetUtilization <= 80) score += 15;
+        else if (budgetUtilization <= 90) score += 10;
+        else if (budgetUtilization <= 100) score += 5;
+        else score -= 10;
+    }
 
-    // Goals progress
-    if (goalsProgress >= 75) score += 15;
-    else if (goalsProgress >= 50) score += 10;
-    else if (goalsProgress >= 25) score += 5;
+    // Goals progress - only score if goals exist
+    if (hasGoals) {
+        if (goalsProgress >= 75) score += 15;
+        else if (goalsProgress >= 50) score += 10;
+        else if (goalsProgress >= 25) score += 5;
+    }
 
     return Math.min(Math.max(Math.round(score), 0), 100);
 };

@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Menu, X, Sun, Moon } from 'lucide-react';
 import { Button } from './ui/button';
 import { useTheme } from 'next-themes';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthModal } from '../context/AuthContext';
 import logo from '../assets/logo.png';
 
 export const Navbar = () => {
   const { openLogin, openRegister } = useAuthModal();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
@@ -28,7 +29,6 @@ export const Navbar = () => {
     { name: 'Home', href: '/' },
     { name: 'Features', href: '/#features' },
     { name: 'How It Works', href: '/#how-it-works' },
-    { name: 'Feedback', href: '/feedback' },
     { name: 'Pricing', href: '/pricing' },
     { name: 'FAQ', href: '/faq' }
   ];
@@ -60,7 +60,13 @@ export const Navbar = () => {
       <div className="w-full px-6 sm:px-10 lg:px-12">
         <div className="flex justify-between items-center h-28">
           {/* Logo */}
-          <div className="flex items-center cursor-pointer group" onClick={() => navigate('/')}>
+          <div className="flex items-center cursor-pointer group" onClick={() => {
+            if (location.pathname === '/') {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+              navigate('/');
+            }
+          }}>
             <img
               src={logo}
               alt="FinTrack Logo"
@@ -69,14 +75,21 @@ export const Navbar = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-x-16">
+          <div className="hidden md:flex items-center gap-x-16 flex-1 justify-center">
             {navLinks.map((link) => (
               <a
                 key={link.name}
                 href={link.href}
                 onClick={(e) => {
                   e.preventDefault();
-                  if (link.href.startsWith('/#')) {
+                  if (link.name === 'Home') {
+                    // If already on home page, scroll to top; otherwise navigate
+                    if (location.pathname === '/') {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else {
+                      navigate('/');
+                    }
+                  } else if (link.href.startsWith('/#')) {
                     // anchor on home page — navigate there (browser will scroll to hash)
                     window.location.href = link.href;
                   } else {
@@ -92,6 +105,29 @@ export const Navbar = () => {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              className="text-gray-300 hover:text-white hover:bg-white/10"
+              onClick={() => navigate('/about')}
+            >
+              About Us
+            </Button>
+            <Button
+              variant="ghost"
+              className="text-gray-300 hover:text-white hover:bg-white/10"
+              onClick={() => navigate('/contact')}
+            >
+              Contact Us
+            </Button>
+            <Button
+              variant="ghost"
+              className="text-gray-300 hover:text-white hover:bg-white/10"
+              onClick={() => navigate('/feedback')}
+            >
+              Feedback
+            </Button>
+            {/* Divider between Contact and Theme toggle */}
+            <div className="h-6 w-px bg-white/10 mx-2" aria-hidden />
             <ThemeToggle />
             <Button
               variant="ghost"
@@ -129,7 +165,13 @@ export const Navbar = () => {
                   onClick={(e) => {
                     e.preventDefault();
                     setIsMobileMenuOpen(false);
-                    if (link.href.startsWith('/#')) {
+                    if (link.name === 'Home') {
+                      if (location.pathname === '/') {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      } else {
+                        navigate('/');
+                      }
+                    } else if (link.href.startsWith('/#')) {
                       window.location.href = link.href;
                     } else {
                       navigate(link.href);
@@ -139,6 +181,39 @@ export const Navbar = () => {
                   {link.name}
                 </a>
               ))}
+              <a
+                href="/about"
+                className="text-gray-300 hover:text-white text-lg font-medium transition-colors duration-200"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsMobileMenuOpen(false);
+                  navigate('/about');
+                }}
+              >
+                About Us
+              </a>
+              <a
+                href="/contact"
+                className="text-gray-300 hover:text-white text-lg font-medium transition-colors duration-200"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsMobileMenuOpen(false);
+                  navigate('/contact');
+                }}
+              >
+                Contact Us
+              </a>
+              <a
+                href="/feedback"
+                className="text-gray-300 hover:text-white text-lg font-medium transition-colors duration-200"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsMobileMenuOpen(false);
+                  navigate('/feedback');
+                }}
+              >
+                Feedback
+              </a>
               <div className="flex items-center justify-between py-2 border-t border-white/5 mt-2">
                 <span className="text-sm font-medium text-gray-400">Theme</span>
                 <ThemeToggle />

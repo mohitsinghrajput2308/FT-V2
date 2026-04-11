@@ -15,12 +15,11 @@ const plans = [
     color: 'text-gray-400',
     border: 'border-gray-200 dark:border-dark-400',
     features: [
-      'Unlimited transactions (income & expenses)',
-      'Unlimited investments tracking',
+      '50 transactions (income & expenses)',
+      '3 investments max',
       'Analytics dashboard & reports',
       '2 budgets, 2 goals & 2 bills',
       'Default expense categories',
-      'All 7 financial calculators',
       'Email support',
     ],
   },
@@ -39,7 +38,6 @@ const plans = [
       '5 budgets, 5 goals & 5 bills',
       '3 custom categories (lifetime)',
       'CSV & PDF data export',
-      'API documentation access',
       'Priority support & live chat',
     ],
   },
@@ -56,9 +54,6 @@ const plans = [
       'Unlimited budgets, goals & bills',
       'Unlimited custom categories',
       'Team collaboration (up to 5 users)',
-      'Tax preparation reports',
-      'Custom integrations & API access',
-      'Dedicated account manager',
     ],
   },
 ];
@@ -67,9 +62,9 @@ const comparison = [
   {
     category: 'Core Tracking',
     rows: [
-      { feature: 'Transactions (Income & Expenses)', free: 'Unlimited', pro: 'Unlimited', business: 'Unlimited' },
-      { feature: 'Investments', free: 'Unlimited', pro: 'Unlimited', business: 'Unlimited' },
-      { feature: 'Financial Calculators', free: 'All 7', pro: 'All 7', business: 'All 7' },
+      { feature: 'Transactions (Income & Expenses)', free: '50', pro: 'Unlimited', business: 'Unlimited' },
+      { feature: 'Investments', free: '3 max', pro: 'Unlimited', business: 'Unlimited' },
+      { feature: 'Financial Calculators', free: false, pro: 'All 7', business: 'All 7' },
       { feature: 'Recurring Transactions', free: true, pro: true, business: true },
     ],
   },
@@ -94,22 +89,13 @@ const comparison = [
       { feature: 'Analytics Dashboard', free: true, pro: true, business: true },
       { feature: 'CSV Export', free: false, pro: true, business: true },
       { feature: 'PDF Export', free: false, pro: true, business: true },
-      { feature: 'Tax Preparation Reports', free: false, pro: false, business: true },
-    ],
-  },
-  {
-    category: 'Developer',
-    rows: [
-      { feature: 'API Documentation', free: false, pro: true, business: true },
     ],
   },
   {
     category: 'Collaboration',
     rows: [
       { feature: 'Team Members', free: '1', pro: '1', business: 'Up to 5' },
-      { feature: 'Business Expense Tracking', free: false, pro: false, business: true },
-      { feature: 'Custom Integrations', free: false, pro: false, business: true },
-      { feature: 'Dedicated Account Manager', free: false, pro: false, business: true },
+
     ],
   },
   {
@@ -118,18 +104,18 @@ const comparison = [
       { feature: 'Email Support', free: true, pro: true, business: true },
       { feature: 'Priority Support', free: false, pro: true, business: true },
       { feature: 'Live Chat', free: false, pro: true, business: true },
-      { feature: 'Dedicated Manager', free: false, pro: false, business: true },
     ],
   },
 ];
 
 const faqs = [
-  { q: 'Can I cancel anytime?', a: 'Yes. Cancel your subscription at any time from your account settings. You keep Pro access until the end of your billing period.' },
-  { q: 'Is there a free trial?', a: 'The Free plan is yours forever with no credit card required. You can upgrade to Pro or Business whenever you\'re ready.' },
-  { q: 'How does the yearly discount work?', a: 'Choosing yearly billing gives you 20% off — you pay upfront for 12 months at the discounted rate.' },
-  { q: 'What payment methods are accepted?', a: 'We accept all major credit and debit cards (Visa, Mastercard, Amex) via Stripe. All transactions are encrypted.' },
-  { q: 'Can I switch plans later?', a: 'Yes. You can upgrade or downgrade your plan at any time. Upgrades take effect immediately; downgrades apply at next billing cycle.' },
-  { q: 'Is my data safe?', a: 'Absolutely. All data is encrypted in transit (TLS 1.3) and at rest (AES-256). We never sell your financial data.' },
+  { q: 'Can I cancel anytime?', a: 'Yes. Cancel your subscription at any time from your account settings. Your access continues until the end of your current billing period. If you cancel during a 14-day trial, you\'re not charged.' },
+  { q: 'Is there a free trial?', a: 'Yes! Pro and Business plans include a 7-day free trial with full access to all features. No credit card required to start the trial — you\'re only charged when the trial ends. Cancel anytime during the trial and you won\'t be charged.' },
+  { q: 'Do I get a money-back guarantee?', a: 'Absolutely. All paid plans include a 14-day money-back guarantee. If you\'re unhappy for any reason, contact us within 14 days of any charge and we\'ll issue a full refund, no questions asked.' },
+  { q: 'How does the yearly discount work?', a: 'Choosing yearly billing gives you 20% off the monthly rate. You pay the full year upfront at the discounted price, which results in significant savings. You can still cancel anytime.' },
+  { q: 'What payment methods are accepted?', a: 'We accept all major credit and debit cards (Visa, Mastercard, Amex) via Paddle. Paddle supports 100+ payment methods globally including local options. All transactions are encrypted with PCI-DSS compliance.' },
+  { q: 'Can I switch plans later?', a: 'Yes. Upgrade or downgrade anytime from your account settings. Upgrades take effect immediately and you pay the difference. Downgrades apply at your next billing cycle, so you keep the current plan benefits through your current billing period.' },
+  { q: 'Is my data safe?', a: 'Absolutely. All data is encrypted in transit (TLS 1.3) and at rest (AES-256). Your transactions are stored securely in Supabase with Row Level Security — only you can access your data. We never sell or share your financial information.' },
 ];
 
 const Cell = ({ value }) => {

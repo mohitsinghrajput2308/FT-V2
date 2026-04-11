@@ -1,7 +1,8 @@
 ﻿import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Calculator, TrendingUp, Coins, PiggyBank, Wallet,
-    RefreshCw, ChevronRight
+    RefreshCw, ChevronRight, Lock
 } from 'lucide-react';
 import {
     BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -13,6 +14,7 @@ import {
 } from '../utils/calculators';
 import { formatCurrency } from '../utils/helpers';
 import { useFinance } from '../context/FinanceContext';
+import { useSubscription } from '../../hooks/useSubscription';
 import Card from '../components/Common/Card';
 import Input from '../components/Common/Input';
 import Button from '../components/Common/Button';
@@ -51,6 +53,8 @@ const TOOLTIP_STYLE = { fontSize: 12, borderRadius: 8 };
 
 const Calculators = () => {
     const { currency } = useFinance();
+    const { isPro, isBusiness } = useSubscription();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('emi');
 
     // ── EMI ──────────────────────────────────────────────────────────────────
@@ -150,6 +154,39 @@ const Calculators = () => {
     };
 
     const activeColor = TABS.find(t => t.id === activeTab)?.color || 'primary';
+
+    // ── Access Control ──────────────────────────────────────────────────────
+    if (!isPro && !isBusiness) {
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center justify-between mb-8">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Financial Calculators</h1>
+                        <p className="text-gray-500 dark:text-gray-400">7 calculators to plan every aspect of your finances</p>
+                    </div>
+                </div>
+
+                {/* Paywall Card */}
+                <Card className="border-2 border-amber-500/30 bg-gradient-to-br from-amber-50/50 to-orange-50/50 dark:from-amber-900/10 dark:to-orange-900/10">
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                        <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-4">
+                            <Lock className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Premium Feature</h2>
+                        <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md">
+                            Financial Calculators are available to Pro and Business plan subscribers. Upgrade now to access all 7 calculators.
+                        </p>
+                        <Button
+                            onClick={() => navigate('/dashboard/pricing')}
+                            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold"
+                        >
+                            View Pricing Plans
+                        </Button>
+                    </div>
+                </Card>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">

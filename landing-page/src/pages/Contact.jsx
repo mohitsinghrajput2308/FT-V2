@@ -5,21 +5,14 @@ import { Footer } from '../components/Footer';
 import { AuthModal } from '../components/AuthModal';
 import { useAuthModal } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { Mail, Send, MapPin, Phone, MessageSquare, Sparkles, Clock, Loader2 } from 'lucide-react';
+import { Mail, Send, MessageSquare, Sparkles, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] } }) };
 
 const contactMethods = [
-  { icon: Mail, title: 'Email Us', desc: 'support@fintrack.app', sub: 'We respond within 24 hours', gradient: 'from-teal-500 to-cyan-500' },
-  { icon: MessageSquare, title: 'Live Chat', desc: 'Available in-app', sub: 'Mon–Fri, 9AM–6PM EST', gradient: 'from-blue-500 to-indigo-500' },
-  { icon: Phone, title: 'Phone', desc: '+1 (555) 123-4567', sub: 'Mon–Fri, 9AM–5PM EST', gradient: 'from-emerald-500 to-teal-500' },
-];
-
-const offices = [
-  { city: 'San Francisco', address: '100 Market St, Suite 400, CA 94105', tz: 'PST (UTC-8)' },
-  { city: 'London', address: '10 Finsbury Square, EC2A 1AF', tz: 'GMT (UTC+0)' },
-  { city: 'Singapore', address: '1 Raffles Place, Tower 2, #20-01', tz: 'SGT (UTC+8)' },
+  { icon: Mail, title: 'Email Us', desc: 'support@fintrack.app', sub: 'We will try to respond within 72 hours', gradient: 'from-teal-500 to-cyan-500' },
+  { icon: MessageSquare, title: 'AI Assistant', desc: 'Available in-app', sub: 'Paid users only', gradient: 'from-blue-500 to-indigo-500' },
 ];
 
 const Contact = () => {
@@ -43,6 +36,10 @@ const Contact = () => {
         });
       if (error) throw error;
       setSubmitted(true);
+      setTimeout(() => {
+        setForm({ name: '', email: '', subject: '', message: '' });
+        setSubmitted(false);
+      }, 5000);
     } catch (err) {
       setSubmitError('Failed to send message. Please try again.');
     } finally {
@@ -83,7 +80,7 @@ const Contact = () => {
 
         {/* Contact Methods */}
         <section className="pb-16 px-6">
-          <div className="max-w-4xl mx-auto grid sm:grid-cols-3 gap-5">
+          <div className="max-w-2xl mx-auto grid sm:grid-cols-2 gap-5">
             {contactMethods.map((m, i) => (
               <motion.div key={m.title} custom={i} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}
                 className="bg-[#0A0A0B] border border-white/5 rounded-[20px] p-6 text-center hover:border-teal-500/30 transition-all"
@@ -150,25 +147,6 @@ const Contact = () => {
                 </div>
               )}
             </motion.div>
-          </div>
-        </section>
-
-        {/* Offices */}
-        <section className="pb-32 px-6">
-          <div className="max-w-4xl mx-auto">
-            <motion.h2 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-3xl font-black text-center mb-12">Our Offices</motion.h2>
-            <div className="grid sm:grid-cols-3 gap-5">
-              {offices.map((o, i) => (
-                <motion.div key={o.city} custom={i} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}
-                  className="bg-[#0A0A0B] border border-white/5 rounded-[20px] p-6 hover:border-teal-500/30 transition-all"
-                >
-                  <MapPin className="w-6 h-6 text-teal-400 mb-3" />
-                  <h3 className="font-black text-white mb-1">{o.city}</h3>
-                  <p className="text-gray-500 text-sm mb-2">{o.address}</p>
-                  <div className="flex items-center gap-1 text-xs text-gray-600"><Clock className="w-3 h-3" /> {o.tz}</div>
-                </motion.div>
-              ))}
-            </div>
           </div>
         </section>
       </div>
