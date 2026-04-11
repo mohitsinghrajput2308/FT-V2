@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { TrendingUp, TrendingDown, RefreshCw, Search, Star, Lock } from 'lucide-react';
 import { STOCK_FOREX_UNIVERSE } from '../../data/marketAssets';
-import { useNavigate } from 'react-router-dom';
+
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const FIXED_SYMBOLS = new Set(STOCK_FOREX_UNIVERSE.map(a => a.symbol));
@@ -76,7 +76,7 @@ const fromYahooQuote = (q) => ({
 
 // ── Component ──────────────────────────────────────────────────────────────
 const MarketWatch = () => {
-    const navigate = useNavigate();
+
 
     // Persistent watchlist - initially with symbols only (no stale prices)
     const [watchlist, setWatchlist] = useState(() => {
@@ -448,8 +448,7 @@ const MarketWatch = () => {
                     return (
                         <div
                             key={asset.symbol}
-                            onClick={() => navigate(`/dashboard/investments/chart/${encodeURIComponent(asset.symbol)}`)}
-                            className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-dark-300/60 cursor-pointer transition group"
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-dark-300/60 transition group"
                         >
                             {/* Star / Lock */}
                             <button
