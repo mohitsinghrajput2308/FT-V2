@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useFinance } from '../context/FinanceContext';
 import { useNotification } from '../context/NotificationContext';
+import { supabase } from '../../lib/supabase';
 
 import Card from '../components/Common/Card';
 import Button from '../components/Common/Button';
@@ -26,10 +27,24 @@ const Settings = () => {
 
     const handleWipeData = async () => {
         setActionLoading(true);
-        // This is a UI mockup placeholder for stripping data rows.
-        await new Promise(res => setTimeout(res, 1200));
-        success('All financial data wiped successfully.');
-        setWipeModal(false);
+        try {
+            const uid = currentUser.id;
+            // Purge all related items from Supabase tables
+            await Promise.all([
+                supabase.from('transactions').delete().eq('user_id', uid),
+                supabase.from('budgets').delete().eq('user_id', uid),
+                supabase.from('goals').delete().eq('user_id', uid),
+                supabase.from('investments').delete().eq('user_id', uid),
+                supabase.from('bills').delete().eq('user_id', uid),
+                supabase.from('categories').delete().eq('user_id', uid).eq('is_builtin', false)
+            ]);
+            success('All financial data wiped successfully.');
+            setWipeModal(false);
+            // Force reload to dump Context state cleanly
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (err) {
+            error('Failed to wipe data: ' + err.message);
+        }
         setActionLoading(false);
     };
 
@@ -39,9 +54,11 @@ const Settings = () => {
         if (ok) {
             success('Account deleted successfully.');
         } else {
-            error(err || 'Failed to delete account.');
-            setActionLoading(false);
+            warning('Server deletion missing (Edge Function). Forcing local logout.');
+            await logout();
+            window.location.reload();
         }
+        setActionLoading(false);
     };
 
     const [formData, setFormData] = useState({
