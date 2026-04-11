@@ -193,25 +193,46 @@ const MarketWatch = () => {
             return;
         }
 
+        // Extract exact static assets that belong to this tab
+        const baseAssets = STOCK_FOREX_UNIVERSE.filter(a => a.type === (activeTab === 'Indices' ? 'Index' : activeTab === 'Funds' ? 'ETF' : activeTab.replace(/s$/, '')) || (activeTab === 'Commodity' && a.type === 'Commodity') || (activeTab === 'Futures' && a.type === 'Future') || (activeTab === 'Stocks' && a.type === 'Stock'));
+        
+        // Optimize: Fetch each ticker symbol exactly once avoiding duplicate API payload 
+        const uniqueSyms = [...new Set(syms)];
+
         let cancelled = false;
         fetchingForTab.current = activeTab;
         setTabLoading(true);
 
-        yahooQuote(syms)
+        yahooQuote(uniqueSyms)
             .then(quotes => {
                 if (cancelled || fetchingForTab.current !== activeTab) return;
-                const fetchedAssets = quotes.map(fromYahooQuote);
-                const fetchedSyms = fetchedAssets.map(a => a.symbol);
                 
-                // Merge any symbols that Yahoo failed to find with our static data
-                const missingAssets = STOCK_FOREX_UNIVERSE.filter(a => syms.includes(a.symbol) && !fetchedSyms.includes(a.symbol));
-                setTabData(prev => ({ ...prev, [activeTab]: [...fetchedAssets, ...missingAssets] }));
+                // Fast lookup for live pricing
+                const liveMap = {};
+                quotes.forEach(q => {
+                    liveMap[q.symbol] = fromYahooQuote(q);
+                });
+
+                // Merge live pricing without overwriting custom names/ids (e.g. "Gold vs Euro")
+                const finalAssets = baseAssets.map(asset => {
+                    const live = liveMap[asset.symbol];
+                    if (live) {
+                        return { 
+                            ...asset, 
+                            price: live.price, 
+                            changePercent: live.changePercent, 
+                            change24h: live.change24h,
+                            isDynamic: true 
+                        };
+                    }
+                    return asset; // Fallback to static if no quote found
+                });
+
+                setTabData(prev => ({ ...prev, [activeTab]: finalAssets }));
             })
             .catch(() => {
                 if (cancelled || fetchingForTab.current !== activeTab) return;
-                // Fallback for unsupported Yahoo assets
-                const assets = STOCK_FOREX_UNIVERSE.filter(a => syms.includes(a.symbol));
-                setTabData(prev => ({ ...prev, [activeTab]: assets }));
+                setTabData(prev => ({ ...prev, [activeTab]: baseAssets }));
             })
             .finally(() => {
                 if (!cancelled) setTabLoading(false);
@@ -255,15 +276,20 @@ const MarketWatch = () => {
                 const updates = {};
                 allQuotes.forEach(q => { updates[q.symbol] = fromYahooQuote(q); });
 
-                setWatchlist(prev => prev.map(a => updates[a.symbol] ? { ...a, ...updates[a.symbol] } : a));
+                const mergeLivePrice = (a) => {
+                    const live = updates[a.symbol];
+                    return live ? { ...a, price: live.price, changePercent: live.changePercent, change24h: live.change24h } : a;
+                };
+
+                setWatchlist(prev => prev.map(mergeLivePrice));
                 setTabData(prev => {
                     const next = { ...prev };
                     for (const tab of Object.keys(next)) {
-                        next[tab] = next[tab].map(a => updates[a.symbol] ? { ...a, ...updates[a.symbol] } : a);
+                        next[tab] = next[tab].map(mergeLivePrice);
                     }
                     return next;
                 });
-                setSearchResults(prev => prev.map(a => updates[a.symbol] ? { ...a, ...updates[a.symbol] } : a));
+                setSearchResults(prev => prev.map(mergeLivePrice));
             } catch {}
         };
 
