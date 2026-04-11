@@ -326,13 +326,32 @@ export const SecureInvestmentAPI = {
             sanitized.purchasePrice = Math.round(num * 100) / 100;
         }
         if (data.currentValue !== undefined || data.currentPrice !== undefined) {
-            const num = parseFloat(data.currentValue || data.currentPrice);
+            const num = parseFloat(data.currentValue ?? data.currentPrice);
             if (isNaN(num) || num < 0) return validationError('Invalid current price');
-            sanitized.currentValue = Math.round(num * 100) / 100;
+            // 6 decimal places — Forex rates need precision beyond 2 dp
+            sanitized.currentValue = parseFloat(num.toFixed(6));
         }
         if (data.purchaseDate || data.date) sanitized.purchaseDate = data.purchaseDate || data.date;
 
         return InvestmentService.update(idCheck.value, sanitized);
+    },
+
+    /**
+     * Price-only update — called exclusively by the internal portfolio poller.
+     * Intentionally bypasses rate limiting since this is a trusted internal action,
+     * not a user-initiated mutation. Runs every 5s across all symbol-linked assets.
+     */
+    async updatePrice(id, currentValue) {
+        const idCheck = validateUUID(id);
+        if (!idCheck.valid) return validationError(idCheck.error);
+
+        const num = parseFloat(currentValue);
+        if (isNaN(num) || num < 0) return validationError('Invalid price');
+
+        // Go directly to Supabase — no rate limit, no toast, no full validation
+        return InvestmentService.update(idCheck.value, {
+            currentValue: parseFloat(num.toFixed(6)),
+        });
     },
 
     async delete(id, userId) {

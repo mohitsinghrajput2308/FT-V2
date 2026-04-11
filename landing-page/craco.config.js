@@ -1,4 +1,5 @@
 // craco.config.js
+require('node:dns').setDefaultResultOrder('ipv4first');
 const path = require("path");
 require("dotenv").config();
 
@@ -49,15 +50,15 @@ const webpackConfig = {
     configure: (webpackConfig) => {
 
       // Add ignored patterns to reduce watched directories
-        webpackConfig.watchOptions = {
-          ...webpackConfig.watchOptions,
-          ignored: [
-            '**/node_modules/**',
-            '**/.git/**',
-            '**/build/**',
-            '**/dist/**',
-            '**/coverage/**',
-            '**/public/**',
+      webpackConfig.watchOptions = {
+        ...webpackConfig.watchOptions,
+        ignored: [
+          '**/node_modules/**',
+          '**/.git/**',
+          '**/build/**',
+          '**/dist/**',
+          '**/coverage/**',
+          '**/public/**',
         ],
       };
 
@@ -83,22 +84,90 @@ webpackConfig.devServer = (devServerConfig) => {
     devServerConfig = setupDevServer(devServerConfig);
   }
 
-  // Add health check endpoints if enabled
-  if (config.enableHealthCheck && setupHealthEndpoints && healthPluginInstance) {
-    const originalSetupMiddlewares = devServerConfig.setupMiddlewares;
+  // Setup middlewares for health checks and local API endpoints
+  const originalSetupMiddlewares = devServerConfig.setupMiddlewares;
+  devServerConfig.setupMiddlewares = (middlewares, devServer) => {
+    if (originalSetupMiddlewares) {
+      middlewares = originalSetupMiddlewares(middlewares, devServer);
+    }
 
-    devServerConfig.setupMiddlewares = (middlewares, devServer) => {
-      // Call original setup if exists
-      if (originalSetupMiddlewares) {
-        middlewares = originalSetupMiddlewares(middlewares, devServer);
-      }
-
-      // Setup health endpoints
+    if (config.enableHealthCheck && setupHealthEndpoints && healthPluginInstance) {
       setupHealthEndpoints(devServer, healthPluginInstance);
+    }
 
-      return middlewares;
-    };
-  }
+    // Local dev API endpoints for Yahoo Finance (to match Vercel serverless)
+    devServer.app.get('/api/quote', async (req, res) => {
+      const symbols = req.query.symbols;
+      if (!symbols) return res.status(400).json({ error: 'Missing symbols' });
+      try {
+        const YF = require('yahoo-finance2').default;
+        const yahooFinance = new YF({ suppressNotices: ['yahooSurvey'] });
+        const symbolArray = symbols.split(',').map(s => s.trim());
+        let quotes;
+        try {
+          quotes = await yahooFinance.quote(symbolArray);
+        } catch (e) {
+          if (e.name === 'FailedYahooValidationError') {
+            quotes = e.result;
+          } else {
+            throw e;
+          }
+        }
+        res.status(200).json({ quoteResponse: { result: Array.isArray(quotes) ? quotes : [quotes] } });
+      } catch (error) {
+        console.error('Yahoo Quote Error:', error);
+        res.status(500).json({ error: 'Failed to fetch quote', details: error.message });
+      }
+    });
+
+    devServer.app.get('/api/search', async (req, res) => {
+      const q = req.query.q;
+      if (!q) return res.status(400).json({ error: 'Missing query' });
+      try {
+        const YF = require('yahoo-finance2').default;
+        const yahooFinance = new YF({ suppressNotices: ['yahooSurvey'] });
+        const results = await yahooFinance.search(q, { quotesCount: 10, newsCount: 0 });
+        res.status(200).json(results);
+      } catch (error) {
+        console.error('Yahoo Search Error:', error);
+        res.status(500).json({ error: 'Failed to fetch search', details: error.message });
+      }
+    });
+
+    return middlewares;
+  };
+
+  // Add proxy to bypass CORS for Yahoo Finance API
+  devServerConfig.proxy = [
+    {
+      context: ['/api/yahoo'],
+      target: 'https://query1.finance.yahoo.com',
+      changeOrigin: true,
+      secure: false,
+      pathRewrite: { '^/api/yahoo': '' },
+      on: {
+        proxyReq: (proxyReq) => {
+          proxyReq.setHeader('Origin', 'https://finance.yahoo.com');
+          proxyReq.setHeader('Referer', 'https://finance.yahoo.com/');
+          proxyReq.setHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+        }
+      }
+    },
+    {
+      context: ['/api/yahoo2'],
+      target: 'https://query2.finance.yahoo.com',
+      changeOrigin: true,
+      secure: false,
+      pathRewrite: { '^/api/yahoo2': '' },
+      on: {
+        proxyReq: (proxyReq) => {
+          proxyReq.setHeader('Origin', 'https://finance.yahoo.com');
+          proxyReq.setHeader('Referer', 'https://finance.yahoo.com/');
+          proxyReq.setHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+        }
+      }
+    }
+  ];
 
   return devServerConfig;
 };

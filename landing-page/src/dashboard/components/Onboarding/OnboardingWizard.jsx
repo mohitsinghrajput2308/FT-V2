@@ -49,8 +49,8 @@ const OnboardingWizard = ({ onComplete }) => {
     const incomeCategories = (categories.income.length > 0 ? categories.income.map(c => ({ value: c.name, label: c.name })) : DEFAULT_INCOME_CATS.map(c => ({ value: c, label: c })));
     const displayCategories = txType === 'expense' ? expenseCategories : incomeCategories;
 
-    // Dynamic currency prefix component for Input icons
-    const CurrencyPrefix = () => <span className="text-sm font-semibold leading-none">{currency}</span>;
+    // Dynamic currency prefix — rendered inline (NOT as a component) to avoid re-mounting inputs on every keystroke
+    const currencySpan = () => <span className="text-sm font-semibold leading-none">{currency}</span>;
 
     const nextStep = () => {
         setDirection(1);
@@ -238,7 +238,7 @@ const OnboardingWizard = ({ onComplete }) => {
                                             placeholder="Amount"
                                             value={txAmount}
                                             onChange={(e) => setTxAmount(e.target.value)}
-                                            icon={CurrencyPrefix}
+                                            icon={currencySpan}
                                         />
                                     </div>
                                     <Select
@@ -290,7 +290,7 @@ const OnboardingWizard = ({ onComplete }) => {
                                             placeholder="Monthly Limit"
                                             value={budLimit}
                                             onChange={(e) => setBudLimit(e.target.value)}
-                                            icon={CurrencyPrefix}
+                                            icon={currencySpan}
                                         />
                                     </div>
                                 </div>

@@ -10,9 +10,6 @@ import ExpensePieChart from '../components/Charts/ExpensePieChart';
 import OnboardingWizard from '../components/Onboarding/OnboardingWizard';
 
 const Dashboard = () => {
-    const [wizardDone, setWizardDone] = useState(() => {
-        return localStorage.getItem('fintrack_onboarding_completed') === 'true';
-    });
     const {
         transactions,
         monthlyIncome,
@@ -20,8 +17,24 @@ const Dashboard = () => {
         totalBalance,
         totalSavings,
         currency,
-        settings
+        settings,
+        loading
     } = useFinance();
+
+    // Show onboarding only when:
+    // 1. localStorage hasn't marked it done, AND
+    // 2. The user has zero transactions in the DB (truly new user)
+    const [wizardDone, setWizardDone] = useState(() => {
+        return localStorage.getItem('fintrack_onboarding_completed') === 'true';
+    });
+
+    // Once data loads, if the user already has transactions, mark onboarding done to prevent duplicate entries
+    const shouldShowWizard = !wizardDone && !loading && transactions.length === 0;
+
+    // Total income across all time (matches the Income page "Total Income" card)
+    const totalIncome = transactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0);
 
     // Calculate expense data for pie chart
     const currentMonthExpenses = transactions.filter(
@@ -70,8 +83,8 @@ const Dashboard = () => {
                     color="primary"
                 />
                 <SummaryCard
-                    title="Monthly Income"
-                    value={formatCurrency(monthlyIncome, currency)}
+                    title="Total Income"
+                    value={formatCurrency(totalIncome, currency)}
                     icon={TrendingUp}
                     color="success"
                 />
@@ -111,9 +124,12 @@ const Dashboard = () => {
             {/* Recent Transactions */}
             <RecentTransactions />
 
-            {/* Onboarding Overlay */}
-            {!wizardDone && (
-                <OnboardingWizard onComplete={() => setWizardDone(true)} />
+            {/* Onboarding Overlay — only for genuinely new accounts */}
+            {shouldShowWizard && (
+                <OnboardingWizard onComplete={() => {
+                    localStorage.setItem('fintrack_onboarding_completed', 'true');
+                    setWizardDone(true);
+                }} />
             )}
         </div>
     );

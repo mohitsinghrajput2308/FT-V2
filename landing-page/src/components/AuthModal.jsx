@@ -80,6 +80,7 @@ export const AuthModal = ({ isOpen, onClose, initialView = 'login' }) => {
     const [gender, setGender] = useState('');
     const [birthDate, setBirthDate] = useState();
     const [dateInput, setDateInput] = useState('');
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [strength, setStrength] = useState(0);
     const [emailError, setEmailError] = useState('');
 
@@ -1537,7 +1538,7 @@ export const AuthModal = ({ isOpen, onClose, initialView = 'login' }) => {
 
                                     <div className="space-y-1.5 sm:space-y-2">
                                         <Label className="text-white font-semibold text-[13px] ml-1">Date of Birth</Label>
-                                        <Popover>
+                                        <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                                             <PopoverTrigger asChild>
                                                 <div className="relative group">
                                                     <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-blue-500 transition-colors z-10" />
@@ -1566,6 +1567,7 @@ export const AuthModal = ({ isOpen, onClose, initialView = 'login' }) => {
                                                     selected={birthDate}
                                                     onSelect={(date) => {
                                                         setBirthDate(date);
+                                                        setIsCalendarOpen(false);
                                                     }}
                                                     disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                                                     initialFocus

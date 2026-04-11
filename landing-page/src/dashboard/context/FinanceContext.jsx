@@ -279,6 +279,21 @@ export const FinanceProvider = ({ children }) => {
         success?.('Investment updated');
     }, [userId, success, notifyError]);
 
+    // Silent price-only update: optimistic UI first, then background DB sync
+    // Does NOT show any toast notification — used exclusively by price pollers.
+    // Uses the dedicated updatePrice endpoint that bypasses the mutation rate limiter.
+    const updateInvestmentPrice = useCallback(async (id, currentValue) => {
+        const newPrice = Number(currentValue);
+        if (!id || isNaN(newPrice) || newPrice <= 0) return;
+
+        // 1. Update React state immediately — zero perceived latency
+        setInvestments(prev => prev.map(i =>
+            i.id === id ? { ...i, currentValue: newPrice } : i
+        ));
+        // 2. Persist to DB via rate-limit-free endpoint (fire and forget)
+        SecureAPI.investments.updatePrice(id, newPrice).catch(() => {/* silent */});
+    }, []);
+
     const deleteInvestment = useCallback(async (id) => {
         const result = await SecureAPI.investments.delete(id, userId);
         if (result.error) { notifyError?.(result.error); return; }
@@ -411,7 +426,7 @@ export const FinanceProvider = ({ children }) => {
         addTransaction, updateTransaction, deleteTransaction,
         addBudget, updateBudget, deleteBudget,
         addGoal, updateGoal, deleteGoal, addToGoal,
-        addInvestment, updateInvestment, deleteInvestment,
+        addInvestment, updateInvestment, updateInvestmentPrice, deleteInvestment,
         addBill, updateBill, deleteBill, markBillPaid, unmarkBillPaid,
         addCategory, updateCategory, deleteCategory,
         updateSettings,

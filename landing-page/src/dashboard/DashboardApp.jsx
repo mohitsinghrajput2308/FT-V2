@@ -24,6 +24,7 @@ import Goals from './pages/Goals';
 import Transactions from './pages/Transactions';
 import Reports from './pages/Reports';
 import Investments from './pages/Investments';
+import AssetChart from './pages/AssetChart';
 import Bills from './pages/Bills';
 import Calculators from './pages/Calculators';
 import Categories from './pages/Categories';
@@ -53,6 +54,7 @@ const DashboardApp = () => {
                                     <Route path="transactions" element={<Transactions />} />
                                     <Route path="reports" element={<Reports />} />
                                     <Route path="investments" element={<Investments />} />
+                                    <Route path="investments/chart/:symbol" element={<AssetChart />} />
                                     <Route path="bills" element={<Bills />} />
                                     <Route path="calculators" element={<Calculators />} />
                                     <Route path="categories" element={<Categories />} />

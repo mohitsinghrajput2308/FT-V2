@@ -153,43 +153,49 @@ const fromSupabaseGoal = (row) => ({
 });
 
 const toSupabaseInvestment = (i) => {
-    // Pack name + type into stock_symbol as JSON so we don't lose data
-    const meta = { name: i.name || i.symbol || '', type: i.type || 'Other' };
+    // Pack name + type + ticker symbol into stock_symbol as JSON
+    const meta = {
+        name:   i.name   || i.symbol || '',
+        type:   i.type   || 'Other',
+        symbol: i.symbol || null,   // ← Yahoo Finance ticker (e.g. 'AAPL', 'EURUSD=X')
+    };
     return {
-        user_id: i.userId,
-        stock_symbol: JSON.stringify(meta),
-        quantity: Number(i.quantity),
+        user_id:       i.userId,
+        stock_symbol:  JSON.stringify(meta),
+        quantity:      Number(i.quantity),
         purchase_price: Number(i.purchasePrice || i.buyPrice || 0),
-        current_price: Number(i.currentValue || i.currentPrice || 0),
-        purchase_date: i.purchaseDate || i.date || new Date().toISOString().split('T')[0],
+        current_price:  Number(i.currentValue  || i.currentPrice || 0),
+        purchase_date:  i.purchaseDate || i.date || new Date().toISOString().split('T')[0],
     };
 };
 
 const fromSupabaseInvestment = (row) => {
-    let name = row.stock_symbol || '';
-    let type = 'Other';
+    let name   = row.stock_symbol || '';
+    let type   = 'Other';
+    let symbol = null;   // Yahoo ticker
     try {
         if (name.startsWith('{')) {
             const parsed = JSON.parse(name);
-            name = parsed.name || '';
-            type = parsed.type || 'Other';
+            name   = parsed.name   || '';
+            type   = parsed.type   || 'Other';
+            symbol = parsed.symbol || null;   // ← read back the actual ticker
         }
     } catch { /* keep raw value */ }
     return {
-        id: row.id,
-        userId: row.user_id,
+        id:            row.id,
+        userId:        row.user_id,
         name,
         type,
-        symbol: name,
-        stockSymbol: name,
-        quantity: Number(row.quantity),
-        buyPrice: Number(row.purchase_price),
+        symbol,                                         // ← Yahoo ticker or null
+        stockSymbol:   symbol || name,
+        quantity:      Number(row.quantity),
+        buyPrice:      Number(row.purchase_price),
         purchasePrice: Number(row.purchase_price),
-        currentValue: Number(row.current_price || row.purchase_price),
-        currentPrice: Number(row.current_price || row.purchase_price),
-        purchaseDate: row.purchase_date,
-        date: row.purchase_date,
-        createdAt: row.created_at,
+        currentValue:  Number(row.current_price || row.purchase_price),
+        currentPrice:  Number(row.current_price || row.purchase_price),
+        purchaseDate:  row.purchase_date,
+        date:          row.purchase_date,
+        createdAt:     row.created_at,
     };
 };
 
@@ -455,17 +461,26 @@ export const InvestmentService = {
     async update(id, updates) {
         try {
             const payload = {};
-            // Re-pack name+type into stock_symbol JSON
-            if (updates.name !== undefined || updates.type !== undefined) {
-                // We need to merge with existing — fetch current first is complex,
-                // so just pack both if present
-                const meta = { name: updates.name || '', type: updates.type || 'Other' };
+
+            // Re-pack stock_symbol JSON when name, type, OR symbol changes.
+            // We must always include all three fields to avoid overwriting with blanks.
+            if (updates.name !== undefined || updates.type !== undefined || updates.symbol !== undefined) {
+                const meta = {
+                    name:   updates.name   ?? '',
+                    type:   updates.type   ?? 'Other',
+                    symbol: updates.symbol ?? null,
+                };
                 payload.stock_symbol = JSON.stringify(meta);
             }
-            if (updates.quantity !== undefined) payload.quantity = Number(updates.quantity);
-            if (updates.purchasePrice !== undefined || updates.buyPrice !== undefined) payload.purchase_price = Number(updates.purchasePrice || updates.buyPrice);
-            if (updates.currentValue !== undefined || updates.currentPrice !== undefined) payload.current_price = Number(updates.currentValue || updates.currentPrice);
-            if (updates.purchaseDate || updates.date) payload.purchase_date = updates.purchaseDate || updates.date;
+
+            if (updates.quantity     !== undefined) payload.quantity       = Number(updates.quantity);
+            if (updates.purchasePrice !== undefined || updates.buyPrice !== undefined)
+                payload.purchase_price = Number(updates.purchasePrice ?? updates.buyPrice);
+            if (updates.currentValue  !== undefined || updates.currentPrice !== undefined)
+                // Use 6 decimal places to preserve Forex prices (e.g. EURUSD=X 1.157654)
+                payload.current_price = parseFloat(Number(updates.currentValue ?? updates.currentPrice).toFixed(6));
+            if (updates.purchaseDate || updates.date)
+                payload.purchase_date = updates.purchaseDate || updates.date;
 
             const { data, error } = await supabase
                 .from('investments')
