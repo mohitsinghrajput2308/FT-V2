@@ -31,8 +31,8 @@ const TAB_SYMBOLS = {
     Indices:   STOCK_FOREX_UNIVERSE.filter(a => a.type === 'Index').map(a => a.symbol),
     Bonds:     STOCK_FOREX_UNIVERSE.filter(a => a.type === 'Bond').map(a => a.symbol),
     Commodity: STOCK_FOREX_UNIVERSE.filter(a => a.type === 'Commodity').map(a => a.symbol),
-    Economy:   [],
-    Options:   [],
+    Economy:   STOCK_FOREX_UNIVERSE.filter(a => a.type === 'Economy').map(a => a.symbol),
+    Options:   STOCK_FOREX_UNIVERSE.filter(a => a.type === 'Option').map(a => a.symbol),
 };
 
 // ❌ REMOVED: TAB_FALLBACK was showing stale prices!
@@ -187,6 +187,12 @@ const MarketWatch = () => {
         const syms = TAB_SYMBOLS[activeTab] || [];
         if (!syms.length) return;
 
+        if (activeTab === 'Economy') {
+            // Economy macro-indicators aren't standard Yahoo stocks; load statically
+            setTabData(prev => ({ ...prev, [activeTab]: STOCK_FOREX_UNIVERSE.filter(a => syms.includes(a.symbol)) }));
+            return;
+        }
+
         let cancelled = false;
         fetchingForTab.current = activeTab;
         setTabLoading(true);
@@ -194,13 +200,18 @@ const MarketWatch = () => {
         yahooQuote(syms)
             .then(quotes => {
                 if (cancelled || fetchingForTab.current !== activeTab) return;
-                const assets = quotes.map(fromYahooQuote);
-                setTabData(prev => ({ ...prev, [activeTab]: assets }));
+                const fetchedAssets = quotes.map(fromYahooQuote);
+                const fetchedSyms = fetchedAssets.map(a => a.symbol);
+                
+                // Merge any symbols that Yahoo failed to find with our static data
+                const missingAssets = STOCK_FOREX_UNIVERSE.filter(a => syms.includes(a.symbol) && !fetchedSyms.includes(a.symbol));
+                setTabData(prev => ({ ...prev, [activeTab]: [...fetchedAssets, ...missingAssets] }));
             })
             .catch(() => {
                 if (cancelled || fetchingForTab.current !== activeTab) return;
-                // ❌ NO FALLBACK: Never show stale data, show empty instead
-                setTabData(prev => ({ ...prev, [activeTab]: [] }));
+                // Fallback for unsupported Yahoo assets
+                const assets = STOCK_FOREX_UNIVERSE.filter(a => syms.includes(a.symbol));
+                setTabData(prev => ({ ...prev, [activeTab]: assets }));
             })
             .finally(() => {
                 if (!cancelled) setTabLoading(false);
