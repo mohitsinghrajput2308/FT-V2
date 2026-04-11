@@ -30,7 +30,7 @@ import Calculators from './pages/Calculators';
 import Categories from './pages/Categories';
 import Settings from './pages/Settings';
 import Help from './pages/Help';
-import ApiDocs from './pages/ApiDocs/ApiDocs';
+
 import DashboardPricing from './pages/DashboardPricing';
 
 const DashboardApp = () => {
@@ -61,7 +61,7 @@ const DashboardApp = () => {
                                     <Route path="pricing" element={<DashboardPricing />} />
                                     <Route path="settings" element={<Settings />} />
                                     <Route path="help" element={<Help />} />
-                                    <Route path="api-docs" element={<ApiDocs />} />
+
                                     <Route path="*" element={<Navigate to="/dashboard" replace />} />
                                 </Routes>
                             </Layout>

@@ -178,28 +178,7 @@ const Settings = () => {
                 </div>
             </Card>
 
-            {/* Notifications */}
-            <Card>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Notifications</h3>
-                <div className="space-y-3">
-                    {[
-                        { key: 'email', label: 'Email Notifications' },
-                        { key: 'push', label: 'Push Notifications' },
-                        { key: 'billReminders', label: 'Bill Reminders' },
-                        { key: 'budgetAlerts', label: 'Budget Alerts' }
-                    ].map((item) => (
-                        <label key={item.key} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-dark-300 cursor-pointer">
-                            <span className="font-medium text-gray-700 dark:text-gray-300">{item.label}</span>
-                            <input
-                                type="checkbox"
-                                checked={formData.notifications[item.key]}
-                                onChange={(e) => handleNotificationChange(item.key, e.target.checked)}
-                                className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                            />
-                        </label>
-                    ))}
-                </div>
-            </Card>
+
 
             {/* Save & Reset */}
             <Card>
