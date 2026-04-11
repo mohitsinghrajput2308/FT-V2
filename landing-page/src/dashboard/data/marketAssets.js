@@ -70,15 +70,9 @@ export const STOCK_FOREX_UNIVERSE = [
     { id: 'GBP/JPY', symbol: 'GBPJPY=X', name: 'British Pound / Yen', type: 'Forex', price: 190.50, change24h: 0.15 },
 
 
-    // Precious Metals
+    // Precious Metals (Commodities)
     { id: 'XAUUSD', symbol: 'GC=F', name: 'Gold vs US Dollar', type: 'Commodity', price: 2150.50, change24h: 12.40 },
-    { id: 'XAUEUR', symbol: 'GC=F', name: 'Gold vs Euro', type: 'Commodity', price: 1980.20, change24h: 8.50 },
-    { id: 'XAUGBP', symbol: 'GC=F', name: 'Gold vs British Pound', type: 'Commodity', price: 1690.30, change24h: 9.10 },
-    { id: 'XAUAUD', symbol: 'GC=F', name: 'Gold vs Australian Dollar', type: 'Commodity', price: 3260.80, change24h: 18.20 },
     { id: 'XAGUSD', symbol: 'SI=F', name: 'Silver vs US Dollar', type: 'Commodity', price: 24.50, change24h: 0.35 },
-    { id: 'XAGEUR', symbol: 'SI=F', name: 'Silver vs Euro', type: 'Commodity', price: 22.60, change24h: 0.25 },
-    { id: 'XAGGBP', symbol: 'SI=F', name: 'Silver vs British Pound', type: 'Commodity', price: 19.30, change24h: 0.20 },
-    { id: 'XAGAUD', symbol: 'SI=F', name: 'Silver vs Australian Dollar', type: 'Commodity', price: 37.10, change24h: 0.50 },
     { id: 'XPTUSD', symbol: 'PL=F', name: 'Platinum vs US Dollar', type: 'Commodity', price: 920.40, change24h: -5.20 },
     { id: 'XPDUSD', symbol: 'PA=F', name: 'Palladium vs US Dollar', type: 'Commodity', price: 1050.20, change24h: 15.30 },
 
