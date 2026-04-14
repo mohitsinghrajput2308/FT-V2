@@ -20,7 +20,7 @@
  */
 
 // Plan-based item limits (budgets / goals / bills)
-const PLAN_ITEM_LIMITS = { free: 2, pro: 5 }; // 'business' is not present → unlimited
+const PLAN_ITEM_LIMITS = { free: 2, pro: 10 }; // 'business' is not present → unlimited
 
 import { config } from './config';
 import { mutationRateLimiter, apiRateLimiter, createRateLimitResponse } from './rateLimit';

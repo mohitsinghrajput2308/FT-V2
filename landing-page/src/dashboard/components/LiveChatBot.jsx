@@ -140,8 +140,8 @@ const LiveChatBot = () => {
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-500 to-teal-500 px-5 py-4 flex items-center justify-between">
             <div>
-              <h3 className="text-white font-bold text-sm">FinTrack AI Assistant</h3>
-              <p className="text-xs text-blue-100">Powered by advanced AI</p>
+              <h3 className="text-white font-bold text-sm">FinTrack Assistant</h3>
+              <p className="text-xs text-blue-100">Available to help</p>
             </div>
             <button
               onClick={() => setIsOpen(false)}

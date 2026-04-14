@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase';
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] } }) };
 
 const contactMethods = [
-  { icon: Mail, title: 'Email Us', desc: 'support@fintrack.app', sub: 'We will try to respond within 72 hours', gradient: 'from-teal-500 to-cyan-500' },
+  { icon: Mail, title: 'Email Us', desc: 'support@fintrack.app', sub: 'We respond to inquiries within 1-2 business days', gradient: 'from-teal-500 to-cyan-500' },
   { icon: MessageSquare, title: 'AI Assistant', desc: 'Available in-app', sub: 'Paid users only', gradient: 'from-blue-500 to-indigo-500' },
 ];
 

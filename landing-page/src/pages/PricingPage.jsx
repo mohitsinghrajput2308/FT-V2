@@ -17,7 +17,7 @@ const plans = [
     name: 'Free',
     monthlyPrice: 0,
     yearlyPrice: 0,
-    description: 'Perfect for getting started with personal finance tracking',
+    description: 'Perfect for tracking basic spending',
     color: 'gray',
     cta: 'Start Free',
     ctaVariant: 'free',
@@ -29,7 +29,7 @@ const plans = [
     name: 'Pro',
     monthlyPrice: 9.99,
     yearlyPrice: 7.99,
-    description: 'For individuals who want full control of their finances',
+    description: 'Best for serious personal finance tracking',
     color: 'gold',
     cta: 'Start 14-Day Trial',
     ctaVariant: 'gold',
@@ -41,7 +41,7 @@ const plans = [
     name: 'Business',
     monthlyPrice: 29.99,
     yearlyPrice: 24.99,
-    description: 'Ideal for small businesses and teams',
+    description: 'For small teams managing finances together',
     color: 'blue',
     cta: 'Start 14-Day Trial',
     ctaVariant: 'gold',
@@ -55,33 +55,33 @@ const featureCategories = [
   {
     category: 'Core Tracking',
     features: [
-      { name: 'Transactions (Income & Expenses)', free: '50', pro: 'Unlimited', business: 'Unlimited' },
-      { name: 'Investments Tracking', free: '3 max', pro: 'Unlimited', business: 'Unlimited' },
-      { name: 'Financial Calculators', free: false, pro: 'All 7', business: 'All 7' },
-      { name: 'Income Tracking', free: true, pro: true, business: true },
+      { name: 'Transactions per Month', free: '50', pro: '500', business: 'Unlimited' },
+      { name: 'Income & Expense Tracking', free: true, pro: true, business: true },
+      { name: 'Transaction Categories', free: 'Basic', pro: 'Unlimited', business: 'Unlimited' },
       { name: 'Recurring Transactions', free: true, pro: true, business: true },
-      { name: 'Analytics Dashboard', free: true, pro: true, business: true },
+      { name: 'Investment Tracking', free: '3 max', pro: 'Unlimited', business: 'Unlimited' },
+      { name: 'Financial Calculators', free: false, pro: 'All 7', business: 'All 7' },
     ],
   },
   {
     category: 'Budgets, Goals & Bills',
     features: [
-      { name: 'Budgets', free: '2 max', pro: '5 max', business: 'Unlimited' },
-      { name: 'Savings Goals', free: '2 max', pro: '5 max', business: 'Unlimited' },
-      { name: 'Bill Reminders', free: '2 max', pro: '5 max', business: 'Unlimited' },
+      { name: 'Budgets', free: '2 max', pro: '10 max', business: 'Unlimited' },
+      { name: 'Savings Goals', free: '2 max', pro: '10 max', business: 'Unlimited' },
+      { name: 'Bill Reminders', free: '2 max', pro: '10 max', business: 'Unlimited' },
     ],
   },
   {
     category: 'Categories',
     features: [
       { name: 'Default Categories', free: true, pro: true, business: true },
-      { name: 'Custom Categories', free: false, pro: '3 lifetime', business: 'Unlimited' },
+      { name: 'Custom Categories', free: false, pro: 'Unlimited', business: 'Unlimited' },
     ],
   },
   {
     category: 'Reports & Exports',
     features: [
-      { name: 'Analytics & Reports', free: true, pro: true, business: true },
+      { name: 'Basic Tracking Dashboard', free: true, pro: true, business: true },
       { name: 'CSV Export', free: false, pro: true, business: true },
       { name: 'PDF Export', free: false, pro: true, business: true },
     ],
@@ -89,8 +89,7 @@ const featureCategories = [
   {
     category: 'Collaboration',
     features: [
-      { name: 'Team Members', free: '1 (just you)', pro: '1 (just you)', business: 'Up to 5 users' },
-
+      { name: 'Team Members', free: '1 (just you)', pro: '1 (just you)', business: 'Up to 3 users' },
     ],
   },
   {
@@ -98,7 +97,7 @@ const featureCategories = [
     features: [
       { name: 'Email Support', free: true, pro: true, business: true },
       { name: 'Priority Support', free: false, pro: true, business: true },
-      { name: 'Live Chat', free: false, pro: true, business: true },
+      { name: 'Dedicated Support', free: false, pro: false, business: true },
     ],
   },
 ];
@@ -107,7 +106,7 @@ const featureCategories = [
 const faqs = [
   { q: 'Can I cancel anytime?', a: 'Yes. Cancel your subscription at any time from your account settings. Your access continues until the end of your current billing period. If you cancel during a 14-day trial, you\'re not charged.' },
   { q: 'Is there a free trial?', a: 'Yes! Pro and Business plans include a 7-day free trial with full access to all features. No credit card required to start the trial — you\'re only charged when the trial ends. Cancel anytime during the trial and you won\'t be charged.' },
-  { q: 'Do I get a money-back guarantee?', a: 'Absolutely. All paid plans include a 14-day money-back guarantee. If you\'re unhappy for any reason, contact us within 14 days of any charge and we\'ll issue a full refund, no questions asked.' },
+  { q: 'What are your refund terms?', a: 'See our Terms of Service and Pricing page for complete refund policy details.' },
   { q: 'How does the yearly discount work?', a: 'Choosing yearly billing gives you 20% off the monthly rate. You pay the full year upfront at the discounted price, which results in significant savings. You can still cancel anytime.' },
   { q: 'What payment methods are accepted?', a: 'We accept all major credit and debit cards (Visa, Mastercard, Amex) via Paddle. Paddle supports 100+ payment methods globally including local options. All transactions are encrypted with PCI-DSS compliance.' },
   { q: 'Can I switch plans later?', a: 'Yes. Upgrade or downgrade anytime from your account settings. Upgrades take effect immediately and you pay the difference. Downgrades apply at your next billing cycle, so you keep the current plan benefits through your current billing period.' },
@@ -221,7 +220,7 @@ const PricingPage = () => {
             transition={{ delay: 0.2, duration: 0.6 }}
             className="text-4xl md:text-6xl font-black mb-4 tracking-tight"
           >
-            Choose the Perfect Plan
+            Choose a Plan
             <br />
             <span className="bg-gradient-to-r from-blue-400 to-teal-400 bg-clip-text text-transparent">
               For Your Journey
@@ -360,7 +359,7 @@ const PricingPage = () => {
                     'Analytics dashboard & reports',
                     '2 budgets, 2 goals & 2 bill reminders',
                     'Default expense categories',
-                    'Email support',
+                    'Support',
                   ].map((f, fi) => (
                     <motion.li 
                       key={f} 
@@ -377,10 +376,11 @@ const PricingPage = () => {
                   ))}
                   {plan.id === 'pro' && [
                     'Everything in Free',
-                    '5 budgets, 5 goals & 5 bill reminders',
+                    '10 budgets, 10 goals & 10 bill reminders',
+                    'All 7 financial calculators',
                     '3 custom categories (lifetime)',
                     'CSV & PDF data export',
-                    'Priority support & live chat',
+                    'Priority support & AI assistant',
                   ].map((f, fi) => (
                     <motion.li 
                       key={f} 
@@ -399,6 +399,7 @@ const PricingPage = () => {
                     'Everything in Pro',
                     'Unlimited budgets, goals & bills',
                     'Unlimited custom categories',
+                    'All 7 financial calculators',
                     'Team collaboration (up to 5 users)',
                   ].map((f, fi) => (
                     <motion.li 
@@ -538,7 +539,7 @@ const PricingPage = () => {
           viewport={{ once: true }}
           className="border-t border-white/10 py-6 text-center text-gray-500 text-sm px-4"
         >
-          🔒 Secure payments powered by Paddle &nbsp;•&nbsp; Cancel during trial, no charge &nbsp;•&nbsp; 14-day money-back guarantee &nbsp;•&nbsp; No hidden fees &nbsp;•&nbsp; GST &amp; taxes handled automatically
+          🔒 Secure payments powered by Paddle &nbsp;•&nbsp; Cancel anytime &nbsp;•&nbsp; No hidden fees &nbsp;•&nbsp; GST & taxes handled automatically
         </motion.div>
       </div>
       <Footer />

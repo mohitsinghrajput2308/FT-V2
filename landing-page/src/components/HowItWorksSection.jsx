@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { UserPlus, Link as LinkIcon, LineChart, Rocket } from 'lucide-react';
+import { UserPlus, Link as LinkIcon, LineChart, Rocket, Target, TrendingUp, Zap, MessageSquare } from 'lucide-react';
 import { motion, useScroll, useTransform, useSpring, useMotionValue } from 'framer-motion';
 
 const TiltStepCard = ({ step, index, total }) => {
@@ -72,8 +72,8 @@ const TiltStepCard = ({ step, index, total }) => {
         </div>
       </motion.div>
 
-      {/* Connection arrow between cards (hidden on mobile) */}
-      {index < total - 1 && (
+      {/* Connection arrow between cards (hidden on mobile and at row ends) */}
+      {index < total - 1 && (index + 1) % 4 !== 0 && (
         <motion.div
           initial={{ opacity: 0, scale: 0 }}
           whileInView={{ opacity: 1, scale: 1 }}
@@ -100,26 +100,50 @@ export const HowItWorksSection = () => {
     {
       icon: UserPlus,
       step: '01',
-      title: 'Create Account',
-      description: 'Sign up securely in seconds. No credit card required to access our core features.'
+      title: 'Create Your Account',
+      description: 'Sign up securely in seconds using email or social login. Enable 2FA for added security. No credit card required.'
     },
     {
       icon: LinkIcon,
       step: '02',
-      title: 'Link Institutions',
-      description: 'Connect your banks and credit cards securely using bank-grade 256-bit encryption.'
+      title: 'Setup is Instant',
+      description: 'Link your banks and credit cards securely using bank-grade 256-bit encryption. Your data is always protected.'
+    },
+    {
+      icon: Target,
+      step: '03',
+      title: 'Build Your Budgets',
+      description: 'Create personalized budgets for each spending category. Set limits and get smart alerts when approaching thresholds.'
     },
     {
       icon: LineChart,
-      step: '03',
-      title: 'Track & Analyze',
-      description: 'Watch as our AI automatically categorizes your transactions and builds rich insights.'
+      step: '04',
+      title: 'AI Powers Insights',
+      description: 'Our AI automatically categorizes transactions and builds personalized recommendations to optimize your spending patterns.'
+    },
+    {
+      icon: TrendingUp,
+      step: '05',
+      title: 'Track Investments',
+      description: 'Monitor your stock portfolio and investment assets with live market data, performance tracking, and detailed analytics.'
+    },
+    {
+      icon: Zap,
+      step: '06',
+      title: 'Set & Achieve Goals',
+      description: 'Define financial goals with milestone tracking. Get real-time progress updates and dynamic recommendations to stay on track.'
+    },
+    {
+      icon: MessageSquare,
+      step: '07',
+      title: 'Get Priority Support',
+      description: 'Pro/Business users get 24-hour priority support, ticket handling, and direct assistance from our team.'
     },
     {
       icon: Rocket,
-      step: '04',
-      title: 'Achieve Freedom',
-      description: 'Follow personalized growth recommendations and reach your financial goals faster.'
+      step: '08',
+      title: 'Financial Freedom',
+      description: 'With complete visibility and smart automation, achieve your financial goals faster and build lasting wealth.'
     }
   ];
 
@@ -150,7 +174,7 @@ export const HowItWorksSection = () => {
             className="inline-flex items-center px-4 py-2 border border-teal-500/30 bg-teal-500/10 rounded-full mb-8 backdrop-blur-md"
           >
             <span className="text-xs font-bold tracking-widest text-teal-600 dark:text-teal-400 uppercase">
-              Seamless Onboarding
+              Complete Workflow
             </span>
           </motion.div>
 
@@ -161,10 +185,10 @@ export const HowItWorksSection = () => {
             transition={{ duration: 0.8 }}
             className="text-5xl md:text-7xl font-black text-gray-900 dark:text-white mb-6 tracking-tight"
           >
-            Get Started in
+            Your Complete Journey to
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-teal-400 to-emerald-400">
-              4 Simple Steps
+              Financial Mastery
             </span>
           </motion.h2>
 
@@ -173,9 +197,9 @@ export const HowItWorksSection = () => {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 1, delay: 0.3 }}
-            className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto"
+            className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto"
           >
-            From creating an account to complete financial clarity in under three minutes.
+            From account creation to AI-powered insights, investment tracking, and 24/7 support. Complete control over your financial destiny in simple, intuitive steps.
           </motion.p>
         </div>
 
@@ -190,7 +214,7 @@ export const HowItWorksSection = () => {
             className="hidden lg:block absolute top-[160px] left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-teal-400 to-cyan-500 origin-left z-0"
           />
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16 w-full place-items-center">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-24 w-full place-items-center">
             {steps.map((step, index) => (
               <TiltStepCard key={index} step={step} index={index} total={steps.length} />
             ))}

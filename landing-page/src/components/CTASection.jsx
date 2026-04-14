@@ -35,10 +35,10 @@ export const CTASection = () => {
   }, [ctaVariant]);
 
   const features = [
-    { icon: Shield, label: 'Bank-grade security' },
-    { icon: TrendingUp, label: 'Smart insights' },
+    { icon: Shield, label: 'Secure encryption' },
+    { icon: TrendingUp, label: 'Financial tracking' },
     { icon: Zap, label: 'Real-time sync' },
-    { icon: Sparkles, label: 'AI-powered' },
+    { icon: Sparkles, label: 'Organized data' },
   ];
 
   return (
@@ -77,7 +77,7 @@ export const CTASection = () => {
           }}>
           <DollarSign className="w-4 h-4" style={{ color: '#FBBF24' }} />
           <span className="text-sm font-semibold tracking-wide" style={{ color: '#FBBF24' }}>
-            Join 50,000+ smart savers
+            Start your free account today
           </span>
         </div>
 
@@ -100,8 +100,7 @@ export const CTASection = () => {
         {/* Sub-heading */}
         <p className="text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed"
           style={{ color: '#A8977A' }}>
-          Take control of your financial future with AI-powered tracking, real-time insights,
-          and smart budgeting — all in one place.
+          Track your income and expenses, organize your finances, and understand where your money goes — all in one simple platform.
         </p>
 
         {/* Feature pills */}
@@ -138,6 +137,9 @@ export const CTASection = () => {
           </button>
 
           <button
+            onClick={() => {
+              document.getElementById('how-it-works').scrollIntoView({ behavior: 'smooth' });
+            }}
             className="group flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold border transition-all duration-300 hover:scale-105"
             style={{
               background: 'rgba(28,22,12,0.50)',
@@ -168,13 +170,13 @@ export const CTASection = () => {
             ))}
           </div>
           <div className="text-sm" style={{ color: '#8A7A62' }}>
-            <span style={{ color: '#FBBF24', fontWeight: 700 }}>50,000+</span> people already growing their wealth
+            Join us in building simpler tools for personal finance
           </div>
         </div>
 
         {/* Trust badges */}
         <div className="flex flex-wrap justify-center gap-6 mt-10">
-          {['No credit card required', 'Free forever plan', '14-day free trial — cancel anytime'].map((item) => (
+          {['No credit card required', 'Start exploring free', 'Cancel anytime'].map((item) => (
             <div key={item} className="flex items-center gap-2 text-sm" style={{ color: '#6B5E4B' }}>
               <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#D97706' }} />
               {item}

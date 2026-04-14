@@ -15,8 +15,9 @@ export const AuthProvider = ({ children }) => {
     const [session, setSession] = useState(null);
     const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
-    // Mock local state for pro subscription (until Stripe is connected)
+    // Subscription state — fetched from profiles table
     const [localIsPro, setLocalIsPro] = useState(false);
+    const [subscriptionTier, setSubscriptionTier] = useState('free');
 
     const inactivityTimer = useRef(null);
 
@@ -86,6 +87,52 @@ export const AuthProvider = ({ children }) => {
 
         return () => subscription.unsubscribe();
     }, []);
+
+    // ── Fetch subscription status from profiles table for current user ──
+    useEffect(() => {
+        const fetchSubscriptionStatus = async () => {
+            if (!user) {
+                setLocalIsPro(false);
+                setSubscriptionTier('free');
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('is_pro, subscription_tier')
+                    .eq('id', user.id)
+                    .single();
+
+                if (error) {
+                    console.warn('Failed to fetch subscription status:', error);
+                    setLocalIsPro(false);
+                    setSubscriptionTier('free');
+                    return;
+                }
+
+                if (data) {
+                    const tier = data.subscription_tier || 'free';
+                    const isPro = data.is_pro === true || tier === 'pro' || tier === 'business';
+                    
+                    setLocalIsPro(isPro);
+                    setSubscriptionTier(tier);
+                    
+                    console.log('[AuthContext] ✓ Subscription loaded:', { 
+                        tier, 
+                        isPro,
+                        proFlag: data.is_pro
+                    });
+                }
+            } catch (err) {
+                console.error('Error fetching subscription status:', err);
+                setLocalIsPro(false);
+                setSubscriptionTier('free');
+            }
+        };
+
+        fetchSubscriptionStatus();
+    }, [user]);
 
     // ── Modal helpers ──
     const openLogin = () => setModalState({ isOpen: true, view: 'login' });
@@ -277,6 +324,10 @@ export const AuthProvider = ({ children }) => {
             changePassword,
             deleteAccount,
             upgradeToPro,
+            
+            // Subscription status (NEW - for Priority Support + paid features)
+            localIsPro,
+            subscriptionTier,
         }}>
             {children}
         </AuthContext.Provider>

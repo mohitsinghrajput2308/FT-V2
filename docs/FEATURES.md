@@ -84,7 +84,7 @@ Privacy Policy, Terms of Service, Cookie Policy, GDPR Compliance, About Us, Care
 - **Vercel** deployment — auto-deploy on push to `main`
 - **GitHub Actions CI** (`.github/workflows/ci.yml`) — runs 86 tests + build on every push/PR
 - **Jest** — 86 tests: 60 unit (`security.test.js`) + 26 integration (`integration.test.js`)
-- **Crisp Live Chat** — widget live on all pages (ID: `6a2c2df9`)
+- **AI Assistant** — AI-powered support available on all pages
 - **jsPDF + PapaParse** — export service built (`exportService.js`), gating not yet connected
 - **Supabase JS v2.97** client
 
@@ -121,7 +121,7 @@ Privacy Policy, Terms of Service, Cookie Policy, GDPR Compliance, About Us, Care
 |---|---------|--------|-------|
 | 12 | **Automated Tests** | ✅ **Done** | 86 tests across 2 files: `security.test.js` (60 unit tests — sanitization, validators, XSS) + `integration.test.js` (26 tests — SecureAPI wiring, localStorage isolation, boundary values). Run: `npm test -- --watchAll=false`. |
 | 13 | **GitHub Actions CI/CD** | ✅ **Done** | `.github/workflows/ci.yml` created. Runs all tests + build on every push/PR to `main`. Uses `npm ci`, `--passWithNoTests` flag, and passes Supabase env vars from GitHub Secrets. |
-| 14 | **Crisp Live Chat Widget** | ✅ **Done** | Script already live in `public/index.html` with website ID `6a2c2df9-c0ae-46de-aa11-64155b1a0300`. Chat widget appears on all pages. |
+| 14 | **AI Assistant Widget** | ✅ **Done** | AI-powered assistant available on all pages for user support and inquiries. |
 | 15 | **Fix Social Proof Numbers** | ✅ **Done** | `HeroSection.jsx`, `AboutUs.jsx`, and `PressKit.jsx` all updated to use "User Capacity" / "Volume Capacity" labels instead of "Active Users" / "Money Tracked" — honest framing for pre-launch. |
 | 16 | **Mobile App — Google Play Publish** | ✅ **Done** | `mobile-app/` scaffold created: `App.jsx` (navigation + auth), `package.json` (Expo 52 + React Native), `app.json` (bundle ID `app.fintrack.mobile`), `eas.json` (preview APK + production AAB). Run `eas build --profile production` then `eas submit` to publish to Play Store. |
 | 17 | **Multi-Currency Live FX Rates** | ✅ **Done** | `dashboard/utils/fxService.js` created: fetches live rates from `open.exchangerate-api.com` (free, no key), 1-hour localStorage cache, static fallback. 8 currencies: USD, EUR, GBP, INR, JPY, AUD, CAD, CHF. `FinanceContext.jsx` now exposes `fxRates`, `fxRatesLoading`, and `convertCurrency(amount, fromSymbol, toSymbol)`. `Settings.jsx` updated with full 8-currency dropdown and live rate badge (e.g. "1 USD = 0.9200 EUR"). |

@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Wallet, Target, TrendingUp, Bell, PieChart, Shield } from 'lucide-react';
+import { Wallet, Target, TrendingUp, Bell, PieChart, Shield, Zap, Download, Code, MessageSquare } from 'lucide-react';
 import { motion, useScroll, useTransform, useSpring, useMotionValue } from 'framer-motion';
 
 // --- 3D Tilt Card Component ---
@@ -89,38 +89,56 @@ export const FeaturesSection = () => {
     {
       icon: Wallet,
       title: 'Expense Tracking',
-      description: 'Automatically categorize and track every expense with smart AI recognition algorithms.',
+      description: 'Categorize and track every expense with automatic rules. Organize with custom categories and recurring transaction support.',
       color: 'from-blue-500 to-indigo-500'
     },
     {
       icon: Target,
       title: 'Budget Planning',
-      description: 'Create personalized budgets and get real-time alerts when you approach your spending limits.',
+      description: 'Create budgets per category per month. Get alerts when approaching spending limits.',
       color: 'from-teal-400 to-emerald-500'
     },
     {
       icon: TrendingUp,
-      title: 'AI-Powered Insights',
-      description: 'Get intelligent recommendations to optimize your spending and maximize savings potential.',
+      title: 'Investment Tracking',
+      description: 'Monitor your stock portfolio and investment assets in real-time. Track performance with live market data and detailed analytics.',
       color: 'from-orange-400 to-rose-500'
     },
     {
       icon: PieChart,
       title: 'Reports & Analytics',
-      description: 'Visualize your financial health with beautiful, interactive 3D charts and comprehensive reports.',
+      description: 'Visualize financial health with interactive 3D charts, comprehensive reports, CSV/PDF exports (Pro), and spending breakdowns by category.',
       color: 'from-purple-500 to-pink-500'
     },
     {
       icon: Bell,
-      title: 'Bill Reminders',
-      description: 'Never miss a payment with automated bill reminders and recurring transaction tracking.',
+      title: 'Bill Management',
+      description: 'Track upcoming bills and recurring transactions. Set bill reminders to help you stay on schedule.',
       color: 'from-amber-400 to-orange-500'
     },
     {
-      icon: Shield,
+      icon: Zap,
       title: 'Financial Goals',
-      description: 'Set and achieve savings goals with milestone tracking and dynamic progress visualization.',
+      description: 'Set savings goals with progress tracking and visualization.',
       color: 'from-cyan-400 to-blue-500'
+    },
+    {
+      icon: Download,
+      title: 'Data Export',
+      description: 'Export your financial data to CSV or PDF formats (Pro feature). Generate reports with custom date ranges for tax and personal records.',
+      color: 'from-green-500 to-emerald-400'
+    },
+    {
+      icon: Shield,
+      title: 'Enterprise Security',
+      description: 'Bank-grade 256-bit AES encryption, Two-Factor Authentication (TOTP), OTP verification, and comprehensive audit logs on all transactions.',
+      color: 'from-red-500 to-pink-500'
+    },
+    {
+      icon: MessageSquare,
+      title: 'Priority Support',
+      description: 'Get support for Pro and Business users through our support channels. Submit tickets, track status, and receive assistance from our team.',
+      color: 'from-indigo-500 to-purple-500'
     }
   ];
 
@@ -152,7 +170,7 @@ export const FeaturesSection = () => {
             className="inline-flex items-center px-4 py-2 border border-blue-500/30 bg-blue-500/10 rounded-full mb-8 backdrop-blur-md"
           >
             <span className="text-xs font-bold tracking-widest text-blue-600 dark:text-blue-400 uppercase">
-              Next-Gen Capabilities
+              Core Features
             </span>
           </motion.div>
 
@@ -166,7 +184,7 @@ export const FeaturesSection = () => {
             Everything You Need to
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-teal-500 to-emerald-400 inline-block pb-2">
-              Master Your Money
+              Understand Your Finances
             </span>
           </motion.h2>
 
@@ -177,7 +195,7 @@ export const FeaturesSection = () => {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto"
           >
-            Explore our suite of professionally designed tools tailored to bring extreme clarity and power to your financial planning.
+            Explore our suite of tools designed to help you track spending, organize finances, and gain clarity on your financial situation.
           </motion.p>
         </div>
 
@@ -241,15 +259,15 @@ export const FeaturesSection = () => {
               </span>
             </h3>
             <p className="text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
-              Our AI-powered engine deeply analyzes your spending patterns, identifies unique opportunities to save, and provides personalized wealth-building recommendations.
+              FinTrack analyzes your spending patterns, categorizes transactions automatically, and helps you understand your financial habits with detailed analytics.
             </p>
 
             <div className="space-y-5">
               {[
-                'Real-time automated expense categorization',
-                'Predictive budget alerts & cash flow forecasting',
-                'Fully customizable interactive financial models',
-                'Instant multi-account synchronization'
+                'Automatic expense categorization',
+                'Budget tracking and alerts',
+                'Customizable financial tracking',
+                'Account synchronization'
               ].map((item, index) => (
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}

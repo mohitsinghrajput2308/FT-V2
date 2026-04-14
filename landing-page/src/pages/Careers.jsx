@@ -10,21 +10,21 @@ import { Briefcase, Heart, Zap, Globe, Coffee, GraduationCap, Sparkles, MapPin, 
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] } }) };
 
 const perks = [
-  { icon: Globe, title: 'Remote First', desc: 'Work from anywhere in the world' },
-  { icon: Heart, title: 'Health & Wellness', desc: 'Full medical + mental health support' },
-  { icon: Coffee, title: 'Unlimited PTO', desc: 'Take time off when you need it' },
-  { icon: GraduationCap, title: 'Learning Budget', desc: '$3,000/year for courses & conferences' },
-  { icon: Zap, title: 'Latest Equipment', desc: 'M3 MacBook Pro + 4K monitor setup' },
-  { icon: Briefcase, title: 'Equity for All', desc: 'Stock options from day one' },
+  { icon: Globe, title: 'Remote Friendly', desc: 'Work-from-home options available' },
+  { icon: Heart, title: 'Health Insurance', desc: 'Coverage for you and family' },
+  { icon: Coffee, title: 'Work-Life Balance', desc: 'Reasonable hours and vacation time' },
+  { icon: GraduationCap, title: 'Learning Budget', desc: 'Support for courses and conferences' },
+  { icon: Zap, title: 'Good Tools', desc: 'Equipment and software you need' },
+  { icon: Briefcase, title: 'Fair Pay', desc: 'Honest, transparent compensation' },
 ];
 
 const openings = [
-  { title: 'Senior Frontend Engineer', team: 'Engineering', location: 'Remote', type: 'Full-time', gradient: 'from-blue-500 to-cyan-500' },
-  { title: 'Backend Engineer (Node.js)', team: 'Engineering', location: 'Remote', type: 'Full-time', gradient: 'from-purple-500 to-pink-500' },
-  { title: 'AI/ML Engineer', team: 'AI Team', location: 'Remote / SF', type: 'Full-time', gradient: 'from-emerald-500 to-teal-500' },
-  { title: 'Product Designer', team: 'Design', location: 'Remote', type: 'Full-time', gradient: 'from-amber-500 to-orange-500' },
-  { title: 'DevOps Engineer', team: 'Infrastructure', location: 'Remote', type: 'Full-time', gradient: 'from-red-500 to-rose-500' },
-  { title: 'Growth Marketing Lead', team: 'Marketing', location: 'Remote / NYC', type: 'Full-time', gradient: 'from-indigo-500 to-blue-500' },
+  { title: 'React Frontend Developer', team: 'Engineering', location: 'Remote', type: 'Full-time', gradient: 'from-blue-500 to-cyan-500' },
+  { title: 'Backend Developer (Node/Express)', team: 'Engineering', location: 'Remote', type: 'Full-time', gradient: 'from-purple-500 to-pink-500' },
+  { title: 'Product Manager', team: 'Product', location: 'Remote', type: 'Full-time', gradient: 'from-emerald-500 to-teal-500' },
+  { title: 'UI/UX Designer', team: 'Design', location: 'Remote', type: 'Full-time', gradient: 'from-amber-500 to-orange-500' },
+  { title: 'Support Specialist', team: 'Customer Success', location: 'Remote', type: 'Full-time', gradient: 'from-red-500 to-rose-500' },
+  { title: 'Finance & Operations', team: 'Back Office', location: 'Remote', type: 'Full-time', gradient: 'from-indigo-500 to-blue-500' },
 ];
 
 const Careers = () => {
@@ -51,10 +51,10 @@ const Careers = () => {
             <Sparkles className="w-3.5 h-3.5" /> Join Our Team
           </motion.div>
           <motion.h1 initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter mb-6 leading-[0.9]">
-            Build the<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-red-400">Future</span>
+            Work With<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-red-400">Us</span>
           </motion.h1>
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto">
-            Help millions take control of their financial future. We're hiring exceptional people who care about making a difference.
+            We're building honest financial tools. We're looking for talented people who care about quality and transparency.
           </motion.p>
         </div>
       </section>

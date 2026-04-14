@@ -13,46 +13,46 @@ const phases = [
   {
     title: 'Q1 2025 — Foundation', status: 'complete', gradient: 'from-emerald-500 to-teal-500',
     items: [
-      { text: 'AI-powered budget recommendations', done: true },
-      { text: 'Multi-currency support (50+ currencies)', done: true },
-      { text: 'Bank integration via Plaid', done: true },
-      { text: 'Enhanced 2FA with TOTP', done: true },
+      { text: 'User authentication & profiles', done: true },
+      { text: 'Transaction tracking & categorization', done: true },
+      { text: 'Budget creation & management', done: true },
+      { text: 'Basic expense reports', done: true },
     ]
   },
   {
-    title: 'Q2 2025 — Growth', status: 'current', gradient: 'from-blue-500 to-indigo-500',
+    title: 'Q2 2025 — Core Functions', status: 'current', gradient: 'from-blue-500 to-indigo-500',
     items: [
-      { text: 'Shared budgets & family accounts', done: true },
-      { text: 'Bill reminders & auto-categorization', done: false },
-      { text: 'Advanced analytics dashboard', done: false },
-      { text: 'Desktop app (macOS & Windows)', done: false },
+      { text: 'Goals & savings tracking', done: true },
+      { text: 'Bill reminders', done: false },
+      { text: 'Investment portfolio overview', done: false },
+      { text: 'Transaction search & filtering', done: false },
     ]
   },
   {
-    title: 'Q3 2025 — Intelligence', status: 'upcoming', gradient: 'from-purple-500 to-violet-500',
+    title: 'Q3 2025 — Enhancements', status: 'upcoming', gradient: 'from-purple-500 to-violet-500',
     items: [
-      { text: 'Predictive spending forecasts', done: false },
-      { text: 'Investment portfolio tracking', done: false },
-      { text: 'Custom financial reports (PDF/CSV)', done: false },
-      { text: 'Open API for third-party integrations', done: false },
+      { text: 'Recurring transaction detection', done: false },
+      { text: 'Budget performance analytics', done: false },
+      { text: 'Export data to CSV & PDF', done: false },
+      { text: 'Mobile responsive improvements', done: false },
     ]
   },
   {
-    title: 'Q4 2025 — Scale', status: 'upcoming', gradient: 'from-amber-500 to-orange-500',
+    title: 'Q4 2025 & Beyond', status: 'upcoming', gradient: 'from-amber-500 to-orange-500',
     items: [
-      { text: 'Tax preparation assistant', done: false },
-      { text: 'Business expense management', done: false },
-      { text: 'AI financial advisor chat', done: false },
-      { text: 'Plugin marketplace', done: false },
+      { text: 'Multi-currency support', done: false },
+      { text: 'Shared family budgets', done: false },
+      { text: 'Advanced reporting & forecasts', done: false },
+      { text: 'Community features & feedback', done: false },
     ]
   },
 ];
 
 const visionCards = [
-  { icon: Rocket, title: 'Speed', desc: 'Sub-100ms response times globally', gradient: 'from-blue-500 to-cyan-500' },
-  { icon: Brain, title: 'Intelligence', desc: 'AI that learns your spending habits', gradient: 'from-purple-500 to-pink-500' },
-  { icon: Globe, title: 'Global', desc: 'Available in 100+ countries by 2026', gradient: 'from-emerald-500 to-teal-500' },
-  { icon: Zap, title: 'Real-time', desc: 'Instant transaction syncing & alerts', gradient: 'from-amber-500 to-orange-500' },
+  { icon: Rocket, title: 'Simple', desc: 'Easy-to-use budget and expense tracking', gradient: 'from-blue-500 to-cyan-500' },
+  { icon: Brain, title: 'Transparent', desc: 'Clear insights into your spending patterns', gradient: 'from-purple-500 to-pink-500' },
+  { icon: Globe, title: 'Accessible', desc: 'Helping users better understand their finances', gradient: 'from-emerald-500 to-teal-500' },
+  { icon: Zap, title: 'Secure', desc: 'Your financial data protected with encryption', gradient: 'from-amber-500 to-orange-500' },
 ];
 
 const Roadmap = () => {
@@ -82,7 +82,7 @@ const Roadmap = () => {
             Product<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400">Roadmap</span>
           </motion.h1>
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto">
-            Our vision for making FinTrack the most powerful personal finance platform on the planet.
+            We're building FinTrack to help you track your money and understand your spending. Here's what we're working on.
           </motion.p>
         </div>
       </section>

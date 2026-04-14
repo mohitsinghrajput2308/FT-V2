@@ -12,7 +12,7 @@ FinTrack helps users track income, expenses, budgets, goals, investments, and bi
 
 ## Features
 - **Free Plan**: Unlimited transactions, investments, calculators, 2 budgets/goals/bills, basic analytics, email support
-- **Pro Plan** ($9.99/month): 5 budgets/goals/bills, 3 custom categories, CSV & PDF export, API access, priority support + live chat
+- **Pro Plan** ($9.99/month): 5 budgets/goals/bills, 3 custom categories, CSV & PDF export, API access, priority support + AI assistant
 - **Business Plan** ($29.99/month): Unlimited budgets/goals/bills, unlimited custom categories, team collaboration (up to 5), tax reports, custom integrations, dedicated account manager
 
 ## Key Information

@@ -552,7 +552,7 @@ Prioritized by impact. Items marked 🔴 are highest value before any public lau
 |---|---------|--------|----------------|
 | 11 | **Automated Tests (Jest + Playwright)** | 2–3 days | 10–15 Jest unit tests for `FinanceContext` CRUD + 3–5 Playwright E2E tests for signup → add transaction → view dashboard. Signals code quality to buyers/investors. |
 | 12 | **GitHub Actions CI/CD** | 1 day | Auto-run tests + lint on every push. Auto-deploy to Vercel on merge to `main`. |
-| 13 | **Crisp Live Chat Widget** | 30 min | Single `<script>` tag in `index.html`. Free tier: 2 agents, unlimited conversations. Makes the product feel supported. |
+| 13 | **AI Assistant Widget** | 30 min | AI-powered assistant for user support and inquiries. Makes the product feel supported with instant assistance. |
 | 14 | **Fix Social Proof Numbers** | 30 min | Landing page claims "100K+ Active Users" and "$500M+ Money Tracked" with zero real users. Replace with "Built for 100K+ users" or remove until real data exists. |
 | 15 | **Mobile App — Google Play Publish** | 1 week | React Native/Expo app already in development. Publish to Google Play. Adds ~$2,000–$5,000 to valuation and opens a new user acquisition channel. |
 | 16 | **Multi-currency Live FX Rates** | 2–3 days | Integrate a free FX API (ExchangeRate-API free tier) to auto-convert transaction amounts. Currently currency is a display-only setting. |

@@ -1,40 +1,100 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { AuthModal } from '../components/AuthModal';
 import { useAuthModal } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { Shield, Sparkles, Lock, Eye, Server, Key, FileCheck, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Shield, Sparkles, Lock, Eye, Server, Key, FileCheck, AlertTriangle, CheckCircle2, Send } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] } }) };
 
 const practices = [
-  { icon: Lock, title: 'Encryption', desc: 'AES-256 encryption at rest, TLS 1.3 for data in transit. Your financial data is always protected with military-grade encryption.', gradient: 'from-red-500 to-rose-500' },
-  { icon: Eye, title: 'Zero-Knowledge Architecture', desc: 'We process data without viewing it. Even our engineers cannot access your personal financial information.', gradient: 'from-orange-500 to-amber-500' },
-  { icon: Server, title: 'Infrastructure Security', desc: 'Hosted on SOC 2 Type II certified infrastructure. Automated security patching and 24/7 monitoring for intrusions.', gradient: 'from-blue-500 to-indigo-500' },
-  { icon: Key, title: 'Multi-Factor Auth (2FA)', desc: 'Optional TOTP-based two-factor authentication adds an extra layer of protection to every account.', gradient: 'from-emerald-500 to-teal-500' },
-  { icon: FileCheck, title: 'Row-Level Security (RLS)', desc: 'Database policies ensure users can only access their own data. No exceptions, no backdoors.', gradient: 'from-purple-500 to-violet-500' },
-  { icon: AlertTriangle, title: 'Rate Limiting & Abuse Protection', desc: 'Intelligent rate limiting prevents brute force attacks, credential stuffing, and API abuse.', gradient: 'from-pink-500 to-rose-500' },
+  { icon: Lock, title: 'Encryption', desc: 'AES-256 encryption at rest, TLS 1.3 for data in transit. Your financial information is encrypted and secure.', gradient: 'from-red-500 to-rose-500' },
+  { icon: Eye, title: 'Data Privacy', desc: 'We\'re transparent about what data we collect and how we use it. No selling user data to third parties.', gradient: 'from-orange-500 to-amber-500' },
+  { icon: Server, title: 'Infrastructure', desc: 'Hosted on secure, reliable infrastructure with automated backups and regular security updates.', gradient: 'from-blue-500 to-indigo-500' },
+  { icon: Key, title: 'Two-Factor Authentication', desc: 'Optional TOTP-based 2FA available for additional account security.', gradient: 'from-emerald-500 to-teal-500' },
+  { icon: FileCheck, title: 'Row-Level Security', desc: 'Database policies ensure users can only access their own financial data. No exceptions.', gradient: 'from-purple-500 to-violet-500' },
+  { icon: AlertTriangle, title: 'Abuse Protection', desc: 'Rate limiting and monitoring to protect against brute force attacks and credential stuffing.', gradient: 'from-pink-500 to-rose-500' },
 ];
 
 const certifications = [
-  { title: 'SOC 2 Type II', status: 'Certified', desc: 'Annual audit of security, availability & confidentiality controls' },
   { title: 'GDPR Compliant', status: 'Compliant', desc: 'Full compliance with EU General Data Protection Regulation' },
-  { title: 'ISO 27001', status: 'In Progress', desc: 'Information security management system certification' },
-  { title: 'PCI DSS Level 1', status: 'Certified', desc: 'Payment Card Industry data security standard' },
+  { title: 'SOC 2 Type II', status: 'In Progress', desc: 'Working toward annual audit of security, availability & confidentiality controls' },
+  { title: 'Data Encryption', status: 'Implemented', desc: 'AES-256 encryption at rest, TLS 1.3 for data in transit' },
+  { title: 'Security Practices', status: 'Active', desc: 'Continuous monitoring, regular security reviews, and responsible disclosure' },
 ];
 
 const timeline = [
-  { date: 'Q4 2024', event: 'SOC 2 Type II audit completed' },
-  { date: 'Q3 2024', event: 'Bug bounty program launched' },
-  { date: 'Q2 2024', event: 'TOTP 2FA rolled out to all users' },
-  { date: 'Q1 2024', event: 'Row-level security implemented' },
-  { date: 'Q4 2023', event: 'End-to-end encryption deployed' },
+  { date: 'Q2 2025', event: 'Pursuing SOC 2 Type II certification' },
+  { date: 'Q1 2025', event: 'GDPR compliance audit completed' },
+  { date: 'Q4 2024', event: '2FA (TOTP) security feature launched' },
+  { date: 'Q3 2024', event: 'Row-level database security enabled' },
+  { date: 'Q2 2024', event: 'AES-256 encryption deployed' },
 ];
 
 const Security = () => {
   const { modalState, closeModal } = useAuthModal();
+  const [vulnerabilityForm, setVulnerabilityForm] = useState({ email: '', description: '', severity: 'medium' });
+  const [isSubmittingVuln, setIsSubmittingVuln] = useState(false);
+  const [vulnSubmitStatus, setVulnSubmitStatus] = useState(null);
+
+  const handleVulnerabilitySubmit = async () => {
+    if (!vulnerabilityForm.email.trim() || !vulnerabilityForm.description.trim()) {
+      setVulnSubmitStatus({ type: 'error', message: 'Please fill in all fields' });
+      return;
+    }
+    setIsSubmittingVuln(true);
+    try {
+      // Store vulnerability report in Supabase
+      const { data, error } = await supabase
+        .from('security_vulnerabilities')
+        .insert({
+          reporter_email: vulnerabilityForm.email.trim().toLowerCase(),
+          severity: vulnerabilityForm.severity,
+          description: vulnerabilityForm.description.trim(),
+          status: 'pending',
+          reported_at: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+
+      // Send notification email (via Edge Function or API)
+      try {
+        await fetch('/api/send-security-alert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reporter_email: vulnerabilityForm.email,
+            severity: vulnerabilityForm.severity,
+            description: vulnerabilityForm.description,
+          }),
+        });
+      } catch (emailError) {
+        console.log('Email notification pending manual review');
+      }
+
+      setVulnSubmitStatus({ 
+        type: 'success', 
+        message: '✓ Report submitted successfully. Our security team will review this within 48 hours. You will receive updates at ' + vulnerabilityForm.email 
+      });
+      
+      setTimeout(() => {
+        setVulnerabilityForm({ email: '', description: '', severity: 'medium' });
+        setVulnSubmitStatus(null);
+      }, 7000);
+    } catch (error) {
+      console.error('Submission error:', error);
+      setVulnSubmitStatus({ 
+        type: 'error', 
+        message: 'Submission failed. Please email security@fintrack.app directly with subject: [SECURITY] Vulnerability Report' 
+      });
+    } finally {
+      setIsSubmittingVuln(false);
+    }
+  };
+
   return (
   <div className="min-h-screen bg-[#050505] text-white overflow-hidden">
       <Navbar />
@@ -60,7 +120,7 @@ const Security = () => {
             Security<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-rose-400 to-pink-400">First</span>
           </motion.h1>
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto">
-            Your financial data deserves the highest level of protection. Here's how we keep it safe.
+              We take your financial security seriously. Here's what we do to protect your data and maintain your trust.
           </motion.p>
         </div>
       </section>
@@ -128,15 +188,104 @@ const Security = () => {
 
       {/* Report */}
       <section className="pb-32 px-6">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-4xl mx-auto">
+          <motion.h2 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-3xl font-black text-center mb-10">Responsible Disclosure</motion.h2>
+          
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-            className="bg-gradient-to-br from-red-500/10 to-rose-500/10 border border-red-500/20 rounded-[28px] p-10 text-center"
+            className="bg-gradient-to-br from-red-500/10 to-rose-500/10 border border-red-500/20 rounded-[28px] p-10 mb-8"
           >
-            <h3 className="text-2xl font-black mb-3">Found a Vulnerability?</h3>
-            <p className="text-gray-400 mb-6">We run a responsible disclosure program. Report security issues and earn bounties.</p>
-            <a href="mailto:security@fintrack.app" className="inline-flex items-center gap-2 bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold px-8 py-3 rounded-full hover:shadow-xl hover:shadow-red-500/30 transition-all">
-              <Shield className="w-4 h-4" /> Report a Vulnerability
-            </a>
+            <h3 className="text-xl font-black mb-3">Report a Security Issue</h3>
+            <p className="text-gray-400 mb-6">Found a vulnerability? We take security seriously and appreciate responsible disclosure. Please report it to our security team.</p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-gray-300 block mb-2">Your Email</label>
+                <input 
+                  type="email" 
+                  value={vulnerabilityForm.email}
+                  onChange={(e) => setVulnerabilityForm({ ...vulnerabilityForm, email: e.target.value })}
+                  placeholder="your@email.com"
+                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm placeholder-gray-500 focus:border-red-500/50 focus:outline-none"
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm text-gray-300 block mb-2">Severity Level</label>
+                <select 
+                  value={vulnerabilityForm.severity}
+                  onChange={(e) => setVulnerabilityForm({ ...vulnerabilityForm, severity: e.target.value })}
+                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm focus:border-red-500/50 focus:outline-none cursor-pointer"
+                  style={{ colorScheme: 'dark' }}
+                >
+                  <option value="low" style={{ backgroundColor: '#1f2937', color: '#fff' }}>Low</option>
+                  <option value="medium" style={{ backgroundColor: '#1f2937', color: '#fff' }}>Medium</option>
+                  <option value="high" style={{ backgroundColor: '#1f2937', color: '#fff' }}>High</option>
+                  <option value="critical" style={{ backgroundColor: '#1f2937', color: '#fff' }}>Critical</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="text-sm text-gray-300 block mb-2">Vulnerability Description</label>
+                <textarea 
+                  value={vulnerabilityForm.description}
+                  onChange={(e) => setVulnerabilityForm({ ...vulnerabilityForm, description: e.target.value })}
+                  placeholder="Describe the vulnerability in detail..."
+                  rows="4"
+                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white text-sm placeholder-gray-500 focus:border-red-500/50 focus:outline-none resize-none"
+                />
+              </div>
+
+              {vulnSubmitStatus && (
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                  className={`p-3 rounded-lg text-sm font-semibold ${
+                    vulnSubmitStatus.type === 'success' 
+                      ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
+                      : 'bg-red-500/10 border border-red-500/30 text-red-300'
+                  }`}
+                >
+                  {vulnSubmitStatus.message}
+                </motion.div>
+              )}
+              
+              <button
+                onClick={handleVulnerabilitySubmit}
+                disabled={isSubmittingVuln}
+                className="w-full bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold py-3 rounded-lg hover:shadow-xl hover:shadow-red-500/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+                {isSubmittingVuln ? 'Submitting...' : 'Submit Vulnerability Report'}
+              </button>
+              
+              <p className="text-xs text-gray-500 text-center mt-4">Or email directly to: <span className="text-gray-400 font-mono">security@fintrack.app</span></p>
+            </div>
+          </motion.div>
+          
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+            className="bg-[#0A0A0B] border border-white/5 rounded-[20px] p-8"
+          >
+            <h4 className="font-black text-white mb-4">Our Commitment</h4>
+            <ul className="space-y-3 text-sm text-gray-400">
+              <li className="flex items-start gap-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
+                <span>We will acknowledge receipt of your report within 24 hours via email</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
+                <span>We will send updates to the email you provided as we investigate</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
+                <span>We will work to fix confirmed vulnerabilities quickly and notify you</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
+                <span>We will credit you publicly (if desired) when we ship the fix</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
+                <span>We will not pursue legal action against good-faith reporters</span>
+              </li>
+            </ul>
           </motion.div>
         </div>
       </section>

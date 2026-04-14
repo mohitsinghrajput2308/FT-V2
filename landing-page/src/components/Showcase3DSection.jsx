@@ -23,26 +23,26 @@ export const Showcase3DSection = () => {
   const stats = [
     {
       icon: TrendingUp,
-      value: '2.5x',
-      label: 'Faster Budgeting',
+      value: 'Simple',
+      label: 'Budgeting Process',
       color: 'from-blue-500 to-cyan-500'
     },
     {
       icon: Shield,
-      value: '100%',
-      label: 'Secure & Encrypted',
+      value: 'Secure',
+      label: 'Data Protection',
       color: 'from-emerald-500 to-teal-500'
     },
     {
       icon: Zap,
-      value: '<1s',
-      label: 'Real-time Sync',
+      value: 'Live',
+      label: 'Data Updates',
       color: 'from-violet-500 to-purple-500'
     },
     {
       icon: Globe,
-      value: '150+',
-      label: 'Countries Supported',
+      value: 'Global',
+      label: 'Multi-Currency',
       color: 'from-pink-500 to-rose-500'
     }
   ];
@@ -98,11 +98,11 @@ export const Showcase3DSection = () => {
         {/* Section Header */}
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Powered by
-            <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent neon-glow"> Cutting-Edge Technology</span>
+            Built with
+            <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent neon-glow"> Modern Technology</span>
           </h2>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Experience the future of financial management with our advanced platform
+            A clean, secure platform designed for managing your finances
           </p>
         </div>
 
@@ -160,7 +160,7 @@ export const Showcase3DSection = () => {
             <div className="h-2 bg-white/10 rounded-full w-full mb-2 overflow-hidden">
               <div className="h-full bg-orange-500 w-3/4"></div>
             </div>
-            <p className="text-[10px] text-gray-400">Budget limit reached in "Dining Out" category</p>
+            <p className="text-[10px] text-gray-400">Spending alerts help you stay on track with your goals</p>
           </div>
 
           {/* Floating Mini-Module 2: Insights */}
@@ -176,11 +176,11 @@ export const Showcase3DSection = () => {
                 <TrendingUp className="w-5 h-5 text-blue-400" />
               </div>
               <div>
-                <div className="text-[10px] text-blue-400 font-black uppercase tracking-tighter">AI Insight</div>
-                <div className="text-sm font-bold text-white">+12.5%</div>
+                <div className="text-[10px] text-blue-400 font-black uppercase tracking-tighter">Category</div>
+                <div className="text-sm font-bold text-white">Spending</div>
               </div>
             </div>
-            <p className="text-[10px] text-gray-400">Your savings increased compared to last month. Keep it up!</p>
+            <p className="text-[10px] text-gray-400">Categorize expenses automatically to understand spending patterns</p>
           </div>
 
           <div
@@ -216,14 +216,14 @@ export const Showcase3DSection = () => {
 
                   <div className="grid grid-cols-3 gap-4">
                     {[
-                      { label: 'Total Balance', value: '$84,250.00', trend: '+12%' },
-                      { label: 'Monthly ROI', value: '$12,400.00', trend: '+5.4%' },
-                      { label: 'Active Assets', value: '24', trend: 'Stable' }
+                      { label: 'Total Income', value: 'Tracked', trend: 'Auto-categorized' },
+                      { label: 'Total Expenses', value: 'Tracked', trend: 'Organized' },
+                      { label: 'Budget Health', value: 'Clear', trend: 'Monitored' }
                     ].map((item, i) => (
                       <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-md hover:bg-white/10 transition-colors">
                         <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">{item.label}</div>
                         <div className="text-xl font-black text-white mb-1">{item.value}</div>
-                        <div className="text-[10px] font-bold text-blue-400">{item.trend} Since last month</div>
+                        <div className="text-[10px] font-bold text-blue-400">{item.trend}</div>
                       </div>
                     ))}
                   </div>

@@ -18,13 +18,14 @@ export const PricingSection = () => {
       name: 'Free',
       monthlyPrice: 0,
       yearlyPrice: 0,
-      description: 'Perfect for getting started with personal finance tracking',
+      description: 'Perfect for tracking basic spending',
       features: [
-        '50 transactions (income & expenses)',
-        '3 investments max',
-        'Analytics dashboard & reports',
+        'Up to 50 transactions per month',
+        'Investment tracking (3 max)',
+        'Financial calculators (blocked)',
         '2 budgets, 2 goals & 2 bill reminders',
-        'Default expense categories',
+        'Basic expense categories',
+        'Simple transaction tracking',
         'Email support'
       ],
       popular: false
@@ -33,13 +34,16 @@ export const PricingSection = () => {
       name: 'Pro',
       monthlyPrice: 9.99,
       yearlyPrice: 7.99,
-      description: 'Best for individuals serious about their finances',
+      description: 'Best for serious personal finance tracking',
       features: [
         'Everything in Free',
-        '5 budgets, 5 goals & 5 bill reminders',
-        '3 custom categories (lifetime)',
+        'Up to 500 transactions per month',
+        'Unlimited investment tracking',
+        'All 7 financial calculators',
+        '10 budgets, 10 goals & 10 bill reminders',
+        'Unlimited custom categories',
         'CSV & PDF data export',
-        'Priority support & live chat'
+        'Priority email support'
       ],
       popular: true
     },
@@ -47,12 +51,16 @@ export const PricingSection = () => {
       name: 'Business',
       monthlyPrice: 29.99,
       yearlyPrice: 24.99,
-      description: 'Ideal for small businesses and teams',
+      description: 'For small teams managing finances together',
       features: [
         'Everything in Pro',
+        'Unlimited transactions',
+        'Unlimited investment tracking',
+        'All 7 financial calculators',
         'Unlimited budgets, goals & bills',
         'Unlimited custom categories',
-        'Team collaboration (up to 5 users)',
+        'Multi-user access (up to 3 users)',
+        'Dedicated support'
       ],
       popular: false
     }
@@ -71,14 +79,14 @@ export const PricingSection = () => {
             <span className="text-sm font-medium text-blue-600 dark:text-blue-400">PRICING PLANS</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-            Choose the Perfect Plan
+            Choose a Plan
             <br />
             <span className="bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
               For Your Journey
             </span>
           </h2>
           <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-8">
-            Start free, upgrade when you need more. Paid plans include a 14-day free trial — cancel anytime during the trial at no charge. All paid plans include a 14-day money-back guarantee.
+            Start free, upgrade when you're ready. See our pricing page for complete plan details and terms.
           </p>
 
           {/* Monthly / Yearly Toggle */}

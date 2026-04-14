@@ -26,8 +26,8 @@ const faqs = [
         answer: 'Yes! Pro and Business plans include a 7-day free trial with full access to all features. No credit card required to start the trial — you\'re only charged when the trial ends. Cancel anytime during the trial and you won\'t be charged.'
       },
       {
-        question: 'Do I get a money-back guarantee?',
-        answer: 'Absolutely. All paid plans include a 14-day money-back guarantee. If you\'re unhappy for any reason, contact us within 14 days of any charge and we\'ll issue a full refund, no questions asked.'
+        question: 'What are the terms and conditions for paid plans?',
+        answer: 'See our Terms of Service page for full details on paid plans and refund policies.'
       },
       {
         question: 'How does the yearly discount work?',

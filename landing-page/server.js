@@ -7,13 +7,27 @@ require('dotenv').config({ path: '.env.local' });
 const express = require('express');
 const Groq = require('groq-sdk');
 const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.SERVER_PORT || 3001;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:3002', 'http://127.0.0.1:3000', 'http://127.0.0.1:3002'],
+  credentials: true
+}));
 app.use(express.json());
+
+// Serve static files from public directory (fallback for dev)
+const publicPath = path.join(__dirname, 'public');
+if (fs.existsSync(publicPath)) {
+  app.use(express.static(publicPath, {
+    maxAge: '1d',
+    etag: false
+  }));
+}
 
 // Initialize Groq
 const groq = new Groq({
@@ -95,12 +109,35 @@ app.post('/api/chat', async (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, '127.0.0.1', () => {
   console.log(`
-╔════════════════════════════════════════╗
-║   FinTrack AI Chat Server Running      ║
-║   http://localhost:${PORT}                  ║
-║   React Dev Server: http://localhost:3002   ║
-╚════════════════════════════════════════╝
+╔════════════════════════════════════════════════════════════╗
+║   ✅ FinTrack API Server Ready                             ║
+║   📡 Chat API:  http://localhost:${PORT}/api/chat               ║
+║   🏥 Health:    http://localhost:${PORT}/health                ║
+║                                                            ║
+║   🚀 React Dev Server should start on port 3000           ║
+║   📱 Access app at: http://localhost:3000                 ║
+╚════════════════════════════════════════════════════════════╝
   `);
+});
+
+// Better error handling
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${PORT} is already in use!`);
+    console.error('   Try: lsof -ti:${PORT} | xargs kill -9');
+    console.error(`   Or set SERVER_PORT environment variable`);
+  } else {
+    console.error('Server error:', err);
+  }
+  process.exit(1);
+});
+
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
 });

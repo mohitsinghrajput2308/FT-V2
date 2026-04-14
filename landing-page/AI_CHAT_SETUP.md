@@ -1,7 +1,7 @@
 # FinTrack AI Chat Setup Guide
 
 ## Overview
-The Live Chat AI Assistant now uses Claude API (Anthropic) for real AI conversations instead of simple pattern matching.
+The AI Assistant now uses Claude API (Anthropic) for real AI conversations instead of simple pattern matching.
 
 ## Setup Steps
 

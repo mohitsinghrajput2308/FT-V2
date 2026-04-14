@@ -18,54 +18,54 @@ const typeConfig = {
 
 const releases = [
   {
-    version: '2.4.0', date: 'January 20, 2025', title: 'AI Insights & Multi-Currency', gradient: 'from-purple-500 to-indigo-500',
+    version: '2.4.0', date: 'January 20, 2025', title: 'Investment Tracking & Goals', gradient: 'from-purple-500 to-indigo-500',
     changes: [
-      { type: 'feature', text: 'AI-powered spending insights with personalized recommendations' },
-      { type: 'feature', text: 'Multi-currency support for 50+ currencies with real-time conversion' },
-      { type: 'improvement', text: 'Redesigned dashboard with customizable widget layout' },
-      { type: 'performance', text: 'Transaction loading speed improved by 3x' },
+      { type: 'feature', text: 'Investment portfolio overview page' },
+      { type: 'feature', text: 'Goals and savings tracking with progress visualizations' },
+      { type: 'improvement', text: 'Enhanced dashboard with better organized widgets' },
       { type: 'fix', text: 'Fixed budget reset not triggering on month boundaries' },
+      { type: 'fix', text: 'Improved transaction categorization accuracy' },
     ]
   },
   {
-    version: '2.3.0', date: 'December 15, 2024', title: 'Two-Factor Authentication', gradient: 'from-emerald-500 to-teal-500',
+    version: '2.3.0', date: 'December 15, 2024', title: 'Security & Recovery Options', gradient: 'from-emerald-500 to-teal-500',
     changes: [
-      { type: 'feature', text: 'Optional TOTP-based two-factor authentication' },
-      { type: 'feature', text: 'Security question recovery for password resets' },
-      { type: 'improvement', text: 'Enhanced password strength meter with real-time feedback' },
-      { type: 'fix', text: 'Fixed OTP verification timeout on slow connections' },
-      { type: 'fix', text: 'Resolved duplicate notification issue on mobile' },
+      { type: 'feature', text: 'Two-factor authentication with authenticator apps' },
+      { type: 'feature', text: 'Security questions for account recovery' },
+      { type: 'improvement', text: 'Better password strength requirements' },
+      { type: 'improvement', text: 'Enhanced login security checks' },
+      { type: 'fix', text: 'Fixed login issues on slow connections' },
     ]
   },
   {
-    version: '2.2.0', date: 'November 8, 2024', title: 'Smart Categories & Bank Sync', gradient: 'from-blue-500 to-cyan-500',
+    version: '2.2.0', date: 'November 8, 2024', title: 'Smart Categories & Organization', gradient: 'from-blue-500 to-cyan-500',
     changes: [
-      { type: 'feature', text: 'Auto-categorization using ML-based transaction analysis' },
-      { type: 'feature', text: 'Bank account synchronization via Plaid integration' },
-      { type: 'improvement', text: 'Category management with custom icons and colors' },
-      { type: 'performance', text: 'Reduced app bundle size by 40%' },
-      { type: 'fix', text: 'Fixed chart rendering glitch on Safari browsers' },
+      { type: 'feature', text: 'Automatic transaction categorization suggestions' },
+      { type: 'feature', text: 'Custom category creation with icons and colors' },
+      { type: 'improvement', text: 'Better filtering and search for transactions' },
+      { type: 'fix', text: 'Fixed chart rendering issues on some devices' },
+      { type: 'fix', text: 'Improved mobile responsiveness' },
     ]
   },
   {
-    version: '2.1.0', date: 'October 1, 2024', title: 'Analytics Dashboard Overhaul', gradient: 'from-amber-500 to-orange-500',
+    version: '2.1.0', date: 'October 1, 2024', title: 'Analytics & Reporting', gradient: 'from-amber-500 to-orange-500',
     changes: [
-      { type: 'feature', text: 'New analytics page with spending trends and patterns' },
-      { type: 'improvement', text: 'Dark mode refinements across all screens' },
-      { type: 'improvement', text: 'Improved accessibility (WCAG 2.1 AA compliance)' },
-      { type: 'performance', text: 'API response times reduced by 60%' },
-      { type: 'fix', text: 'Fixed data export including incorrect date ranges' },
+      { type: 'feature', text: 'New analytics dashboard with spending trends' },
+      { type: 'feature', text: 'Export transactions to CSV and PDF reports' },
+      { type: 'improvement', text: 'Dark mode is now the default interface' },
+      { type: 'improvement', text: 'Better data visualization with charts and graphs' },
+      { type: 'fix', text: 'Fixed data export date range issues' },
     ]
   },
   {
-    version: '2.0.0', date: 'August 15, 2024', title: 'FinTrack 2.0 — Complete Redesign', gradient: 'from-pink-500 to-rose-500',
+    version: '2.0.0', date: 'August 15, 2024', title: 'FinTrack 2.0 — Modern Redesign', gradient: 'from-pink-500 to-rose-500',
     changes: [
-      { type: 'feature', text: 'Completely redesigned UI with glassmorphism design system' },
-      { type: 'feature', text: 'Real-time collaborative budgets for families' },
+      { type: 'feature', text: 'Completely redesigned user interface' },
       { type: 'feature', text: 'Recurring transaction templates' },
-      { type: 'improvement', text: 'New onboarding flow with interactive tutorial' },
-      { type: 'performance', text: 'Offline-first architecture with instant sync' },
-      { type: 'fix', text: 'Major stability improvements (99.9% uptime)' },
+      { type: 'feature', text: 'Bill reminders and notifications' },
+      { type: 'improvement', text: 'New onboarding tutorial for new users' },
+      { type: 'improvement', text: 'Better mobile app experience' },
+      { type: 'fix', text: 'Overall stability and performance improvements' },
     ]
   },
 ];
@@ -97,7 +97,7 @@ const Changelog = () => {
             Change<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 via-violet-400 to-purple-400">Log</span>
           </motion.h1>
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto">
-            Every update, improvement, and fix — all in one place.
+            Track all the updates and improvements we've made to FinTrack over time.
           </motion.p>
         </div>
       </section>

@@ -26,33 +26,6 @@ import logo from '../assets/logo.png';
 export const Footer = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [newsletterStatus, setNewsletterStatus] = useState('idle'); // idle | loading | success | error
-  const [newsletterMsg, setNewsletterMsg] = useState('');
-
-  const handleNewsletterSubmit = async (e) => {
-    e.preventDefault();
-    const email = newsletterEmail.trim().toLowerCase();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setNewsletterStatus('error');
-      setNewsletterMsg('Please enter a valid email.');
-      return;
-    }
-    setNewsletterStatus('loading');
-    try {
-      const { error } = await supabase
-        .from('newsletter_subscribers')
-        .upsert({ email, source: 'footer' }, { onConflict: 'email' });
-      if (error) throw error;
-      setNewsletterStatus('success');
-      setNewsletterMsg("You're in! We'll keep you updated.");
-      setNewsletterEmail('');
-      trackNewsletterSubscribe();
-    } catch (err) {
-      setNewsletterStatus('error');
-      setNewsletterMsg('Something went wrong. Try again.');
-    }
-  };
 
   const footerLinks = {
     Product: [
@@ -100,37 +73,6 @@ export const Footer = () => {
               Your money tells a story. <span className="font-semibold" style={{ color: '#FFFBF0' }}>FinTrack</span> helps you write a better one — with AI that listens, learns, and lights the way to financial freedom.
             </p>
             <p className="text-xs italic mb-5" style={{ color: '#5C5040' }}>Built for dreamers. Designed for doers.</p>
-
-            {/* Newsletter Signup */}
-            <div className="max-w-sm">
-              <h4 className="text-sm font-semibold mb-2" style={{ color: '#FFFBF0' }}>Stay in the loop</h4>
-              {newsletterStatus === 'success' ? (
-                <div className="flex items-center gap-2 text-sm text-emerald-400">
-                  <CheckCircle className="w-4 h-4" />
-                  {newsletterMsg}
-                </div>
-              ) : (
-                <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
-                  <input
-                    type="email"
-                    placeholder="you@example.com"
-                    value={newsletterEmail}
-                    onChange={(e) => { setNewsletterEmail(e.target.value); setNewsletterStatus('idle'); }}
-                    className="flex-1 px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50 transition-colors"
-                  />
-                  <button
-                    type="submit"
-                    disabled={newsletterStatus === 'loading'}
-                    className="px-3 py-2 rounded-lg text-sm font-medium bg-amber-600 hover:bg-amber-500 text-white transition-colors disabled:opacity-50 flex items-center gap-1"
-                  >
-                    {newsletterStatus === 'loading' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  </button>
-                </form>
-              )}
-              {newsletterStatus === 'error' && (
-                <p className="text-xs text-red-400 mt-1">{newsletterMsg}</p>
-              )}
-            </div>
           </div>
 
           {/* Links Columns */}
@@ -191,52 +133,29 @@ export const Footer = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           {/* Section Header */}
           <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-black tracking-[0.25em] uppercase mb-4"
-              style={{ background: 'rgba(217,119,6,0.1)', border: '1px solid rgba(217,119,6,0.2)', color: '#FBBF24' }}>
-              <Sparkles className="w-3.5 h-3.5" /> Connected Everywhere
-            </div>
             <h3 className="text-3xl md:text-4xl font-black mb-3 tracking-tight" style={{ color: '#FFFBF0' }}>
-              Join Our <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(to right, #F59E0B, #EA580C, #DC2626)' }}>Global Community</span>
+              Connect With Us <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(to right, #F59E0B, #EA580C, #DC2626)' }}>On</span>
             </h3>
             <p className="max-w-lg mx-auto" style={{ color: '#A8977A' }}>
-              50,000+ members across 8 platforms. Pick your favorite — or join them all.
+              Join our community and stay updated with the latest features and financial insights.
             </p>
-          </div>
-
-          {/* Stats Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8 max-w-3xl mx-auto">
-            {[
-              { value: '50K+', label: 'Members', icon: Users },
-              { value: '120+', label: 'Countries', icon: Globe },
-              { value: '24/7', label: 'Active Chat', icon: MessageCircle },
-              { value: '99%', label: 'Satisfaction', icon: Sparkles },
-            ].map((stat) => (
-              <div key={stat.label} className="rounded-2xl p-4 text-center group transition-all duration-300"
-                style={{ background: 'rgba(28,22,12,0.6)', border: '1px solid rgba(161,98,7,0.15)' }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(217,119,6,0.35)'; e.currentTarget.style.background = 'rgba(28,22,12,0.9)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(161,98,7,0.15)'; e.currentTarget.style.background = 'rgba(28,22,12,0.6)'; }}>
-                <stat.icon className="w-4 h-4 mx-auto mb-1.5 group-hover:scale-110 transition-transform" style={{ color: '#FBBF24' }} />
-                <div className="text-xl font-black" style={{ color: '#FFFBF0' }}>{stat.value}</div>
-                <div className="text-[11px] uppercase tracking-wider font-bold" style={{ color: '#6B5E4B' }}>{stat.label}</div>
-              </div>
-            ))}
           </div>
 
           {/* App Grid — 12 platforms */}
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 max-w-5xl mx-auto mb-8">
             {[
-              { name: 'WhatsApp', href: 'https://wa.me/#', icon: MessageCircle, members: '12K Members', action: 'Join', gradient: 'linear-gradient(135deg,#25D366,#128C7E)', accent: '#25D366', shadow: 'rgba(37,211,102,0.2)', hoverShadow: 'rgba(37,211,102,0.4)', hoverBorder: 'rgba(37,211,102,0.4)' },
-              { name: 'Telegram', href: 'https://t.me/#', icon: Send, members: '8K Members', action: 'Join', gradient: 'linear-gradient(135deg,#2AABEE,#229ED9)', accent: '#2AABEE', shadow: 'rgba(42,171,238,0.2)', hoverShadow: 'rgba(42,171,238,0.4)', hoverBorder: 'rgba(42,171,238,0.4)' },
-              { name: 'Discord', href: 'https://discord.gg/#', icon: Disc, members: '15K Members', action: 'Join', gradient: 'linear-gradient(135deg,#5865F2,#4752C4)', accent: '#5865F2', shadow: 'rgba(88,101,242,0.2)', hoverShadow: 'rgba(88,101,242,0.4)', hoverBorder: 'rgba(88,101,242,0.4)' },
-              { name: 'YouTube', href: 'https://youtube.com/#', icon: Youtube, members: '5K Subscribers', action: 'Subscribe', gradient: 'linear-gradient(135deg,#FF0000,#CC0000)', accent: '#FF4444', shadow: 'rgba(255,0,0,0.2)', hoverShadow: 'rgba(255,0,0,0.4)', hoverBorder: 'rgba(255,68,68,0.4)' },
-              { name: 'LinkedIn', href: 'https://linkedin.com/company/#', icon: Linkedin, members: '7K Network', action: 'Connect', gradient: 'linear-gradient(135deg,#0A66C2,#004182)', accent: '#0A66C2', shadow: 'rgba(10,102,194,0.2)', hoverShadow: 'rgba(10,102,194,0.4)', hoverBorder: 'rgba(10,102,194,0.4)' },
-              { name: 'Instagram', href: 'https://instagram.com/#', icon: Instagram, members: '9K Followers', action: 'Follow', gradient: 'linear-gradient(135deg,#833AB4,#FD1D1D,#FCB045)', accent: '#FD1D1D', shadow: 'rgba(253,29,29,0.2)', hoverShadow: 'rgba(253,29,29,0.4)', hoverBorder: 'rgba(253,29,29,0.4)' },
-              { name: 'GitHub', href: 'https://github.com/#', icon: Github, members: '3K Stars', action: 'Star', gradient: 'linear-gradient(135deg,#24292e,#57606a)', accent: '#8b949e', shadow: 'rgba(139,148,158,0.2)', hoverShadow: 'rgba(139,148,158,0.4)', hoverBorder: 'rgba(139,148,158,0.4)' },
-              { name: 'X', href: 'https://x.com/#', icon: Twitter, members: '11K Followers', action: 'Follow', gradient: 'linear-gradient(135deg,#000000,#2f3336)', accent: '#e7e9ea', shadow: 'rgba(231,233,234,0.15)', hoverShadow: 'rgba(231,233,234,0.3)', hoverBorder: 'rgba(231,233,234,0.3)' },
-              { name: 'Reddit', href: 'https://reddit.com/r/#', customIcon: RedditIcon, members: '6K Members', action: 'Join', gradient: 'linear-gradient(135deg,#FF4500,#CC3700)', accent: '#FF6534', shadow: 'rgba(255,69,0,0.2)', hoverShadow: 'rgba(255,69,0,0.4)', hoverBorder: 'rgba(255,69,0,0.4)' },
-              { name: 'Threads', href: 'https://threads.net/#', customIcon: ThreadsIcon, members: '4K Followers', action: 'Follow', gradient: 'linear-gradient(135deg,#101010,#333333)', accent: '#e0e0e0', shadow: 'rgba(224,224,224,0.15)', hoverShadow: 'rgba(224,224,224,0.3)', hoverBorder: 'rgba(224,224,224,0.3)' },
-              { name: 'Facebook', href: 'https://facebook.com/#', icon: Facebook, members: '18K Likes', action: 'Like', gradient: 'linear-gradient(135deg,#1877F2,#0C5FD4)', accent: '#4293FB', shadow: 'rgba(24,119,242,0.2)', hoverShadow: 'rgba(24,119,242,0.4)', hoverBorder: 'rgba(24,119,242,0.4)' },
-              { name: 'Quora', href: 'https://quora.com/#', customIcon: QuoraIcon, members: '2K Followers', action: 'Follow', gradient: 'linear-gradient(135deg,#B92B27,#8E1F1C)', accent: '#E8352F', shadow: 'rgba(185,43,39,0.2)', hoverShadow: 'rgba(185,43,39,0.4)', hoverBorder: 'rgba(185,43,39,0.4)' },
+              { name: 'WhatsApp', href: 'https://wa.me/#', icon: MessageCircle, members: 'Connect', action: 'Join', gradient: 'linear-gradient(135deg,#25D366,#128C7E)', accent: '#25D366', shadow: 'rgba(37,211,102,0.2)', hoverShadow: 'rgba(37,211,102,0.4)', hoverBorder: 'rgba(37,211,102,0.4)' },
+              { name: 'Telegram', href: 'https://t.me/+gzCELKsKxS4yNDBl', icon: Send, members: 'Connect', action: 'Join', gradient: 'linear-gradient(135deg,#2AABEE,#229ED9)', accent: '#2AABEE', shadow: 'rgba(42,171,238,0.2)', hoverShadow: 'rgba(42,171,238,0.4)', hoverBorder: 'rgba(42,171,238,0.4)' },
+              { name: 'Discord', href: 'https://discord.gg/#', icon: Disc, members: 'Connect', action: 'Join', gradient: 'linear-gradient(135deg,#5865F2,#4752C4)', accent: '#5865F2', shadow: 'rgba(88,101,242,0.2)', hoverShadow: 'rgba(88,101,242,0.4)', hoverBorder: 'rgba(88,101,242,0.4)' },
+              { name: 'YouTube', href: 'https://youtube.com/#', icon: Youtube, members: 'Connect', action: 'Subscribe', gradient: 'linear-gradient(135deg,#FF0000,#CC0000)', accent: '#FF4444', shadow: 'rgba(255,0,0,0.2)', hoverShadow: 'rgba(255,0,0,0.4)', hoverBorder: 'rgba(255,68,68,0.4)' },
+              { name: 'LinkedIn', href: 'https://linkedin.com/company/#', icon: Linkedin, members: 'Connect', action: 'Connect', gradient: 'linear-gradient(135deg,#0A66C2,#004182)', accent: '#0A66C2', shadow: 'rgba(10,102,194,0.2)', hoverShadow: 'rgba(10,102,194,0.4)', hoverBorder: 'rgba(10,102,194,0.4)' },
+              { name: 'Instagram', href: 'https://instagram.com/#', icon: Instagram, members: 'Connect', action: 'Follow', gradient: 'linear-gradient(135deg,#833AB4,#FD1D1D,#FCB045)', accent: '#FD1D1D', shadow: 'rgba(253,29,29,0.2)', hoverShadow: 'rgba(253,29,29,0.4)', hoverBorder: 'rgba(253,29,29,0.4)' },
+              { name: 'GitHub', href: 'https://github.com/#', icon: Github, members: 'Connect', action: 'Star', gradient: 'linear-gradient(135deg,#24292e,#57606a)', accent: '#8b949e', shadow: 'rgba(139,148,158,0.2)', hoverShadow: 'rgba(139,148,158,0.4)', hoverBorder: 'rgba(139,148,158,0.4)' },
+              { name: 'X', href: 'https://x.com/#', icon: Twitter, members: 'Connect', action: 'Follow', gradient: 'linear-gradient(135deg,#000000,#2f3336)', accent: '#e7e9ea', shadow: 'rgba(231,233,234,0.15)', hoverShadow: 'rgba(231,233,234,0.3)', hoverBorder: 'rgba(231,233,234,0.3)' },
+              { name: 'Reddit', href: 'https://reddit.com/r/#', customIcon: RedditIcon, members: 'Connect', action: 'Join', gradient: 'linear-gradient(135deg,#FF4500,#CC3700)', accent: '#FF6534', shadow: 'rgba(255,69,0,0.2)', hoverShadow: 'rgba(255,69,0,0.4)', hoverBorder: 'rgba(255,69,0,0.4)' },
+              { name: 'Threads', href: 'https://threads.net/#', customIcon: ThreadsIcon, members: 'Connect', action: 'Follow', gradient: 'linear-gradient(135deg,#101010,#333333)', accent: '#e0e0e0', shadow: 'rgba(224,224,224,0.15)', hoverShadow: 'rgba(224,224,224,0.3)', hoverBorder: 'rgba(224,224,224,0.3)' },
+              { name: 'Facebook', href: 'https://facebook.com/#', icon: Facebook, members: 'Connect', action: 'Like', gradient: 'linear-gradient(135deg,#1877F2,#0C5FD4)', accent: '#4293FB', shadow: 'rgba(24,119,242,0.2)', hoverShadow: 'rgba(24,119,242,0.4)', hoverBorder: 'rgba(24,119,242,0.4)' },
+              { name: 'Quora', href: 'https://quora.com/#', customIcon: QuoraIcon, members: 'Connect', action: 'Follow', gradient: 'linear-gradient(135deg,#B92B27,#8E1F1C)', accent: '#E8352F', shadow: 'rgba(185,43,39,0.2)', hoverShadow: 'rgba(185,43,39,0.4)', hoverBorder: 'rgba(185,43,39,0.4)' },
             ].map((platform) => (
               <a key={platform.name} href={platform.href} target="_blank" rel="noopener noreferrer"
                 className="group relative rounded-2xl p-5 text-center transition-all duration-300 overflow-hidden hover:-translate-y-1"
@@ -262,22 +181,6 @@ export const Footer = () => {
             ))}
           </div>
 
-          {/* Newsletter CTA */}
-          <div className="max-w-2xl mx-auto rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-5"
-            style={{ background: 'linear-gradient(135deg, rgba(217,119,6,0.08), rgba(234,88,12,0.06), rgba(161,98,7,0.08))', border: '1px solid rgba(217,119,6,0.12)' }}>
-            <div className="flex-1 text-center sm:text-left">
-              <h4 className="font-black text-lg mb-1" style={{ color: '#FFFBF0' }}>Stay in the Loop</h4>
-              <p className="text-sm" style={{ color: '#A8977A' }}>Weekly insights, product updates & financial tips — no spam.</p>
-            </div>
-            <div className="flex w-full sm:w-auto">
-              <input type="email" placeholder="you@email.com" className="flex-1 sm:w-52 rounded-l-xl px-4 py-2.5 text-sm focus:outline-none"
-                style={{ background: 'rgba(217,119,6,0.06)', border: '1px solid rgba(161,98,7,0.2)', borderRight: 'none', color: '#FFFBF0', placeholder: '#5C5040' }} />
-              <button className="text-white font-bold px-5 py-2.5 rounded-r-xl transition-all text-sm whitespace-nowrap flex items-center gap-1.5"
-                style={{ background: 'linear-gradient(135deg, #D97706, #EA580C)', boxShadow: '0 8px 24px -8px rgba(234,88,12,0.3)' }}>
-                <Mail className="w-4 h-4" /> Subscribe
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 

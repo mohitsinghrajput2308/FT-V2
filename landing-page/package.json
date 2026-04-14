@@ -75,7 +75,8 @@
     "start": "craco start",
     "dev": "concurrently \"node server.js\" \"craco start\"",
     "build": "craco build",
-    "test": "craco test"
+    "test": "craco test",
+    "diagnose": "node diagnostic.js"
   },
   "browserslist": {
     "production": [

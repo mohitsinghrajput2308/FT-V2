@@ -190,7 +190,7 @@ export const HeroSection = () => {
             <div className="inline-flex items-center px-4 py-2 bg-blue-100 rounded-full mb-6 animate-fade-in">
               <TrendingUp className="w-4 h-4 text-blue-600 mr-2" />
               <span className="text-sm font-medium text-blue-600">
-                #1 Finance Tracking App of 2026
+                Simple Money Management
               </span>
             </div>
 
@@ -203,8 +203,7 @@ export const HeroSection = () => {
             </h1>
 
             <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl animate-slide-up animation-delay-200">
-              Track expenses, create budgets, and achieve your financial goals with AI-powered insights.
-              Built to scale and designed to help 100,000+ users transform their financial future.
+              Track expenses, organize your finances, and understand where your money goes. A simple, secure platform to manage your finances.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-slide-up animation-delay-400">
@@ -220,16 +219,16 @@ export const HeroSection = () => {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-6 mt-12 animate-fade-in animation-delay-600">
               <div className="text-center lg:text-left">
-                <div className="text-3xl font-bold text-gray-900 dark:text-white">100K+</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">User Capacity</div>
+                <div className="text-3xl font-bold text-gray-900 dark:text-white">10K+</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Account Storage</div>
               </div>
               <div className="text-center lg:text-left">
-                <div className="text-3xl font-bold text-gray-900 dark:text-white">$500M+</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Volume Capacity</div>
+                <div className="text-3xl font-bold text-gray-900 dark:text-white">$50M+</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Transaction Capacity</div>
               </div>
               <div className="text-center lg:text-left">
-                <div className="text-3xl font-bold text-gray-900 dark:text-white">4.9/5</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">User Rating</div>
+                <div className="text-3xl font-bold text-gray-900 dark:text-white">Secure</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Encryption Standard</div>
               </div>
             </div>
           </div>

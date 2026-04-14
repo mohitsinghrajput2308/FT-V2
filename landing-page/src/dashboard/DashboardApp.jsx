@@ -30,6 +30,7 @@ import Calculators from './pages/Calculators';
 import Categories from './pages/Categories';
 import Settings from './pages/Settings';
 import Help from './pages/Help';
+import PrioritySupport from './pages/PrioritySupport';
 
 import DashboardPricing from './pages/DashboardPricing';
 
@@ -59,6 +60,7 @@ const DashboardApp = () => {
                                     <Route path="calculators" element={<Calculators />} />
                                     <Route path="categories" element={<Categories />} />
                                     <Route path="pricing" element={<DashboardPricing />} />
+                                    <Route path="support" element={<PrioritySupport />} />
                                     <Route path="settings" element={<Settings />} />
                                     <Route path="help" element={<Help />} />
 

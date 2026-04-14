@@ -21,8 +21,8 @@ const faqs = [
   { q: 'Is my financial data secure?', a: 'Absolutely. We use AES-256 encryption at rest, TLS 1.3 in transit, row-level security on all database tables, and optional 2FA. We never sell or share your data.' },
   { q: 'Can I import transactions from my bank?', a: 'Yes! We support CSV import and integration with major banks through Plaid. Go to Settings → Import Data to get started.' },
   { q: 'How do I set up budgets?', a: 'Navigate to the Budget tab, tap "Create Budget", choose a category (or create a custom one), set your monthly limit, and we\'ll track your spending automatically.' },
-  { q: 'What happens if I forget my password?', a: 'You can reset it via email or by answering your security question. Go to the login screen and click "Forgot Password" to see both options.' },
-  { q: 'Is there a free plan?', a: 'Yes! FinTrack offers a generous free tier with unlimited transaction tracking, basic budgets, and analytics. Premium unlocks AI insights, multi-currency, and advanced reports.' },
+  { q: 'What happens if I forget my password?', a: 'Click "Forgot Password" on the login screen to reset via email. You can then create a new password securely.' },
+  { q: 'Is there a free plan?', a: 'Yes! FinTrack offers a generous free tier with unlimited transaction tracking, basic budgets, and analytics. Premium adds multi-currency support, advanced reports, and priority support.' },
   { q: 'How do I enable two-factor authentication?', a: 'During login, you\'ll be prompted to optionally set up 2FA. You can also enable it later from Settings → Security → Two-Factor Authentication.' },
   { q: 'Can I export my data?', a: 'You can export all your data in CSV or JSON format anytime from Settings → Data → Export. Your data belongs to you.' },
 ];

@@ -10,25 +10,21 @@ import { Users, Sparkles, MessageCircle, Github, ExternalLink, Heart, Trophy, St
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] } }) };
 
 const platforms = [
-  { icon: MessageCircle, title: 'Discord Server', desc: 'Chat with 15,000+ community members', members: '15K+', link: '#', gradient: 'from-indigo-500 to-purple-500', bg: 'bg-indigo-500/10' },
-  { icon: Github, title: 'GitHub Discussions', desc: 'Report bugs, request features, contribute', members: '2.5K+', link: '#', gradient: 'from-gray-400 to-gray-600', bg: 'bg-gray-500/10' },
-  { icon: Users, title: 'Reddit Community', desc: 'r/FinTrackApp — tips, tricks & discussions', members: '8K+', link: '#', gradient: 'from-orange-500 to-red-500', bg: 'bg-orange-500/10' },
-  { icon: ExternalLink, title: 'Twitter / X', desc: '@FinTrackApp — updates, polls & memes', members: '25K+', link: '#', gradient: 'from-sky-500 to-blue-500', bg: 'bg-sky-500/10' },
+  { icon: MessageCircle, title: 'Discord Server', desc: 'Join our community for discussions and support', members: 'Join Now', link: '#', gradient: 'from-indigo-500 to-purple-500', bg: 'bg-indigo-500/10' },
+  { icon: Github, title: 'GitHub Discussions', desc: 'Report bugs, request features, contribute', members: 'Join Now', link: '#', gradient: 'from-gray-400 to-gray-600', bg: 'bg-gray-500/10' },
+  { icon: Users, title: 'Reddit Community', desc: 'r/FinTrackApp — tips, tricks & discussions', members: 'Join Now', link: '#', gradient: 'from-orange-500 to-red-500', bg: 'bg-orange-500/10' },
+  { icon: ExternalLink, title: 'Twitter / X', desc: '@FinTrackApp — updates and announcements', members: 'Follow Now', link: '#', gradient: 'from-sky-500 to-blue-500', bg: 'bg-sky-500/10' },
 ];
 
 const contributors = [
-  { name: 'Sarah C.', contributions: 127, badge: 'Core Team', gradient: 'from-purple-500 to-pink-500' },
-  { name: 'Alex K.', contributions: 89, badge: 'Maintainer', gradient: 'from-blue-500 to-cyan-500' },
-  { name: 'Maya P.', contributions: 56, badge: 'Top Contributor', gradient: 'from-emerald-500 to-teal-500' },
-  { name: 'James L.', contributions: 43, badge: 'Top Contributor', gradient: 'from-amber-500 to-orange-500' },
-  { name: 'Lena R.', contributions: 38, badge: 'Rising Star', gradient: 'from-rose-500 to-pink-500' },
-  { name: 'David M.', contributions: 31, badge: 'Rising Star', gradient: 'from-indigo-500 to-violet-500' },
+  { name: 'The FinTrack Team', contributions: null, badge: 'Founders', gradient: 'from-purple-500 to-pink-500' },
+  { name: 'Community Contributors', contributions: null, badge: 'Growing', gradient: 'from-blue-500 to-cyan-500' },
 ];
 
 const events = [
-  { title: 'Monthly Community Call', date: 'First Friday of every month', desc: 'Join us for product updates, Q&A, and sneak peeks at upcoming features.' },
-  { title: 'FinTrack Hackathon 2025', date: 'March 15–17, 2025', desc: 'Build integrations, plugins, or creative tools using the FinTrack API. $10K in prizes!' },
-  { title: 'Finance Literacy Workshop', date: 'Every Wednesday, 2PM EST', desc: 'Free weekly workshops on budgeting, investing, and financial planning.' },
+  { title: 'Community Discussions', date: 'Ongoing', desc: 'Share feedback, ask questions, and connect with other users in our community channels.' },
+  { title: 'Feature Requests & Voting', date: 'Ongoing', desc: 'Help shape the future of FinTrack by voting on features you want to see.' },
+  { title: 'Bug Reports & Support', date: 'Ongoing', desc: 'Found an issue? Report bugs and get support from our growing community.' },
 ];
 
 const Community = () => {

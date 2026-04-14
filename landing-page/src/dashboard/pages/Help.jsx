@@ -142,7 +142,7 @@ const faqCategories = [
             },
             {
                 question: 'Do you offer refunds?',
-                answer: 'We offer a 14-day money-back guarantee on all paid plans. If you\'re unhappy for any reason, contact our support team within 14 days of your first purchase and we\'ll issue a full refund, no questions asked. After 14 days, refunds may be available case-by-case depending on circumstances.'
+                answer: 'See our Terms of Service and Pricing page for complete details on our refund policy.'
             },
             {
                 question: 'Can I cancel my subscription?',

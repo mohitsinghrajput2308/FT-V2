@@ -33,7 +33,7 @@ const recurringOptions = [
     { value: 'One-time', label: 'One-time' }
 ];
 
-const BILL_PLAN_LIMITS = { free: 2, pro: 5 }; // business = unlimited
+const BILL_PLAN_LIMITS = { free: 2, pro: 10 }; // business = unlimited
 
 const Bills = () => {
     const navigate = useNavigate();
@@ -428,7 +428,7 @@ const Bills = () => {
                         <AlertTriangle className="w-7 h-7 text-warning-600 dark:text-warning-400" />
                     </div>
                     <p className="text-gray-700 dark:text-gray-300 mb-1 font-medium">
-                        You've reached your bill limit ({bills.length}/{isBusiness ? '∞' : isPro ? 5 : 2})
+                        You've reached your bill limit ({bills.length}/{isBusiness ? '∞' : isPro ? 10 : 2})
                     </p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
                         You have reached the maximum limit for your current plan. Delete an existing bill or upgrade your plan to create more.

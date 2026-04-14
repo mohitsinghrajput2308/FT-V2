@@ -11,15 +11,16 @@ const plans = [
     label: 'FREE',
     name: 'Free',
     price: { monthly: 0, yearly: 0 },
-    description: 'Great for getting started',
+    description: 'Perfect for tracking basic spending',
     color: 'text-gray-400',
     border: 'border-gray-200 dark:border-dark-400',
     features: [
-      '50 transactions (income & expenses)',
-      '3 investments max',
-      'Analytics dashboard & reports',
+      'Up to 50 transactions per month',
+      'Investment tracking (3 max)',
+      'Financial calculators (blocked)',
       '2 budgets, 2 goals & 2 bills',
-      'Default expense categories',
+      'Basic expense categories',
+      'Simple transaction tracking',
       'Email support',
     ],
   },
@@ -28,17 +29,20 @@ const plans = [
     label: 'PRO',
     name: 'Pro',
     price: { monthly: 9.99, yearly: 7.99 },
-    description: 'For individuals serious about finances',
+    description: 'Best for serious personal finance tracking',
     color: 'text-amber-500',
     border: 'border-amber-400 dark:border-amber-500',
     badge: 'Most Popular',
     highlight: true,
     features: [
       'Everything in Free',
-      '5 budgets, 5 goals & 5 bills',
-      '3 custom categories (lifetime)',
+      'Up to 500 transactions per month',
+      'Unlimited investment tracking',
+      'All 7 financial calculators',
+      '10 budgets, 10 goals & 10 bills',
+      'Unlimited custom categories',
       'CSV & PDF data export',
-      'Priority support & live chat',
+      'Priority email support',
     ],
   },
   {
@@ -46,14 +50,18 @@ const plans = [
     label: 'BUSINESS',
     name: 'Business',
     price: { monthly: 29.99, yearly: 24.99 },
-    description: 'Ideal for small businesses & teams',
+    description: 'For small teams managing finances together',
     color: 'text-blue-400',
     border: 'border-blue-400/40 dark:border-blue-500/40',
     features: [
       'Everything in Pro',
+      'Unlimited transactions',
+      'Unlimited investment tracking',
+      'All 7 financial calculators',
       'Unlimited budgets, goals & bills',
       'Unlimited custom categories',
-      'Team collaboration (up to 5 users)',
+      'Multi-user access (up to 3 users)',
+      'Dedicated support',
     ],
   },
 ];
@@ -62,18 +70,20 @@ const comparison = [
   {
     category: 'Core Tracking',
     rows: [
-      { feature: 'Transactions (Income & Expenses)', free: '50', pro: 'Unlimited', business: 'Unlimited' },
-      { feature: 'Investments', free: '3 max', pro: 'Unlimited', business: 'Unlimited' },
-      { feature: 'Financial Calculators', free: false, pro: 'All 7', business: 'All 7' },
+      { feature: 'Transactions per Month', free: '50', pro: '500', business: 'Unlimited' },
+      { feature: 'Income & Expense Tracking', free: true, pro: true, business: true },
+      { feature: 'Transaction Categories', free: 'Basic', pro: 'Unlimited', business: 'Unlimited' },
       { feature: 'Recurring Transactions', free: true, pro: true, business: true },
+      { feature: 'Investment Tracking', free: '3 max', pro: 'Unlimited', business: 'Unlimited' },
+      { feature: 'Financial Calculators', free: false, pro: 'All 7', business: 'All 7' },
     ],
   },
   {
     category: 'Budgets, Goals & Bills',
     rows: [
-      { feature: 'Budgets', free: '2 max', pro: '5 max', business: 'Unlimited' },
-      { feature: 'Savings Goals', free: '2 max', pro: '5 max', business: 'Unlimited' },
-      { feature: 'Bill Reminders', free: '2 max', pro: '5 max', business: 'Unlimited' },
+      { feature: 'Budgets', free: '2 max', pro: '10 max', business: 'Unlimited' },
+      { feature: 'Savings Goals', free: '2 max', pro: '10 max', business: 'Unlimited' },
+      { feature: 'Bill Reminders', free: '2 max', pro: '10 max', business: 'Unlimited' },
     ],
   },
   {
@@ -94,8 +104,7 @@ const comparison = [
   {
     category: 'Collaboration',
     rows: [
-      { feature: 'Team Members', free: '1', pro: '1', business: 'Up to 5' },
-
+      { feature: 'Team Members', free: '1', pro: '1', business: 'Up to 3' },
     ],
   },
   {
@@ -103,7 +112,7 @@ const comparison = [
     rows: [
       { feature: 'Email Support', free: true, pro: true, business: true },
       { feature: 'Priority Support', free: false, pro: true, business: true },
-      { feature: 'Live Chat', free: false, pro: true, business: true },
+      { feature: 'Dedicated Support', free: false, pro: false, business: true },
     ],
   },
 ];
@@ -111,7 +120,7 @@ const comparison = [
 const faqs = [
   { q: 'Can I cancel anytime?', a: 'Yes. Cancel your subscription at any time from your account settings. Your access continues until the end of your current billing period. If you cancel during a 14-day trial, you\'re not charged.' },
   { q: 'Is there a free trial?', a: 'Yes! Pro and Business plans include a 7-day free trial with full access to all features. No credit card required to start the trial — you\'re only charged when the trial ends. Cancel anytime during the trial and you won\'t be charged.' },
-  { q: 'Do I get a money-back guarantee?', a: 'Absolutely. All paid plans include a 14-day money-back guarantee. If you\'re unhappy for any reason, contact us within 14 days of any charge and we\'ll issue a full refund, no questions asked.' },
+  { q: 'What are your refund terms?', a: 'See our Terms of Service and Pricing page for complete refund policy details.' },
   { q: 'How does the yearly discount work?', a: 'Choosing yearly billing gives you 20% off the monthly rate. You pay the full year upfront at the discounted price, which results in significant savings. You can still cancel anytime.' },
   { q: 'What payment methods are accepted?', a: 'We accept all major credit and debit cards (Visa, Mastercard, Amex) via Paddle. Paddle supports 100+ payment methods globally including local options. All transactions are encrypted with PCI-DSS compliance.' },
   { q: 'Can I switch plans later?', a: 'Yes. Upgrade or downgrade anytime from your account settings. Upgrades take effect immediately and you pay the difference. Downgrades apply at your next billing cycle, so you keep the current plan benefits through your current billing period.' },
@@ -166,7 +175,7 @@ const DashboardPricing = () => {
           Choose Your Plan
         </h1>
         <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
-          Start free. Upgrade when you're ready.
+          Simple, transparent pricing. Start free, upgrade when you need more.
           {isPro && <span className="ml-2 text-amber-500 font-semibold">You're on Pro ⭐</span>}
           {isBusiness && <span className="ml-2 text-blue-500 font-semibold">You're on Business 🏢</span>}
         </p>

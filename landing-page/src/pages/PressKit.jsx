@@ -10,17 +10,17 @@ import { Newspaper, Download, Sparkles, Image, Palette, FileText, Video } from '
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] } }) };
 
 const assets = [
-  { icon: Image, title: 'Logo Package', desc: 'SVG, PNG, and vector formats in all variants', format: '.zip — 4.2 MB', gradient: 'from-orange-500 to-red-500' },
-  { icon: Palette, title: 'Brand Guidelines', desc: 'Typography, color palette, usage rules & spacing', format: '.pdf — 12 MB', gradient: 'from-amber-500 to-orange-500' },
-  { icon: FileText, title: 'Fact Sheet', desc: 'Company overview, stats, and key milestones', format: '.pdf — 1.8 MB', gradient: 'from-yellow-500 to-amber-500' },
-  { icon: Video, title: 'Product Screenshots', desc: 'High-res screens of dashboard, analytics & mobile', format: '.zip — 28 MB', gradient: 'from-rose-500 to-pink-500' },
+  { icon: Image, title: 'Logo Package', desc: 'Logo, icon, and wordmark in various formats', format: '.zip — 2.1 MB', gradient: 'from-orange-500 to-red-500' },
+  { icon: Palette, title: 'Brand Guidelines', desc: 'Color palette, typography, and usage guidelines', format: '.pdf — 3.2 MB', gradient: 'from-amber-500 to-orange-500' },
+  { icon: FileText, title: 'Company Overview', desc: 'FinTrack background, mission, and key information', format: '.pdf — 0.8 MB', gradient: 'from-yellow-500 to-amber-500' },
+  { icon: Video, title: 'Product Screens', desc: 'Current dashboard and app interface screenshots', format: '.zip — 12 MB', gradient: 'from-rose-500 to-pink-500' },
 ];
 
 const stats = [
   { value: '2024', label: 'Founded' },
-  { value: '500K+', label: 'User Capacity' },
-  { value: '$2.5B+', label: 'Volume Capacity' },
-  { value: '50+', label: 'Countries Supported' },
+  { value: 'Small Team', label: 'Our Size' },
+  { value: 'Personal Finance', label: 'Focus Area' },
+  { value: 'Honest', label: 'Our Approach' },
 ];
 
 const PressKit = () => {
@@ -50,7 +50,7 @@ const PressKit = () => {
             Press<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-400">Kit</span>
           </motion.h1>
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto">
-            Everything media, journalists, and partners need to tell the FinTrack story.
+            Logos, brand guidelines, and assets for journalists and partners covering FinTrack.
           </motion.p>
         </div>
       </section>
@@ -115,8 +115,8 @@ const PressKit = () => {
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
             className="bg-gradient-to-br from-orange-500/10 to-amber-500/10 border border-orange-500/20 rounded-[28px] p-10 text-center"
           >
-            <h3 className="text-2xl font-black mb-3">Media Inquiries</h3>
-            <p className="text-gray-400 mb-6">For interviews, quotes, or partnership opportunities</p>
+            <h3 className="text-2xl font-black mb-3">Get in Touch</h3>
+            <p className="text-gray-400 mb-6">Questions about FinTrack? We'd like to hear from journalists and partners.</p>
             <a href="mailto:press@fintrack.app" className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold px-8 py-3 rounded-full hover:shadow-xl hover:shadow-orange-500/30 transition-all">
               press@fintrack.app
             </a>

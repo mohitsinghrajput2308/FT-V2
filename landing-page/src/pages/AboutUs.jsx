@@ -10,24 +10,24 @@ import { Users, Target, Heart, Zap, TrendingUp, Award, Sparkles, MapPin, Globe, 
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] } }) };
 
 const stats = [
-  { value: '100K+', label: 'User Capacity', icon: Users },
-  { value: '$500M+', label: 'Volume Capacity', icon: TrendingUp },
-  { value: '50+', label: 'Countries', icon: Globe },
-  { value: '99.9%', label: 'Uptime', icon: Zap },
+  { value: '10K+', label: 'Account Storage', icon: Users },
+  { value: '$50M+', label: 'Transaction Capacity', icon: TrendingUp },
+  { value: 'Global', label: 'Multi-Currency', icon: Globe },
+  { value: 'Secure', label: 'Encryption', icon: Zap },
 ];
 
 const values = [
-  { icon: Heart, title: 'User-First', desc: 'Every decision starts with "How does this help our users?" We build features people need, not features that look good in demos.', color: 'pink' },
-  { icon: Target, title: 'Radical Transparency', desc: 'No hidden fees, no data selling, no dark patterns. We tell you exactly what we do with your data and how we make money.', color: 'blue' },
-  { icon: Zap, title: 'Speed Obsessed', desc: 'Performance is a feature. We optimize for milliseconds because your time is valuable — dashboards load in under 200ms.', color: 'amber' },
-  { icon: Award, title: 'Security-First', desc: 'Bank-level encryption, 2FA, row-level security. Your financial data is protected with the same standards used by financial institutions.', color: 'emerald' },
+  { icon: Heart, title: 'Simple to Use', desc: 'We build tools that are straightforward and easy to understand. No complicated features or confusing interfaces.', color: 'pink' },
+  { icon: Target, title: 'Honest & Clear', desc: 'We tell you how we make money and how we use your data. No hidden fees or dark patterns.', color: 'blue' },
+  { icon: Zap, title: 'Reliable', desc: 'Our app works consistently so you can depend on it for tracking your finances.', color: 'amber' },
+  { icon: Award, title: 'Secure', desc: 'Your financial data is encrypted and protected. We take security seriously.', color: 'emerald' },
 ];
 
 const team = [
-  { name: 'Alex Chen', role: 'CEO & Co-Founder', bio: 'Ex-Goldman Sachs, 15 years in fintech', gradient: 'from-blue-500 to-cyan-500' },
-  { name: 'Sarah Kim', role: 'CTO & Co-Founder', bio: 'Previously engineering lead at Stripe', gradient: 'from-purple-500 to-pink-500' },
-  { name: 'James Webb', role: 'Head of Design', bio: 'Former design director at Square', gradient: 'from-amber-500 to-orange-500' },
-  { name: 'Maya Patel', role: 'Head of AI', bio: 'PhD Stanford, ex-Google DeepMind', gradient: 'from-emerald-500 to-teal-500' },
+  { name: 'Small Team', role: 'Dedicated Team', bio: 'A focused group working on building honest financial tools for everyday people.', gradient: 'from-blue-500 to-cyan-500' },
+  { name: 'Always Hiring', role: 'Growth Opportunities', bio: 'We\'re looking for talented engineers and designers who care about quality.', gradient: 'from-purple-500 to-pink-500' },
+  { name: 'Quality First', role: 'Engineering', bio: 'Building features that work well and do what they promise — no hype.', gradient: 'from-amber-500 to-orange-500' },
+  { name: 'User Focused', role: 'Product', bio: 'Making tools that actually help people manage their money better.', gradient: 'from-emerald-500 to-teal-500' },
 ];
 
 const bgMap = { pink: 'bg-pink-500/10 border-pink-500/20', blue: 'bg-blue-500/10 border-blue-500/20', amber: 'bg-amber-500/10 border-amber-500/20', emerald: 'bg-emerald-500/10 border-emerald-500/20' };
@@ -61,7 +61,7 @@ const AboutUs = () => {
             About<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400">FinTrack</span>
           </motion.h1>
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto">
-            We started FinTrack because we believed everyone deserves powerful financial tools — not just the wealthy.
+            FinTrack is a personal finance tool to help you track spending, manage budgets, and understand your money better.
           </motion.p>
         </div>
       </section>
@@ -128,8 +128,8 @@ const AboutUs = () => {
       {/* Mission Statement */}
       <section className="pb-32 px-6">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="max-w-3xl mx-auto text-center bg-gradient-to-br from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-[32px] p-12">
-          <h2 className="text-3xl font-black mb-4">Our Mission</h2>
-          <p className="text-gray-400 text-lg leading-relaxed mb-6">Democratize financial management with AI-powered tools that are accessible, secure, and beautifully designed for everyone.</p>
+          <h2 className="text-3xl font-black mb-4">Our Purpose</h2>
+          <p className="text-gray-400 text-lg leading-relaxed mb-6">Help people understand and manage their personal finances with tools that are simple, honest, and easy to use.</p>
           <Link to="/" className="inline-flex px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-full transition-all hover:scale-105 shadow-lg shadow-blue-500/20">Back to Home</Link>
         </motion.div>
       </section>
