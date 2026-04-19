@@ -495,8 +495,8 @@ export const SecureCategoryAPI = {
 // ============================================
 
 export const SecureSettingsAPI = {
-    async get() {
-        return SettingsService.get();
+    async get(userId) {
+        return SettingsService.get(userId);
     },
 
     async upsert(settings, userId) {

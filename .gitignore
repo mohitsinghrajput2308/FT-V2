@@ -39,6 +39,13 @@ yarn-error.*
 .env*.local
 .env.production
 
+# Local admin/diagnostic scripts (use env vars, never commit hardcoded secrets)
+landing-page/check-setup.js
+landing-page/diagnose-profiles.js
+landing-page/fix-subscriptions.js
+landing-page/full-diagnostic.js
+landing-page/update-subscription.js
+
 # typescript
 *.tsbuildinfo
 

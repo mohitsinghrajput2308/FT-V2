@@ -652,12 +652,11 @@ export const CategoryService = {
 // ─── USER SETTINGS ────────────────────────────────────────────
 
 export const SettingsService = {
-    async get() {
+    async get(userId) {
         try {
-            const { data, error } = await supabase
-                .from('user_settings')
-                .select('*')
-                .single();
+            const query = supabase.from('user_settings').select('*');
+            if (userId) query.eq('user_id', userId);
+            const { data, error } = await query.maybeSingle();
             if (error && error.code !== 'PGRST116') return handleError('get settings', error);
             if (!data) return { data: { currency: '$', dateFormat: 'MM/DD/YYYY' } };
             return {

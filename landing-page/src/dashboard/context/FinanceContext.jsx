@@ -97,7 +97,7 @@ export const FinanceProvider = ({ children }) => {
                     SecureAPI.investments.getAll(userId),
                     SecureAPI.bills.getAll(userId),
                     SecureAPI.categories.getAll(userId),
-                    SecureAPI.settings.get(),
+                    SecureAPI.settings.get(userId),
                 ]);
 
                 if (cancelled) return;
