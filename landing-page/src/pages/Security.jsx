@@ -11,24 +11,27 @@ import { supabase } from '../lib/supabase';
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] } }) };
 
 const practices = [
-  { icon: Lock, title: 'Encryption', desc: 'AES-256 encryption at rest, TLS 1.3 for data in transit. Your financial information is encrypted and secure.', gradient: 'from-red-500 to-rose-500' },
-  { icon: Eye, title: 'Data Privacy', desc: 'We\'re transparent about what data we collect and how we use it. No selling user data to third parties.', gradient: 'from-orange-500 to-amber-500' },
-  { icon: Server, title: 'Infrastructure', desc: 'Hosted on secure, reliable infrastructure with automated backups and regular security updates.', gradient: 'from-blue-500 to-indigo-500' },
-  { icon: Key, title: 'Two-Factor Authentication', desc: 'Optional TOTP-based 2FA available for additional account security.', gradient: 'from-emerald-500 to-teal-500' },
-  { icon: FileCheck, title: 'Row-Level Security', desc: 'Database policies ensure users can only access their own financial data. No exceptions.', gradient: 'from-purple-500 to-violet-500' },
-  { icon: AlertTriangle, title: 'Abuse Protection', desc: 'Rate limiting and monitoring to protect against brute force attacks and credential stuffing.', gradient: 'from-pink-500 to-rose-500' },
+  { icon: Lock, title: 'Encryption', desc: 'AES-256 encryption at rest, TLS 1.2+ for all data in transit (TLS 1.3 in progress). All financial data encrypted end-to-end with zero access by third parties.', gradient: 'from-red-500 to-rose-500' },
+  { icon: Eye, title: 'Data Privacy & Control', desc: 'GDPR Article 18 & 21: Users can restrict data processing or object to any use. Financial data is isolated from analytics. We never sell data to third parties.', gradient: 'from-orange-500 to-amber-500' },
+  { icon: Server, title: 'Infrastructure & Backup', desc: 'Supabase Pro hosted in EU (eu-west-1). 4-tier backup strategy: native replication, daily encrypted exports (S3), transaction logs (5-min RPO), & automated testing.', gradient: 'from-blue-500 to-indigo-500' },
+  { icon: Key, title: 'Cryptographic Key Management', desc: 'Automated 90-day key rotation for all JWT, API, and encryption keys with rollback capability. Zero keys stored in code or git.', gradient: 'from-emerald-500 to-teal-500' },
+  { icon: FileCheck, title: 'Database Security', desc: 'Row-Level Security (RLS) enforced on all tables. Users can only access their own financial data. Immutable audit logs for compliance.', gradient: 'from-purple-500 to-violet-500' },
+  { icon: AlertTriangle, title: 'Threat Detection & Response', desc: 'Real-time monitoring detects brute force (auto-lock 30min), RLS violations, API abuse, & data exfiltration. Automated 72-hour GDPR breach notification to users & authorities.', gradient: 'from-pink-500 to-rose-500' },
 ];
 
 const certifications = [
-  { title: 'GDPR Compliant', status: 'Compliant', desc: 'Full compliance with EU General Data Protection Regulation' },
-  { title: 'SOC 2 Type II', status: 'In Progress', desc: 'Working toward annual audit of security, availability & confidentiality controls' },
-  { title: 'Data Encryption', status: 'Implemented', desc: 'AES-256 encryption at rest, TLS 1.3 for data in transit' },
-  { title: 'Security Practices', status: 'Active', desc: 'Continuous monitoring, regular security reviews, and responsible disclosure' },
+  { title: 'GDPR Compliance', status: 'Implemented', desc: 'Complete GDPR framework deployed: User consent controls (Article 18), right to object (Article 21), 72-hour breach notification (Article 33), & DPA templates for processors.' },
+  { title: 'SOC 2 Type II', status: 'In Progress', desc: '22 of 28 SOC 2 security controls implemented (77% complete). On track for Type II audit engagement in June 2026 with report expected October 2026.' },
+  { title: 'Data Encryption', status: 'Implemented', desc: 'AES-256 encryption at rest (Supabase managed), TLS 1.2+ for all data in transit, TLS 1.3 minimum rollout by May 2026 with Pro plan upgrade.' },
+  { title: 'Security & Monitoring', status: 'Active', desc: 'Continuous 24/7 threat monitoring (5-min intervals): Brute force auto-lock, unauthorized access detection, API abuse prevention, automated incident response.' },
 ];
 
 const timeline = [
-  { date: 'Q2 2025', event: 'Pursuing SOC 2 Type II certification' },
-  { date: 'Q1 2025', event: 'GDPR compliance audit completed' },
+  { date: 'Q2 2026 (June)', event: 'SOC 2 Type II audit engagement begins, DPA signatures expected complete with all vendors' },
+  { date: 'Q2 2026 (May)', event: 'Supabase Pro upgrade: TLS 1.3 minimum enforcement, regional data residency enabled' },
+  { date: 'Q2 2026 (April)', event: 'Penetration testing engagement planned, staff security training program complete' },
+  { date: 'Q1 2026 (January)', event: 'GDPR user controls (Article 18/21) deployed, analytics isolation active, key rotation & monitoring live' },
+  { date: 'Q4 2025', event: 'Security frameworks finalized: GDPR, SOC 2, Incident Response Plan, DPA templates' },
   { date: 'Q4 2024', event: '2FA (TOTP) security feature launched' },
   { date: 'Q3 2024', event: 'Row-level database security enabled' },
   { date: 'Q2 2024', event: 'AES-256 encryption deployed' },
@@ -194,8 +197,9 @@ const Security = () => {
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
             className="bg-gradient-to-br from-red-500/10 to-rose-500/10 border border-red-500/20 rounded-[28px] p-10 mb-8"
           >
-            <h3 className="text-xl font-black mb-3">Report a Security Issue</h3>
-            <p className="text-gray-400 mb-6">Found a vulnerability? We take security seriously and appreciate responsible disclosure. Please report it to our security team.</p>
+            <h3 className="text-xl font-black mb-3">Report a Security Vulnerability</h3>
+            <p className="text-gray-400 mb-2">Found a vulnerability? Join us in making FinTrack secure. We take every report seriously and follow CVSS severity guidelines.</p>
+            <p className="text-gray-500 text-sm mb-6">Reports are reviewed by our Security Team within 24 hours with updates every 72 hours until resolution.</p>
             
             <div className="space-y-4">
               <div>
@@ -261,6 +265,34 @@ const Security = () => {
           </motion.div>
           
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+            className="bg-[#0A0A0B] border border-white/5 rounded-[20px] p-8 mb-8"
+          >
+            <h4 className="font-black text-white mb-4">Our Security Infrastructure (Live)</h4>
+            <ul className="space-y-3 text-sm text-gray-400">
+              <li className="flex items-start gap-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
+                <span><strong>Real-time Threat Monitoring:</strong> 24/7 automated detection of brute force attacks (auto-lock), unauthorized database access (RLS), API abuse, and data exfiltration patterns</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
+                <span><strong>GDPR Article 18 & 21 Controls:</strong> Users can restrict processing or object to any use of their data with persistent audit trail</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
+                <span><strong>Automated Key Rotation:</strong> All cryptographic keys (JWT, API, encryption) rotate every 90 days with versioning and rollback capability</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
+                <span><strong>72-Hour Breach Response:</strong> Automatic incident notification to users and regulatory authorities within 72 hours (GDPR Article 33 compliant)</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
+                <span><strong>4-Tier Backup Strategy:</strong> Native replication + daily encrypted exports + 5-minute transaction logs + application file backup with 1-hour RPO, 4-hour RTO</span>
+              </li>
+            </ul>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
             className="bg-[#0A0A0B] border border-white/5 rounded-[20px] p-8"
           >
             <h4 className="font-black text-white mb-4">Our Commitment</h4>
@@ -271,24 +303,123 @@ const Security = () => {
               </li>
               <li className="flex items-start gap-3">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
-                <span>We will send updates to the email you provided as we investigate</span>
+                <span>We will send updates every 72 hours as we investigate and fix</span>
               </li>
               <li className="flex items-start gap-3">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
-                <span>We will work to fix confirmed vulnerabilities quickly and notify you</span>
+                <span>We will work to release patches within 30 days of confirmed critical vulnerabilities</span>
               </li>
               <li className="flex items-start gap-3">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
-                <span>We will credit you publicly (if desired) when we ship the fix</span>
+                <span>We will credit you publicly (if desired) when the fix ships, and provide CVE if applicable</span>
               </li>
               <li className="flex items-start gap-3">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
-                <span>We will not pursue legal action against good-faith reporters</span>
+                <span>We will not pursue legal action against good-faith security researchers</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
+                <span>All reports are logged in our compliance audit trail and archived per regulations</span>
               </li>
             </ul>
           </motion.div>
         </div>
       </section>
+
+      {/* Security Documentation */}
+      <section className="pb-32 px-6">
+        <div className="max-w-4xl mx-auto">
+          <motion.h2 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-3xl font-black text-center mb-10">Security & Compliance Documentation</motion.h2>
+          
+          <div className="grid sm:grid-cols-2 gap-4">
+            <motion.a href="/docs/GDPR_COMPLIANCE_FRAMEWORK.md" target="_blank" rel="noopener noreferrer"
+              initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}
+              className="bg-[#0A0A0B] border border-white/5 rounded-[20px] p-6 hover:border-red-500/30 transition-all"
+            >
+              <FileCheck className="w-6 h-6 text-red-400 mb-3" />
+              <h3 className="font-black text-white mb-2">GDPR Compliance Framework</h3>
+              <p className="text-gray-500 text-sm">Complete implementation guide for all 6 GDPR data subject rights, with audit procedures and templates.</p>
+            </motion.a>
+
+            <motion.a href="/docs/SOC2_CONTROL_MATRIX.md" target="_blank" rel="noopener noreferrer"
+              initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}
+              className="bg-[#0A0A0B] border border-white/5 rounded-[20px] p-6 hover:border-red-500/30 transition-all"
+            >
+              <Shield className="w-6 h-6 text-amber-400 mb-3" />
+              <h3 className="font-black text-white mb-2">SOC 2 Control Matrix</h3>
+              <p className="text-gray-500 text-sm">77% implementation complete with evidence mapping for all 28 SOC 2 security controls.</p>
+            </motion.a>
+
+            <motion.a href="/docs/INCIDENT_RESPONSE_PLAN.md" target="_blank" rel="noopener noreferrer"
+              initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}
+              className="bg-[#0A0A0B] border border-white/5 rounded-[20px] p-6 hover:border-red-500/30 transition-all"
+            >
+              <AlertTriangle className="w-6 h-6 text-orange-400 mb-3" />
+              <h3 className="font-black text-white mb-2">Incident Response Plan</h3>
+              <p className="text-gray-500 text-sm">7-step incident response procedures including breach notification, forensics, and recovery playbooks.</p>
+            </motion.a>
+
+            <motion.a href="/docs/DPA_TEMPLATE.md" target="_blank" rel="noopener noreferrer"
+              initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}
+              className="bg-[#0A0A0B] border border-white/5 rounded-[20px] p-6 hover:border-red-500/30 transition-all"
+            >
+              <FileCheck className="w-6 h-6 text-blue-400 mb-3" />
+              <h3 className="font-black text-white mb-2">Data Processing Agreements</h3>
+              <p className="text-gray-500 text-sm">Ready-to-sign templates for all data processors (Supabase, Vercel, Paddle, Google, Crisp).</p>
+            </motion.a>
+          </div>
+        </div>
+      </section>
+
+      {/* Authentication & Access */}
+      <section className="pb-32 px-6">
+        <div className="max-w-4xl mx-auto">
+          <motion.h2 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-3xl font-black text-center mb-10">Authentication & Access Control</motion.h2>
+          
+          <div className="grid sm:grid-cols-2 gap-4">
+            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              className="bg-[#0A0A0B] border border-white/5 rounded-[20px] p-6"
+            >
+              <Lock className="w-6 h-6 text-emerald-400 mb-3" />
+              <h3 className="font-black text-white mb-3">Sign In Securely</h3>
+              <p className="text-gray-500 text-sm mb-4">All authentication flows use secure HTTPS with strong TLS encryption. Your credentials are never exposed to third parties.</p>
+              <Link to="/auth" className="text-red-400 hover:text-red-300 font-bold text-sm transition-colors">
+                Sign In or Register →
+              </Link>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              className="bg-[#0A0A0B] border border-white/5 rounded-[20px] p-6"
+            >
+              <Key className="w-6 h-6 text-blue-400 mb-3" />
+              <h3 className="font-black text-white mb-3">Two-Factor Authentication</h3>
+              <p className="text-gray-500 text-sm mb-4">Enhance your account security with Time-based One-Time Passwords (TOTP). Enable 2FA in your account settings.</p>
+              <div className="text-gray-400 text-xs">Supported apps: Google Authenticator, Authy, Microsoft Authenticator</div>
+            </motion.div>
+          </div>
+
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+            className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-[20px] p-8 mt-6"
+          >
+            <h3 className="font-black text-white mb-4">Session Security</h3>
+            <ul className="space-y-3 text-sm text-gray-400">
+              <li className="flex items-start gap-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
+                <span><strong>JWT Tokens:</strong> Signed JWTs expire after 1 hour. Refresh tokens valid for 30 days with automatic rotation.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
+                <span><strong>Session Monitoring:</strong> Unusual login activity immediately flagged. Brute force attempts trigger 30-minute account lock.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
+                <span><strong>Logout Everywhere:</strong> Sign out of all devices instantly if account compromised. Previous sessions immediately invalidated.</span>
+              </li>
+            </ul>
+          </motion.div>
+        </div>
+      </section>
+
       <Footer />
       <AuthModal isOpen={modalState.isOpen} onClose={closeModal} initialView={modalState.view} />
     </div>

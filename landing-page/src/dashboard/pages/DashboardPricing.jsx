@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, Zap, Star, Building2, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
+import { Check, Zap, Star, Building2, ChevronDown, ChevronUp, AlertTriangle, Rocket, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSubscription } from '../../hooks/useSubscription';
 import { initPaddle } from '../../utils/paddle';
@@ -124,7 +124,7 @@ const faqs = [
   { q: 'How does the yearly discount work?', a: 'Choosing yearly billing gives you 20% off the monthly rate. You pay the full year upfront at the discounted price, which results in significant savings. You can still cancel anytime.' },
   { q: 'What payment methods are accepted?', a: 'We accept all major credit and debit cards (Visa, Mastercard, Amex) via Paddle. Paddle supports 100+ payment methods globally including local options. All transactions are encrypted with PCI-DSS compliance.' },
   { q: 'Can I switch plans later?', a: 'Yes. Upgrade or downgrade anytime from your account settings. Upgrades take effect immediately and you pay the difference. Downgrades apply at your next billing cycle, so you keep the current plan benefits through your current billing period.' },
-  { q: 'Is my data safe?', a: 'Absolutely. All data is encrypted in transit (TLS 1.3) and at rest (AES-256). Your transactions are stored securely in Supabase with Row Level Security — only you can access your data. We never sell or share your financial information.' },
+  { q: 'Is my data safe?', a: 'Absolutely. All data is encrypted in transit (TLS 1.2+) and at rest (AES-256). Your transactions are stored securely in Supabase with Row Level Security — only you can access your data. We never sell or share your financial information.' },
 ];
 
 const Cell = ({ value }) => {
@@ -135,13 +135,25 @@ const Cell = ({ value }) => {
 
 const DashboardPricing = () => {
   const { currentUser } = useAuth();
-  const { subscribe, isPro: isProSub, isBusiness: isBusinessSub, plan: currentPlan } = useSubscription();
+  const {
+    subscription,
+    subscribe,
+    upgradeSubscription,
+    upgrading,
+    isPro: isProSub,
+    isBusiness: isBusinessSub,
+    plan: currentPlan,
+  } = useSubscription();
   const [yearly, setYearly] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
   const [paddleReady, setPaddleReady] = useState(false);
+  const [upgradeError, setUpgradeError] = useState(null);
 
   const isPro = isProSub;
   const isBusiness = isBusinessSub;
+  // True only if the user has a REAL Paddle subscription (not a tester bypass).
+  // Tester accounts get isPro=true without a DB row, so paddle_subscription_id is null.
+  const hasRealSubscription = !!subscription?.paddle_subscription_id;
 
   useEffect(() => {
     // Try to initialize Paddle; retry up to 5 times waiting for paddle.js to load
@@ -161,7 +173,34 @@ const DashboardPricing = () => {
       return;
     }
     const cycle = yearly ? 'yearly' : 'monthly';
-    subscribe(planKey, cycle);
+    subscribe(planKey, cycle, false); // false = with trial
+  };
+
+  // handleSkipTrial: opens checkout with NO-trial price ID
+  const handleSkipTrial = (planKey) => {
+    if (!paddleReady) {
+      alert('Payment system is not ready. Please refresh the page.');
+      return;
+    }
+    const cycle = yearly ? 'yearly' : 'monthly';
+    subscribe(planKey, cycle, true); // true = skip trial
+  };
+
+  // Trial label changes based on billing cycle:
+  // Monthly → 7-Day trial, Yearly → 14-Day trial
+  const trialLabel = yearly ? '14-Day' : '7-Day';
+
+  /**
+   * For users already on a paid plan (Pro → Business): upgrade in-place
+   * via the Paddle API — no new checkout, just a subscription item swap.
+   */
+  const handleInPlaceUpgrade = async (planKey) => {
+    setUpgradeError(null);
+    const cycle = yearly ? 'yearly' : 'monthly';
+    const result = await upgradeSubscription(planKey, cycle);
+    if (!result?.success) {
+      setUpgradeError(result?.error ?? 'Upgrade failed. Please try again.');
+    }
   };
 
   return (
@@ -179,6 +218,15 @@ const DashboardPricing = () => {
           {isPro && <span className="ml-2 text-amber-500 font-semibold">You're on Pro ⭐</span>}
           {isBusiness && <span className="ml-2 text-blue-500 font-semibold">You're on Business 🏢</span>}
         </p>
+
+        {/* Error banner for in-place upgrade failures */}
+        {upgradeError && (
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            <span>{upgradeError}</span>
+            <button onClick={() => setUpgradeError(null)} className="ml-auto text-xs underline">Dismiss</button>
+          </div>
+        )}
 
         {/* Billing toggle */}
         <div className="inline-flex items-center gap-3 bg-gray-100 dark:bg-dark-300 rounded-full px-2 py-1.5">
@@ -262,16 +310,72 @@ const DashboardPricing = () => {
                   Free forever
                 </div>
               ) : isHigherTier ? (
-                <button
-                  onClick={() => handleUpgrade(plan.key)}
-                  className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-black transition-all ${plan.key === 'pro'
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black shadow-md shadow-amber-500/20'
-                    : 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white'
-                    }`}
-                >
-                  {plan.key === 'pro' ? <Zap className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
-                  {plan.key === 'pro' ? 'Upgrade to Pro' : 'Get Business'}
-                </button>
+                <div className="flex flex-col gap-2">
+                  {/* ── Case A: New checkout — for free users OR Pro users without a real Paddle sub ─── */}
+                  {(!isPro && !isBusiness || (isPro && plan.key === 'business' && !hasRealSubscription)) && (
+                    <>
+                      <button
+                        onClick={() => handleUpgrade(plan.key)}
+                        className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-black transition-all ${
+                          plan.key === 'pro'
+                            ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black shadow-md shadow-amber-500/20'
+                            : 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-md shadow-blue-500/20'
+                        }`}
+                      >
+                        {plan.key === 'pro' ? <Zap className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
+                        Start {trialLabel} Free Trial
+                      </button>
+
+                      <button
+                        onClick={() => handleSkipTrial(plan.key)}
+                        className="w-full group relative flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-300 bg-gray-50 dark:bg-dark-300/60 hover:dark:bg-dark-300 border-gray-200 dark:border-dark-400 hover:border-amber-500/50 dark:hover:border-amber-600/50 overflow-hidden"
+                      >
+                        <div className="flex flex-col text-left z-10">
+                          <span className={`text-[9px] font-black tracking-[0.18em] mb-0.5 italic ${
+                            plan.key === 'pro' ? 'text-amber-500' : 'text-blue-400'
+                          }`}>FAST-TRACK SYNC</span>
+                          <span className="text-xs font-black text-gray-800 dark:text-white leading-tight">
+                            Skip Trial &amp; Pay Now
+                          </span>
+                        </div>
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shadow-md transition-all z-10 ${
+                          plan.key === 'pro'
+                            ? 'bg-amber-500 shadow-amber-500/30 group-hover:shadow-amber-500/50'
+                            : 'bg-blue-600 shadow-blue-500/30 group-hover:shadow-blue-500/50'
+                        }`}>
+                          <Rocket className="w-4 h-4 text-white" />
+                        </div>
+                      </button>
+
+                      <p className="text-center text-[10px] text-gray-400 dark:text-gray-500">
+                        No credit card required for trial
+                      </p>
+                    </>
+                  )}
+
+                  {/* ── Case B: Pro user with real Paddle sub upgrading to Business in-place ─── */}
+                  {/* Uses Paddle API PATCH — no new checkout */}
+                  {isPro && plan.key === 'business' && hasRealSubscription && (
+                    <>
+                      <button
+                        onClick={() => handleInPlaceUpgrade('business')}
+                        disabled={upgrading}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-black transition-all bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-md shadow-blue-500/20 disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        {upgrading
+                          ? <><Loader2 className="w-4 h-4 animate-spin" /> Upgrading…</>
+                          : <><Building2 className="w-4 h-4" /> Upgrade to Business</>}
+                      </button>
+
+                      <div className="flex items-start gap-2 px-1">
+                        <Zap className="w-3.5 h-3.5 text-blue-400 mt-0.5 flex-shrink-0" />
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-relaxed">
+                          Your Pro subscription upgrades instantly. You're only charged the prorated difference — no new checkout needed.
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
               ) : null}
             </div>
           );

@@ -11,10 +11,18 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 // Map Paddle Price IDs → your plan names
 // Replace these with your actual Paddle Price IDs from Step 2
 const PRICE_TO_PLAN: Record<string, { plan: string; cycle: string }> = {
-  'pri_01kjtc14vr6gnjtwhej3n712x0': { plan: 'pro',      cycle: 'monthly' },
-  'pri_01kjtc41pf8cxdsh58kdddwj1s': { plan: 'pro',      cycle: 'yearly'  },
-  'pri_01kjtc6pwd86m38sbpjxfp7aw3': { plan: 'business', cycle: 'monthly' },
-  'pri_01kjtc80nwm0nh70cbc755nbdq': { plan: 'business', cycle: 'yearly'  },
+  // Pro Monthly
+  'pri_01kpjef8c48hr2hb60fmtgn1yx': { plan: 'pro',      cycle: 'monthly' }, // 7-day trial
+  'pri_01kpjeaqgj2jee2kdyhvpwb1dt': { plan: 'pro',      cycle: 'monthly' }, // no trial
+  // Pro Yearly
+  'pri_01kpjerzv1sxndswe1xy8x3t3c': { plan: 'pro',      cycle: 'yearly'  }, // 14-day trial
+  'pri_01kpjen114xwk6rv87t0mrse8j': { plan: 'pro',      cycle: 'yearly'  }, // no trial
+  // Business Monthly
+  'pri_01kpjfakbv47fhyqa899704nhg': { plan: 'business', cycle: 'monthly' }, // 7-day trial
+  'pri_01kpjf646mpzsfy5g9j9079rwe': { plan: 'business', cycle: 'monthly' }, // no trial
+  // Business Yearly
+  'pri_01kpjfmzrd0ae227q77qqja3jv': { plan: 'business', cycle: 'yearly'  }, // 14-day trial
+  'pri_01kpjffwt20daa9ra66myxxed8': { plan: 'business', cycle: 'yearly'  }, // no trial
 };
 
 // Verify Paddle webhook signature
@@ -79,6 +87,7 @@ serve(async (req: Request) => {
       case 'subscription.created':
       case 'subscription.activated': {
         const userId = data.custom_data?.user_id;
+        const email = data.custom_data?.email;
         if (!userId) { console.error('No user_id in custom_data'); break; }
 
         const priceId = data.items?.[0]?.price?.id;
@@ -89,6 +98,7 @@ serve(async (req: Request) => {
 
         await supabase.from('subscriptions').upsert({
           user_id: userId,
+          email: email,
           paddle_subscription_id: data.id,
           paddle_customer_id: data.customer_id,
           plan: planInfo.plan,
@@ -104,14 +114,21 @@ serve(async (req: Request) => {
       case 'subscription.updated': {
         const priceId = data.items?.[0]?.price?.id;
         const planInfo = PRICE_TO_PLAN[priceId] ?? { plan: 'free', cycle: 'monthly' };
+        const email = data.custom_data?.email;
+
+        // Prepare updates, optionally including email if it's present
+        const updates: any = {
+          plan: planInfo.plan,
+          billing_cycle: planInfo.cycle,
+          status: data.status === 'trialing' ? 'trialing' : 'active',
+          current_period_ends_at: data.current_billing_period?.ends_at ?? null,
+        };
+        if (email) {
+          updates.email = email;
+        }
 
         await supabase.from('subscriptions')
-          .update({
-            plan: planInfo.plan,
-            billing_cycle: planInfo.cycle,
-            status: data.status === 'trialing' ? 'trialing' : 'active',
-            current_period_ends_at: data.current_billing_period?.ends_at ?? null,
-          })
+          .update(updates)
           .eq('paddle_subscription_id', data.id);
         break;
       }

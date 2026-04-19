@@ -11,7 +11,7 @@ const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: (i) => ({ opacity: 1, y
 
 const phases = [
   {
-    title: 'Q1 2025 — Foundation', status: 'complete', gradient: 'from-emerald-500 to-teal-500',
+    title: 'Phase 1 — Foundation (Launched)', status: 'complete', gradient: 'from-emerald-500 to-teal-500',
     items: [
       { text: 'User authentication & profiles', done: true },
       { text: 'Transaction tracking & categorization', done: true },
@@ -20,16 +20,16 @@ const phases = [
     ]
   },
   {
-    title: 'Q2 2025 — Core Functions', status: 'current', gradient: 'from-blue-500 to-indigo-500',
+    title: 'Phase 2 — Core Functions (In Progress)', status: 'current', gradient: 'from-blue-500 to-indigo-500',
     items: [
       { text: 'Goals & savings tracking', done: true },
-      { text: 'Bill reminders', done: false },
+      { text: 'Bill reminders', done: true },
       { text: 'Investment portfolio overview', done: false },
       { text: 'Transaction search & filtering', done: false },
     ]
   },
   {
-    title: 'Q3 2025 — Enhancements', status: 'upcoming', gradient: 'from-purple-500 to-violet-500',
+    title: 'Phase 3 — Enhancements (Planned)', status: 'upcoming', gradient: 'from-purple-500 to-violet-500',
     items: [
       { text: 'Recurring transaction detection', done: false },
       { text: 'Budget performance analytics', done: false },
@@ -38,7 +38,7 @@ const phases = [
     ]
   },
   {
-    title: 'Q4 2025 & Beyond', status: 'upcoming', gradient: 'from-amber-500 to-orange-500',
+    title: 'Phase 4 — Future (Planned)', status: 'upcoming', gradient: 'from-amber-500 to-orange-500',
     items: [
       { text: 'Multi-currency support', done: false },
       { text: 'Shared family budgets', done: false },

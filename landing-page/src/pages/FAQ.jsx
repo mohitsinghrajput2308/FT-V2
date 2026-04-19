@@ -106,7 +106,7 @@ const faqs = [
     items: [
       {
         question: 'Is my financial data safe with FinTrack?',
-        answer: 'Absolutely. All data is encrypted in transit (TLS 1.3) and at rest (AES-256). Your transactions are stored securely in Supabase with Row Level Security — only you can access your data. We never sell or share your financial information.'
+        answer: 'Absolutely. All data is encrypted in transit (TLS 1.2+) and at rest (AES-256). Your transactions are stored securely in Supabase with Row Level Security — only you can access your data. We never sell or share your financial information.'
       },
       {
         question: 'What is the security question for and can I change it?',

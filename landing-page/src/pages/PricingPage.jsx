@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { initializePaddle } from '@paddle/paddle-js';
 import { motion } from 'framer-motion';
 import { Check, X, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -17,6 +18,10 @@ const plans = [
     name: 'Free',
     monthlyPrice: 0,
     yearlyPrice: 0,
+    monthlyPriceId:      null,
+    monthlyTrialPriceId: null,
+    yearlyPriceId:       null,
+    yearlyTrialPriceId:  null,
     description: 'Perfect for tracking basic spending',
     color: 'gray',
     cta: 'Start Free',
@@ -29,9 +34,13 @@ const plans = [
     name: 'Pro',
     monthlyPrice: 9.99,
     yearlyPrice: 7.99,
+    monthlyPriceId:      'pri_01kpjeaqgj2jee2kdyhvpwb1dt', // no trial
+    monthlyTrialPriceId: 'pri_01kpjef8c48hr2hb60fmtgn1yx', // 7-day trial
+    yearlyPriceId:       'pri_01kpjen114xwk6rv87t0mrse8j',  // no trial
+    yearlyTrialPriceId:  'pri_01kpjerzv1sxndswe1xy8x3t3c',  // 14-day trial
     description: 'Best for serious personal finance tracking',
     color: 'gold',
-    cta: 'Start 14-Day Trial',
+    cta: 'Start Trial',
     ctaVariant: 'gold',
     popular: true,
     trial: true,
@@ -41,9 +50,13 @@ const plans = [
     name: 'Business',
     monthlyPrice: 29.99,
     yearlyPrice: 24.99,
+    monthlyPriceId:      'pri_01kpjf646mpzsfy5g9j9079rwe', // no trial
+    monthlyTrialPriceId: 'pri_01kpjfakbv47fhyqa899704nhg', // 7-day trial
+    yearlyPriceId:       'pri_01kpjffwt20daa9ra66myxxed8',  // no trial
+    yearlyTrialPriceId:  'pri_01kpjfmzrd0ae227q77qqja3jv',  // 14-day trial
     description: 'For small teams managing finances together',
     color: 'blue',
-    cta: 'Start 14-Day Trial',
+    cta: 'Start Trial',
     ctaVariant: 'gold',
     popular: false,
     trial: true,
@@ -105,12 +118,12 @@ const featureCategories = [
 /* ─── FAQ ───────────────────────────────────────────────────── */
 const faqs = [
   { q: 'Can I cancel anytime?', a: 'Yes. Cancel your subscription at any time from your account settings. Your access continues until the end of your current billing period. If you cancel during a 14-day trial, you\'re not charged.' },
-  { q: 'Is there a free trial?', a: 'Yes! Pro and Business plans include a 7-day free trial with full access to all features. No credit card required to start the trial — you\'re only charged when the trial ends. Cancel anytime during the trial and you won\'t be charged.' },
+  { q: 'Is there a free trial?', a: 'Yes! Pro and Business plans include a 14-day free trial with full access to all features. No credit card required to start the trial — you\'re only charged when the trial ends. Cancel anytime during the trial and you won\'t be charged.' },
   { q: 'What are your refund terms?', a: 'See our Terms of Service and Pricing page for complete refund policy details.' },
   { q: 'How does the yearly discount work?', a: 'Choosing yearly billing gives you 20% off the monthly rate. You pay the full year upfront at the discounted price, which results in significant savings. You can still cancel anytime.' },
   { q: 'What payment methods are accepted?', a: 'We accept all major credit and debit cards (Visa, Mastercard, Amex) via Paddle. Paddle supports 100+ payment methods globally including local options. All transactions are encrypted with PCI-DSS compliance.' },
   { q: 'Can I switch plans later?', a: 'Yes. Upgrade or downgrade anytime from your account settings. Upgrades take effect immediately and you pay the difference. Downgrades apply at your next billing cycle, so you keep the current plan benefits through your current billing period.' },
-  { q: 'Is my data safe?', a: 'Absolutely. All data is encrypted in transit (TLS 1.3) and at rest (AES-256). Your transactions are stored securely in Supabase with Row Level Security — only you can access your data. We never sell or share your financial information.' },
+  { q: 'Is my data safe?', a: 'Absolutely. All data is encrypted in transit (TLS 1.2+) and at rest (AES-256). Your transactions are stored securely in Supabase with Row Level Security — only you can access your data. We never sell or share your financial information.' },
 ];
 
 /* ─── Helper components ─────────────────────────────────────── */
@@ -175,10 +188,55 @@ const FAQItem = ({ q, a, index, isOpen, onToggle }) => {
 const PricingPage = () => {
   const [yearly, setYearly] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
-  const { openRegister } = useAuthModal();
+  const [paddle, setPaddle] = useState(null);
+  const { openRegister, user, session } = useAuthModal();
 
-  const handlePlanClick = (planId) => {
-    openRegister();
+  useEffect(() => {
+    initializePaddle({
+      environment: 'sandbox',
+      token: 'test_43419997b9925e6e56938a426be',
+    }).then((paddleInstance) => {
+      if (paddleInstance) setPaddle(paddleInstance);
+    });
+  }, []);
+
+  // trialLabel: monthly plans have 7-day trial, yearly plans have 14-day trial
+  const trialLabel = yearly ? '14-Day' : '7-Day';
+
+  const handlePlanClick = (planId, skipTrial = false) => {
+    if (planId === 'free') {
+      openRegister();
+      return;
+    }
+
+    // Require login before showing checkout
+    if (!user) {
+      openRegister();
+      return;
+    }
+
+    const plan = plans.find((p) => p.id === planId);
+    if (!plan) return;
+
+    // Pick the correct price ID:
+    // Trial button  → yearlyTrial / monthlyTrial
+    // Skip trial   → yearly / monthly (no trial)
+    let priceId;
+    if (skipTrial) {
+      priceId = yearly ? plan.yearlyPriceId : plan.monthlyPriceId;
+    } else {
+      priceId = yearly ? plan.yearlyTrialPriceId : plan.monthlyTrialPriceId;
+    }
+
+    if (paddle && priceId) {
+      paddle.Checkout.open({
+        items: [{ priceId: priceId, quantity: 1 }],
+        customData: { user_id: user.id, email: user.email },
+        customer: { email: user.email },
+      });
+    } else {
+      console.warn('Paddle not ready or priceId missing for plan:', planId, skipTrial);
+    }
   };
 
   return (
@@ -324,7 +382,7 @@ const PricingPage = () => {
                       : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black shadow-lg shadow-amber-500/20'
                   }`}
                 >
-                  {plan.cta}
+                  {plan.monthlyPrice === 0 ? plan.cta : `Start ${trialLabel} Free Trial`}
                 </motion.button>
 
                 {/* Skip trial card */}
@@ -400,7 +458,7 @@ const PricingPage = () => {
                     'Unlimited budgets, goals & bills',
                     'Unlimited custom categories',
                     'All 7 financial calculators',
-                    'Team collaboration (up to 5 users)',
+                    'Team collaboration (up to 3 users)',
                   ].map((f, fi) => (
                     <motion.li 
                       key={f} 

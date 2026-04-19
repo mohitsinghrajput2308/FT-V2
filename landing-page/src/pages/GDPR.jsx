@@ -84,7 +84,7 @@ const GDPR = () => {
               'Data breach notification within 72 hours to authorities and affected users',
               'Lawful basis documented for every type of data processing',
               'Cross-border data transfers comply with EU Standard Contractual Clauses',
-              'Regular third-party security audits and penetration testing',
+              'Penetration testing planned as part of our ongoing security improvement roadmap',
             ].map((item, i) => (
               <div key={i} className="flex items-start gap-3">
                 <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full mt-2 shrink-0" />

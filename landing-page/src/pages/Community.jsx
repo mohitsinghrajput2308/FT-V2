@@ -54,7 +54,7 @@ const Community = () => {
               Join the<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400">Movement</span>
             </motion.h1>
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto">
-              Connect with 50,000+ members building better financial futures together.
+              Connect with others who are building better financial habits. Join us on Discord, GitHub, and Reddit.
             </motion.p>
           </div>
         </section>
@@ -70,7 +70,7 @@ const Community = () => {
                   <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${p.gradient} flex items-center justify-center group-hover:scale-110 transition-transform`}>
                     <p.icon className="w-7 h-7 text-white" />
                   </div>
-                  <span className={`${p.bg} text-xs font-bold px-3 py-1 rounded-full text-gray-300`}>{p.members} members</span>
+                  <span className={`${p.bg} text-xs font-bold px-3 py-1 rounded-full text-gray-300`}>{p.members}</span>
                 </div>
                 <h3 className="font-black text-white group-hover:text-pink-400 transition-colors mb-1">{p.title}</h3>
                 <p className="text-gray-500 text-sm">{p.desc}</p>

@@ -3,9 +3,13 @@
  * from Supabase and provide helpers to open checkout or the portal.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { openPaddleCheckout, openPaddlePortal, PADDLE_PRICE_IDS, initPaddle } from '../utils/paddle';
+
+const SUPABASE_FUNCTIONS_URL = process.env.REACT_APP_SUPABASE_URL
+  ? `${process.env.REACT_APP_SUPABASE_URL}/functions/v1`
+  : 'https://eocagbloalvidegyxvpv.supabase.co/functions/v1';
 
 // ── localStorage cache helpers ────────────────────────────────────────────────
 // Caches the resolved subscription + user email so badges and plan-gates render
@@ -31,7 +35,9 @@ export function useSubscription() {
   // Initialise from cache so the plan is correct on first render
   const [subscription, setSubscription] = useState(() => _cachedSub);
   const [loading, setLoading] = useState(true);
+  const [upgrading, setUpgrading] = useState(false);
   const [user, setUser] = useState(null);
+  const userRef = useRef(null);
 
   // Load user + subscription on mount
   useEffect(() => {
@@ -43,6 +49,7 @@ export function useSubscription() {
       const { data: { session } } = await supabase.auth.getSession();
       const u = session?.user ?? null;
       setUser(u);
+      userRef.current = u;
       if (!u) {
         // Logged out — clear cache so a subsequent login starts fresh
         clearCache();
@@ -91,15 +98,19 @@ export function useSubscription() {
    * Open Paddle checkout for a plan.
    * @param {'pro'|'business'} plan
    * @param {'monthly'|'yearly'} cycle
+   * @param {boolean} skipTrial - true = use no-trial price ID, false = use trial price ID
    */
-  const subscribe = useCallback(async (plan, cycle = 'monthly') => {
+  const subscribe = useCallback(async (plan, cycle = 'monthly', skipTrial = false) => {
     if (!user) {
       console.warn('[useSubscription] User not logged in — redirect to auth first');
       return;
     }
-    const priceId = PADDLE_PRICE_IDS[plan]?.[cycle];
+    // Trial button  → monthlyTrial / yearlyTrial
+    // Skip trial    → monthly / yearly
+    const priceKey = skipTrial ? cycle : `${cycle}Trial`;
+    const priceId = PADDLE_PRICE_IDS[plan]?.[priceKey];
     if (!priceId) {
-      console.error('[useSubscription] Unknown plan/cycle:', plan, cycle);
+      console.error('[useSubscription] Unknown plan/cycle/trial:', plan, cycle, skipTrial);
       return;
     }
     openPaddleCheckout({
@@ -115,10 +126,72 @@ export function useSubscription() {
           .maybeSingle();
         const resolved = data ?? { plan: 'free', status: 'active' };
         setSubscription(resolved);
-        writeCache(resolved);
+        writeCache(resolved, user.email);
       },
     });
   }, [user]);
+
+  /**
+   * Re-fetch subscription from Supabase and refresh cache.
+   * Call this after operations that change the plan (e.g. upgrade).
+   */
+  const refetchSubscription = useCallback(async () => {
+    const u = userRef.current;
+    if (!u) return;
+    const { data } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', u.id)
+      .maybeSingle();
+    const resolved = data ?? { plan: 'free', status: 'active' };
+    setSubscription(resolved);
+    writeCache(resolved, u.email);
+  }, []);
+
+  /**
+   * Upgrade an existing Paddle subscription in-place (no new checkout).
+   * Only for paid→paid upgrades, e.g. Pro → Business.
+   * @param {'pro'|'business'} targetPlan
+   * @param {'monthly'|'yearly'} [cycle] — defaults to user's current cycle
+   */
+  const upgradeSubscription = useCallback(async (targetPlan, cycle) => {
+    const u = userRef.current;
+    if (!u) {
+      console.warn('[useSubscription] upgradeSubscription: no logged-in user');
+      return { success: false, error: 'Not logged in' };
+    }
+
+    setUpgrading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      if (!accessToken) throw new Error('No access token');
+
+      const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/upgrade-subscription`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type':  'application/json',
+        },
+        body: JSON.stringify({ targetPlan, cycle }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        console.error('[useSubscription] upgradeSubscription failed:', data);
+        return { success: false, error: data.error ?? 'Upgrade failed' };
+      }
+
+      // Refresh local state immediately — don't wait for webhook
+      await refetchSubscription();
+      return { success: true, plan: targetPlan };
+    } catch (err) {
+      console.error('[useSubscription] upgradeSubscription error:', err);
+      return { success: false, error: String(err) };
+    } finally {
+      setUpgrading(false);
+    }
+  }, [refetchSubscription]);
 
   /** Open Paddle customer portal to manage / cancel */
   const manageSubscription = useCallback(() => {
@@ -128,6 +201,7 @@ export function useSubscription() {
   return {
     subscription,
     loading,
+    upgrading,
     user,
     isPaid,
     isPro,
@@ -136,6 +210,8 @@ export function useSubscription() {
     plan: isTesterBusiness ? 'business' : isTesterPro ? 'pro' : (subscription?.plan ?? 'free'),
     status: (isTesterPro || isTesterBusiness) ? 'active' : (subscription?.status ?? 'active'),
     subscribe,
+    upgradeSubscription,
+    refetchSubscription,
     manageSubscription,
   };
 }

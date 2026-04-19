@@ -10,10 +10,10 @@ import { Users, Target, Heart, Zap, TrendingUp, Award, Sparkles, MapPin, Globe, 
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] } }) };
 
 const stats = [
-  { value: '10K+', label: 'Account Storage', icon: Users },
-  { value: '$50M+', label: 'Transaction Capacity', icon: TrendingUp },
-  { value: 'Global', label: 'Multi-Currency', icon: Globe },
-  { value: 'Secure', label: 'Encryption', icon: Zap },
+  { value: '2024', label: 'Founded', icon: Users },
+  { value: 'Global', label: 'Multi-Currency Support', icon: Globe },
+  { value: 'Free', label: 'Free Tier Available', icon: TrendingUp },
+  { value: 'Secure', label: 'AES-256 Encryption', icon: Zap },
 ];
 
 const values = [

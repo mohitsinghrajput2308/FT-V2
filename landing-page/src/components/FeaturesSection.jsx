@@ -101,7 +101,7 @@ export const FeaturesSection = () => {
     {
       icon: TrendingUp,
       title: 'Investment Tracking',
-      description: 'Monitor your stock portfolio and investment assets in real-time. Track performance with live market data and detailed analytics.',
+      description: 'Monitor your investment assets and portfolio manually. Track performance with charts and detailed analytics to see how your holdings are doing over time.',
       color: 'from-orange-400 to-rose-500'
     },
     {
@@ -267,7 +267,7 @@ export const FeaturesSection = () => {
                 'Automatic expense categorization',
                 'Budget tracking and alerts',
                 'Customizable financial tracking',
-                'Account synchronization'
+                'Manual transaction entry'
               ].map((item, index) => (
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}

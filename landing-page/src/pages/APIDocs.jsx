@@ -71,7 +71,7 @@ const APIDocs = () => {
               API<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400">Docs</span>
             </motion.h1>
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto">
-              Build powerful integrations with the FinTrack REST API. Simple, secure, and well-documented.
+              The FinTrack REST API is currently in development. The endpoints and examples below are a preview of what’s planned. Public API access is not yet available for external developers.
             </motion.p>
           </div>
         </section>

@@ -9,6 +9,10 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { NotificationProvider } from './context/NotificationContext';
 import { FinanceProvider } from './context/FinanceContext';
 import { ThemeProvider } from './context/ThemeContext';
+
+// Security: Disable analytics on financial pages
+import { useDisableFinancialAnalytics } from './hooks/useAnalyticsIsolation';
+
 // Layout
 import Layout from './components/Layout/Layout';
 import ProtectedRoute from './components/Layout/ProtectedRoute';
@@ -35,6 +39,9 @@ import PrioritySupport from './pages/PrioritySupport';
 import DashboardPricing from './pages/DashboardPricing';
 
 const DashboardApp = () => {
+    // Security: Disable all third-party analytics on financial dashboard
+    useDisableFinancialAnalytics();
+
     // All financial data is loaded from Supabase via FinanceContext.
     // No localStorage seeding — Supabase is the single source of truth.
 

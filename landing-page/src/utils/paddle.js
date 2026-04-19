@@ -6,20 +6,36 @@
  *    <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
  *
  * 2. Set REACT_APP_PADDLE_CLIENT_TOKEN in your .env
- *    (Sandbox token starts with: test_  — Live token starts with: live_)
- *
- * 3. Replace the PRICE_IDS values below with your actual Paddle Price IDs
+ *    (Live token starts with: live_  — Sandbox token starts with: test_)
  */
 
-// ── Price IDs (replace with your actual Paddle Price IDs) ────────
+// ── Price IDs ─────────────────────────────────────────────────────────────────
+// ⚠️  The IDs below marked with (needs pri_) are currently Product IDs (pro_xxx).
+//     Replace each with the actual Price ID (pri_xxx) found inside that product
+//     in Paddle Dashboard → Catalog → Products → [product] → Prices tab.
 export const PADDLE_PRICE_IDS = {
   pro: {
-    monthly: 'pri_01kjtc14vr6gnjtwhej3n712x0',
-    yearly:  'pri_01kjtc41pf8cxdsh58kdddwj1s',
+    // Sandbox IDs — replace with live IDs when Paddle verifies your account
+    monthlyTrial: 'pri_01kjtc14vr6gnjtwhej3n712x0', // sandbox (no trial variant)
+    yearlyTrial:  'pri_01kjtc41pf8cxdsh58kdddwj1s', // sandbox (no trial variant)
+    monthly:      'pri_01kjtc14vr6gnjtwhej3n712x0',
+    yearly:       'pri_01kjtc41pf8cxdsh58kdddwj1s',
+    // LIVE (uncomment when verification approved):
+    // monthlyTrial: 'pri_01kpjef8c48hr2hb60fmtgn1yx',
+    // yearlyTrial:  'pri_01kpjerzv1sxndswe1xy8x3t3c',
+    // monthly:      'pri_01kpjeaqgj2jee2kdyhvpwb1dt',
+    // yearly:       'pri_01kpjen114xwk6rv87t0mrse8j',
   },
   business: {
-    monthly: 'pri_01kjtc6pwd86m38sbpjxfp7aw3',
-    yearly:  'pri_01kjtc80nwm0nh70cbc755nbdq',
+    monthlyTrial: 'pri_01kjtc6pwd86m38sbpjxfp7aw3', // sandbox
+    yearlyTrial:  'pri_01kjtc80nwm0nh70cbc755nbdq', // sandbox
+    monthly:      'pri_01kjtc6pwd86m38sbpjxfp7aw3',
+    yearly:       'pri_01kjtc80nwm0nh70cbc755nbdq',
+    // LIVE (uncomment when verification approved):
+    // monthlyTrial: 'pri_01kpjfakbv47fhyqa899704nhg',
+    // yearlyTrial:  'pri_01kpjfmzrd0ae227q77qqja3jv',
+    // monthly:      'pri_01kpjf646mpzsfy5g9j9079rwe',
+    // yearly:       'pri_01kpjffwt20daa9ra66myxxed8',
   },
 };
 
@@ -69,10 +85,10 @@ export function initPaddle() {
 /**
  * Open Paddle overlay checkout for a given price.
  *
- * @param {string} priceId  - Paddle price ID (e.g. 'pri_xxxxxxxx')
- * @param {string} userId   - Your Supabase user ID (passed to webhook via custom_data)
- * @param {string} email    - Pre-fill the user's email
- * @param {function} onSuccess - Called after successful payment
+ * @param {string}   priceId    - Paddle price ID (pri_xxx)
+ * @param {string}   userId     - Supabase user ID (passed via custom_data to webhook)
+ * @param {string}   email      - Pre-fill the user's email
+ * @param {function} onSuccess  - Called after successful payment
  */
 export function openPaddleCheckout({ priceId, userId, email, onSuccess }) {
   if (typeof window === 'undefined' || !window.Paddle) {
@@ -96,6 +112,7 @@ export function openPaddleCheckout({ priceId, userId, email, onSuccess }) {
       customer: { email },
       customData: {
         user_id: userId,
+        email,
       },
       settings: {
         displayMode: 'overlay',
@@ -111,11 +128,8 @@ export function openPaddleCheckout({ priceId, userId, email, onSuccess }) {
 
 /**
  * Open Paddle customer portal to manage / cancel subscription.
- * Requires a Paddle customer portal URL from your dashboard.
  */
 export function openPaddlePortal(customerId) {
-  // This opens the Paddle customer portal in a new tab.
-  // You can also use the Paddle API to generate a one-time portal URL.
   if (!customerId) {
     console.error('[Paddle] No customer ID provided');
     return;

@@ -12,7 +12,7 @@ const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: (i) => ({ opacity: 1, y
 const categories = ['All', 'Product', 'Engineering', 'Finance Tips', 'Company'];
 
 const posts = [
-  { title: 'Getting Started with FinTrack', excerpt: 'Everything you need to know to set up your account, link your banks, and start tracking your finances in minutes.', category: 'Product', author: 'FinTrack Team', date: 'Apr 10, 2025', readTime: '5 min', gradient: 'from-purple-500 to-indigo-500', featured: true },
+  { title: 'Getting Started with FinTrack', excerpt: 'Everything you need to know to set up your account, add your first transactions, and start tracking your finances in minutes.', category: 'Product', author: 'FinTrack Team', date: 'Apr 10, 2025', readTime: '5 min', gradient: 'from-purple-500 to-indigo-500', featured: true },
   { title: 'Building FinTrack from Scratch', excerpt: 'Our journey creating a simple, honest personal finance platform that focuses on core value without inflated marketing.', category: 'Company', author: 'FinTrack Team', date: 'Apr 6, 2025', readTime: '8 min', gradient: 'from-blue-500 to-cyan-500', featured: true },
   { title: '5 Budgeting Mistakes to Avoid in 2025', excerpt: 'Common pitfalls that prevent people from reaching their financial goals, and how to fix them.', category: 'Finance Tips', author: 'FinTrack Team', date: 'Mar 28, 2025', readTime: '4 min', gradient: 'from-emerald-500 to-teal-500' },
   { title: 'The Road Ahead: Our Roadmap for 2025', excerpt: 'What we\'re building next — new features, improvements, and our commitment to transparency.', category: 'Company', author: 'FinTrack Team', date: 'Mar 20, 2025', readTime: '3 min', gradient: 'from-amber-500 to-orange-500' },

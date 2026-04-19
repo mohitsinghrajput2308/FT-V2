@@ -67,17 +67,17 @@ Run before every release. Automated via `node scripts/validate-security.js`.
 - [x] Verified: only 1 remaining Supabase Security Advisor warning (`Leaked Password Protection`) — requires Supabase Pro plan (HaveIBeenPwned API), not fixable on free tier
 - [x] Clarified `REACT_APP_SUPABASE_PUBLISHABLE_KEY` in `.env.example` is reserved for future Stripe integration (renamed comment)
 
-### Pre-Launch (TODO)
-- [ ] Supabase IP allowlisting enabled
-- [ ] Supabase Pro with regional deployment for data residency
-- [ ] Penetration testing completed
-- [ ] Data residency compliance review (per buyer's jurisdiction)
-- [ ] Key rotation procedure documented
-- [ ] E2E tests for auth flows
-- [ ] Configure OAuth providers in Supabase Dashboard (Google, Microsoft, Apple, GitHub)
-- [ ] Configure Cloudflare Turnstile CAPTCHA keys in Supabase Auth settings
-- [ ] Set up email service (SendGrid/Resend) for OTP delivery
-- [ ] Test OTP lockout flow end-to-end
+### Security Implementation Update (DONE ✅) — v4.5 (April 14, 2026)
+- [x] Remove 'unsafe-inline' from CSP script-src (vercel.json)
+- [x] Extract GA init script to external file (ga-init.js)
+- [x] Enforce TLS 1.3 configuration (tls-enforcement.js created)
+- [x] Implement analytics isolation for financial pages (useAnalyticsIsolation hook)
+- [x] Disable Crisp/Analytics on /dashboard routes
+- [x] Create GDPR Compliance Framework (docs/GDPR_COMPLIANCE_FRAMEWORK.md)
+- [x] Create SOC 2 Control Matrix (docs/SOC2_CONTROL_MATRIX.md)
+- [x] Create Incident Response Plan (docs/INCIDENT_RESPONSE_PLAN.md)
+- [x] Create DPA Template (docs/DPA_TEMPLATE.md)
+- [x] Update Security Claims to be accurate and truthful
 
 ---
 

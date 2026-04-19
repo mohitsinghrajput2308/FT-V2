@@ -53,9 +53,9 @@ const Careers = () => {
           <motion.h1 initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter mb-6 leading-[0.9]">
             Work With<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-red-400">Us</span>
           </motion.h1>
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto">
-            We're building honest financial tools. We're looking for talented people who care about quality and transparency.
-          </motion.p>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto">
+              We’re a small team building honest financial tools. If you care about quality and transparency, we’d love to hear from you. Send your profile to <span className="text-purple-400">careers@fintrack.app</span>
+            </motion.p>
         </div>
       </section>
 
@@ -80,7 +80,8 @@ const Careers = () => {
       {/* Openings */}
       <section className="pb-32 px-6">
         <div className="max-w-4xl mx-auto">
-          <motion.h2 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-3xl font-black text-center mb-12">Open Positions</motion.h2>
+          <motion.h2 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-3xl font-black text-center mb-4">Areas of Interest</motion.h2>
+          <p className="text-gray-500 text-sm text-center mb-12">We’re not actively hiring for all roles below — but if any of these resonate with you, reach out. We review all applications.</p>
           <div className="space-y-4">
             {openings.map((job, i) => (
               <motion.div key={job.title} custom={i} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}

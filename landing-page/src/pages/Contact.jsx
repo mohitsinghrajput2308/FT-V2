@@ -109,7 +109,7 @@ const Contact = () => {
                     <Send className="w-10 h-10 text-teal-400" />
                   </div>
                   <h3 className="text-xl font-black mb-2">Message Sent!</h3>
-                  <p className="text-gray-400">We'll get back to you within 24 hours.</p>
+                  <p className="text-gray-400">We'll get back to you within 1–2 business days.</p>
                 </motion.div>
               ) : (
                 <div className="space-y-5">

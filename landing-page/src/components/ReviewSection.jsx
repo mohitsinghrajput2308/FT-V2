@@ -105,7 +105,7 @@ export const ReviewSection = () => {
                         Community <span className="text-blue-500">Feedback</span>
                     </h2>
                     <p className="text-lg md:text-xl text-gray-500 max-w-3xl mx-auto font-medium leading-relaxed">
-                        What our elite users are saying about their FinTrack experience.
+                        What our users are saying about their FinTrack experience.
                     </p>
                 </div>
 
