@@ -58,7 +58,7 @@ const LiveChatBot = () => {
       return data.message;
     } catch (err) {
       console.error('AI API Error:', err);
-      return "I'm having trouble connecting to my AI system right now. Please try again or email us at support@fintrack.app for immediate help.";
+      return "I'm having trouble connecting to my AI system right now. Please try again or email us at fintrack.app123@gmail.com for immediate help.";
     }
   };
 
@@ -111,7 +111,7 @@ const LiveChatBot = () => {
   };
 
   const copyEmail = () => {
-    navigator.clipboard.writeText('support@fintrack.app');
+    navigator.clipboard.writeText('fintrack.app123@gmail.com');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -209,7 +209,7 @@ const LiveChatBot = () => {
                 <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-500" />
                 <div>
                   <p className="font-medium mb-1">Need human support?</p>
-                  <p className="text-gray-400">Email us at <button onClick={copyEmail} className="text-blue-400 hover:text-blue-300 font-mono inline-flex items-center gap-1">support@fintrack.app{copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}</button></p>
+                  <p className="text-gray-400">Email us at <button onClick={copyEmail} className="text-blue-400 hover:text-blue-300 font-mono inline-flex items-center gap-1">fintrack.app123@gmail.com{copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}</button></p>
                 </div>
               </div>
             </div>
