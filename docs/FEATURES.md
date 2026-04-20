@@ -63,7 +63,7 @@ Privacy Policy, Terms of Service, Cookie Policy, GDPR Compliance, About Us, Care
 ---
 
 ### Backend & Security
-- **Supabase PostgreSQL** — 12 tables: profiles, transactions, budgets, goals, investments, bills, categories, user_settings, newsletter_subscribers, contact_submissions, password_reset_log, audit_logs
+- **Supabase PostgreSQL** — 11 tables: profiles, transactions, budgets, goals, investments, bills, categories, user_settings, newsletter_subscribers, contact_submissions, password_reset_log, audit_logs
 - **Row Level Security (RLS)** — every table locked to `auth.uid() = user_id`. Verified March 2, 2026 via API audit.
 - **secureApi.js** — validation + rate limiting + sanitization gateway on all CRUD
 - **rateLimit.js** — client-side rate limiting (auth: 5/15min, mutations: 30/min)
@@ -110,7 +110,7 @@ Privacy Policy, Terms of Service, Cookie Policy, GDPR Compliance, About Us, Care
 | 7 | **Google Analytics 4** | ✅ **Done** | GA4 script already in `public/index.html` using `window.__GA_ID__`. Just set `REACT_APP_GA_MEASUREMENT_ID` env var in Vercel dashboard — that's it. |
 | 8 | **Newsletter Confirmation Email** | ✅ **Done** | Edge Function `send-newsletter-welcome` deployed. pg_net trigger fires on every `newsletter_subscribers` INSERT and sends a branded HTML welcome email via Resend (falls back to SendGrid). Set `RESEND_API_KEY` + `FROM_EMAIL` in Supabase Edge Function env vars to activate. |
 | 9 | **Onboarding Flow** | ✅ **Done** | `OnboardingWizard` imported and rendered in `Dashboard.jsx` with condition `{!settings?.onboarding_completed}`. Fully wired. |
-| 10 | **PWA Support** | ✅ **Done** | `manifest.json` complete, `public/service-worker.js` created (cache-first for assets, network-first for navigation), registered in `src/index.js` for production builds. App is installable and offline-capable. |
+| 10 | **PWA Support** | ❌ Removed | Browser-only app — PWA/install features intentionally removed. |
 | 11 | **Contact Form Backend** | ✅ **Done** | `contact_submissions` table created in Supabase with RLS (anon INSERT allowed, admin read-only). `Contact.jsx` wired with async submit handler, loading spinner, and error feedback. |
 
 ---
@@ -123,10 +123,9 @@ Privacy Policy, Terms of Service, Cookie Policy, GDPR Compliance, About Us, Care
 | 13 | **GitHub Actions CI/CD** | ✅ **Done** | `.github/workflows/ci.yml` created. Runs all tests + build on every push/PR to `main`. Uses `npm ci`, `--passWithNoTests` flag, and passes Supabase env vars from GitHub Secrets. |
 | 14 | **AI Assistant Widget** | ✅ **Done** | AI-powered assistant available on all pages for user support and inquiries. |
 | 15 | **Fix Social Proof Numbers** | ✅ **Done** | `HeroSection.jsx`, `AboutUs.jsx`, and `PressKit.jsx` all updated to use "User Capacity" / "Volume Capacity" labels instead of "Active Users" / "Money Tracked" — honest framing for pre-launch. |
-| 16 | **Mobile App — Google Play Publish** | ✅ **Done** | `mobile-app/` scaffold created: `App.jsx` (navigation + auth), `package.json` (Expo 52 + React Native), `app.json` (bundle ID `app.fintrack.mobile`), `eas.json` (preview APK + production AAB). Run `eas build --profile production` then `eas submit` to publish to Play Store. |
+| 16 | **Mobile App — Google Play Publish** | ❌ Removed | Browser-only app — mobile/Expo scaffold intentionally removed. |
 | 17 | **Multi-Currency Live FX Rates** | ✅ **Done** | `dashboard/utils/fxService.js` created: fetches live rates from `open.exchangerate-api.com` (free, no key), 1-hour localStorage cache, static fallback. 8 currencies: USD, EUR, GBP, INR, JPY, AUD, CAD, CHF. `FinanceContext.jsx` now exposes `fxRates`, `fxRatesLoading`, and `convertCurrency(amount, fromSymbol, toSymbol)`. `Settings.jsx` updated with full 8-currency dropdown and live rate badge (e.g. "1 USD = 0.9200 EUR"). |
-| 18 | **Bank Account Linking (Plaid)** | ✅ **Done** | `PlaidLinkButton.jsx` component created (dynamic SDK load → get link_token from Edge Function → open Plaid Link modal → exchange token). Two Supabase Edge Functions deployed: `plaid-create-link-token` + `plaid-exchange-token`. `plaid_items` table created with RLS (user sees own rows only; INSERT only via service_role). Requires env vars: `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV` in Supabase Edge Function settings. |
-| 19 | **A/B Testing** | ✅ **Done** | `src/utils/abTest.js` created: localStorage-based 50/50 variant assignment, persisted per experiment. `CTASection.jsx` wired: variant A = "Get Started Free", variant B = "Start Tracking Free". Impression + click events forwarded to GA4 via `window.gtag('event', 'ab_test', {experiment, variant, action})`. `EXPERIMENTS` registry: `CTA_BUTTON`, `HERO_BADGE`, `PRICING_PRO`. |
+| 18 | **A/B Testing** | ✅ **Done** | `src/utils/abTest.js` created: localStorage-based 50/50 variant assignment, persisted per experiment. `CTASection.jsx` wired: variant A = "Get Started Free", variant B = "Start Tracking Free". Impression + click events forwarded to GA4 via `window.gtag('event', 'ab_test', {experiment, variant, action})`. `EXPERIMENTS` registry: `CTA_BUTTON`, `HERO_BADGE`, `PRICING_PRO`. |
 
 ---
 
@@ -153,6 +152,4 @@ Privacy Policy, Terms of Service, Cookie Policy, GDPR Compliance, About Us, Care
 | **Email service env vars not set** | Three separate services need credentials before emails will send: (1) OTP/auth emails → Resend or SendGrid in Supabase Auth settings; (2) newsletter welcome email → `RESEND_API_KEY` + `FROM_EMAIL` in Supabase Edge Function env vars; same key covers both if using Resend. |
 | **OAuth providers not configured** | Google, Microsoft, Apple, GitHub OAuth is coded but client IDs/secrets must be entered in Supabase Dashboard → Auth → Providers. |
 | **CAPTCHA keys not set** | Cloudflare Turnstile site key must be configured in Supabase Auth settings to activate bot protection. |
-| **No app store presence** | Expo scaffold is ready (`mobile-app/`). To publish: install EAS CLI (`npm install -g eas-cli`), run `eas build --profile production`, then `eas submit --platform android`. Requires Google Play developer account + `google-service-account.json`. |
-| **Plaid sandbox active** | `PLAID_CLIENT_ID`, `PLAID_SECRET`, and `PLAID_ENV=sandbox` are live in Supabase Edge Function secrets. Bank linking works in sandbox — test with username `user_good` / password `pass_good` inside Plaid Link. To go live: apply for Plaid Production access at dashboard.plaid.com and swap `PLAID_ENV` to `production`. |
 | **Client-side rate limiting only** | Rate limiting resets on page refresh. Real enforcement requires Supabase Pro + Edge Functions. |

@@ -192,9 +192,17 @@ const PricingPage = () => {
   const { openRegister, user, session } = useAuthModal();
 
   useEffect(() => {
+    const token = process.env.REACT_APP_PADDLE_CLIENT_TOKEN;
+    const environment = process.env.REACT_APP_PADDLE_SANDBOX === 'true' ? 'sandbox' : 'live';
+    
+    if (!token) {
+      console.error('[Paddle] Missing REACT_APP_PADDLE_CLIENT_TOKEN in environment variables');
+      return;
+    }
+
     initializePaddle({
-      environment: 'sandbox',
-      token: 'test_43419997b9925e6e56938a426be',
+      environment,
+      token,
     }).then((paddleInstance) => {
       if (paddleInstance) setPaddle(paddleInstance);
     });

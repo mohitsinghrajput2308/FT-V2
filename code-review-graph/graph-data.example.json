@@ -1,0 +1,68 @@
+{
+  "timestamp": "2026-04-20T00:00:00.000Z",
+  "projectRoot": "C:\\Users\\KIIT0001\\Downloads\\Antigravity Projects\\Current Money SRC\\Fintrack-V1",
+  "stats": {
+    "summary": {
+      "totalFiles": 185,
+      "totalSymbols": 2847,
+      "totalDependencies": 1203
+    },
+    "filesByType": {
+      ".jsx": 45,
+      ".js": 92,
+      ".json": 28,
+      ".sql": 24,
+      ".ts": 12,
+      ".tsx": 8,
+      ".css": 6,
+      ".md": 5,
+      ".yaml": 2,
+      ".yml": 1
+    }
+  },
+  "topImports": [
+    {
+      "module": "react",
+      "count": 45
+    },
+    {
+      "module": "react-router-dom",
+      "count": 28
+    },
+    {
+      "module": "@supabase/supabase-js",
+      "count": 18
+    },
+    {
+      "module": "axios",
+      "count": 12
+    },
+    {
+      "module": "framer-motion",
+      "count": 10
+    }
+  ],
+  "topSymbols": [
+    {
+      "name": "useAuth",
+      "count": 8
+    },
+    {
+      "name": "useFinance",
+      "count": 6
+    },
+    {
+      "name": "formatCurrency",
+      "count": 5
+    },
+    {
+      "name": "PrioritySupport",
+      "count": 4
+    },
+    {
+      "name": "DashboardApp",
+      "count": 3
+    }
+  ],
+  "_info": "This is example data. Run 'npm run analyze' to generate real data for your project."
+}

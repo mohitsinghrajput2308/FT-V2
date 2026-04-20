@@ -1,0 +1,64 @@
+{
+  "name": "code-review-graph-mcp",
+  "version": "1.0.0",
+  "displayName": "Code Review Graph MCP Server",
+  "description": "Automatic code analysis and review with token-efficient summaries",
+  "author": "Fintrack",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "mcp": {
+    "name": "code-review-graph",
+    "version": "1.0.0",
+    "type": "stdio",
+    "command": "node",
+    "args": ["mcp-server.js"],
+    "env": {
+      "NODE_ENV": "production"
+    }
+  },
+  "ideMappings": {
+    "vscode": {
+      "configFile": ".mcp.json",
+      "discoveryMethod": "workspace-folder"
+    },
+    "google-cloud-ide": {
+      "configFile": ".ide.json",
+      "discoveryMethod": "manifest"
+    },
+    "gitpod": {
+      "configFile": ".gitpod.yml",
+      "discoveryMethod": "environment"
+    },
+    "github-codespaces": {
+      "configFile": "devcontainer.json",
+      "discoveryMethod": "container"
+    },
+    "replit": {
+      "configFile": ".replit",
+      "discoveryMethod": "manifest"
+    },
+    "web-ide-generic": {
+      "configFile": ".mcp-manifest.json",
+      "discoveryMethod": "auto-discover"
+    }
+  },
+  "scripts": {
+    "start": "node mcp-server.js",
+    "analyze": "node analyze.js",
+    "test": "echo 'Tests would go here'",
+    "register": "node register-mcp.js"
+  },
+  "keywords": [
+    "mcp",
+    "code-analysis",
+    "ide",
+    "copilot",
+    "code-review"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "file:///code-review-graph"
+  }
+}

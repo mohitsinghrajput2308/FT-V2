@@ -1,0 +1,17 @@
+{
+  "name": "code-review-graph-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for code analysis and review with token-efficient summaries",
+  "type": "module",
+  "main": "mcp-server.js",
+  "scripts": {
+    "start": "node mcp-server.js",
+    "analyze": "node analyze.js",
+    "register": "node register-mcp.js",
+    "setup": "npm install && npm run register && npm run analyze"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {}
+}

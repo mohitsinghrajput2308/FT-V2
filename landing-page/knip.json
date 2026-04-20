@@ -1,0 +1,7 @@
+{
+  "entry": ["src/index.js"],
+  "project": ["src/**/*.js", "src/**/*.jsx"],
+  "paths": {
+    "@/*": ["src/*"]
+  }
+}

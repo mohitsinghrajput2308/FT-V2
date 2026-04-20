@@ -17,12 +17,10 @@
 
 **What is NOT included (you must create your own):**
 - Stripe account / payment credentials
-- Plaid account / bank linking credentials
 - Resend email API key
 - Google Analytics 4 property
 - Cloudflare Turnstile CAPTCHA keys
 - Google / GitHub / Apple / Microsoft OAuth app credentials
-- Google Play developer account (for mobile app)
 
 ---
 
@@ -101,9 +99,6 @@ These must be set in both **Vercel** (frontend) and **Supabase Edge Functions** 
 |----------|----------------|-----------|
 | `RESEND_API_KEY` | resend.com → API Keys → Create API Key (free tier: 100 emails/day) | For emails |
 | `FROM_EMAIL` | Your verified sender address in Resend (e.g. `hello@yourdomain.com`) | For emails |
-| `PLAID_CLIENT_ID` | plaid.com → Dashboard → Team Settings → Keys | For bank linking |
-| `PLAID_SECRET` | plaid.com → Dashboard → Keys → Sandbox Secret | For bank linking |
-| `PLAID_ENV` | `sandbox` (testing) or `production` (live) — already set to `sandbox` | For bank linking |
 
 ---
 
@@ -130,12 +125,6 @@ These must be set in both **Vercel** (frontend) and **Supabase Edge Functions** 
 6. Wire `profiles.is_pro` update in Supabase on successful subscription webhook
 
 > The pricing page UI is fully built. Stripe just needs to be connected to the existing `localIsPro` state.
-
-### 🔴 Plaid (Bank Account Linking)
-1. Go to [plaid.com](https://plaid.com) → Create free account
-2. Dashboard → Team Settings → Keys → copy **Client ID** and **Sandbox Secret**
-3. Set in Supabase Edge Function secrets: `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV=sandbox`
-4. To go live: apply for Plaid Production access (requires business verification)
 
 ### 🟡 Cloudflare Turnstile (CAPTCHA)
 1. Go to [dash.cloudflare.com](https://dash.cloudflare.com) → Turnstile → Add Site
@@ -169,7 +158,7 @@ After taking ownership of the Supabase project, verify these settings:
 - [ ] **Auth → URL Configuration** → Redirect URLs includes `https://yourdomain.com/**`
 - [ ] **Auth → Email Templates** → Confirm/reset email templates use your branding
 - [ ] **Storage → Buckets → assets** → bucket is set to **Public** (required for video CDN)
-- [ ] **Edge Functions** → all 3 functions show as **Active**: `send-newsletter-welcome`, `plaid-create-link-token`, `plaid-exchange-token`
+- [ ] **Edge Functions** → all functions show as **Active**: `send-newsletter-welcome`
 - [ ] **Database → Tables** → all 12 tables exist and have RLS enabled
 - [ ] **Settings → General** → update project name if desired
 
@@ -222,10 +211,9 @@ landing-page/
     context/
       AuthContext.jsx    ← Auth state + Supabase session
   supabase/
-    functions/           ← 3 Edge Functions (Deno/TypeScript)
+    functions/           ← Edge Functions (Deno/TypeScript)
     migrations/          ← All SQL migrations in order
 
-mobile-app/              ← Expo React Native app (scaffold, ready to build)
 docs/                    ← FEATURES.md, PRD.md, SECURITY.md, this file
 scripts/                 ← validate-security.js
 ```
@@ -250,7 +238,6 @@ These are intentional shortcuts the seller made pre-launch. Not blockers, but wo
 | Stripe not wired | `localIsPro` is a mock boolean. Wire to real Stripe subscription status. | 2–3 days |
 | Client-side rate limiting | Resets on page refresh. Real enforcement needs Supabase Pro + Edge Functions. | 2 days |
 | Weekly email summary | `pg_cron` job not set up. Requires Supabase Pro plan. | 1 day |
-| Mobile app not published | Expo scaffold is ready. Need EAS CLI + Google Play dev account ($25 one-time fee). | 1 day |
 | No E2E tests | Only unit + integration tests exist. Playwright E2E tests not written. | 2–3 days |
 
 ---
@@ -261,9 +248,7 @@ These are intentional shortcuts the seller made pre-launch. Not blockers, but wo
 |----------|------|
 | Supabase Docs | [supabase.com/docs](https://supabase.com/docs) |
 | Vercel Docs | [vercel.com/docs](https://vercel.com/docs) |
-| Plaid Quickstart | [plaid.com/docs/quickstart](https://plaid.com/docs/quickstart) |
 | Resend Docs | [resend.com/docs](https://resend.com/docs) |
-| Expo/EAS Build | [docs.expo.dev/build](https://docs.expo.dev/build/introduction) |
 | Stripe Checkout | [stripe.com/docs/checkout](https://stripe.com/docs/payments/checkout) |
 | This project's docs | `/docs/` folder in the repository |
 

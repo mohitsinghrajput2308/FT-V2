@@ -1,0 +1,11 @@
+tasks:
+  - init: |
+      npm install
+      npm run analyze
+      npm run register
+  - command: node mcp-server.js
+
+vscode:
+  extensions:
+    - GitHub.copilot
+    - GitHub.copilot-chat

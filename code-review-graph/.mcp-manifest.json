@@ -1,0 +1,40 @@
+{
+  "ide": "web-based",
+  "mcpServers": [
+    {
+      "id": "code-review-graph",
+      "name": "Code Review Graph MCP",
+      "description": "Automatic code analysis and symbol discovery",
+      "type": "stdio",
+      "command": "node",
+      "args": ["code-review-graph/mcp-server.js"],
+      "cwd": "${WORKSPACE_ROOT}",
+      "env": {
+        "NODE_ENV": "production",
+        "MCP_AUTO_DISCOVER": "true",
+        "PROJECT_ROOT": "${WORKSPACE_ROOT}"
+      },
+      "autoStart": true,
+      "enabled": true,
+      "timeout": 30000
+    }
+  ],
+  "autoDiscovery": {
+    "enabled": true,
+    "scanInterval": 5000,
+    "manifestFile": "manifest.json"
+  },
+  "compatibility": {
+    "googleCloudIDE": true,
+    "gitpod": true,
+    "replit": true,
+    "github-codespaces": true,
+    "vscode": true,
+    "jupyterlab": false
+  },
+  "startup": {
+    "autoStart": true,
+    "command": "npm run analyze",
+    "onConnect": "npm run analyze"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "github.copilot.chat.localization": "en",
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "MCP": {
+    "servers": {
+      "code-review-graph": {
+        "command": "node",
+        "args": ["./mcp-server.js"],
+        "enabled": true
+      }
+    }
+  }
+}

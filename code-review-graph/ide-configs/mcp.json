@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "code-review-graph": {
+      "command": "node",
+      "args": ["./mcp-server.js"],
+      "enabled": true,
+      "autoStart": true
+    }
+  }
+}

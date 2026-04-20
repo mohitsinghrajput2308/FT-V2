@@ -1,0 +1,15 @@
+{
+  "mcpServers": [
+    {
+      "id": "code-review-graph",
+      "name": "Code Review Graph MCP",
+      "type": "stdio",
+      "command": "node",
+      "args": ["mcp-server.js"],
+      "autoStart": true,
+      "enabled": true
+    }
+  ],
+  "autoDiscovery": true,
+  "platform": "web-ide"
+}

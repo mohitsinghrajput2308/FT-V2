@@ -1,0 +1,8 @@
+run = "npm install && npm run register && npm run analyze && node mcp-server.js"
+entrypoint = "mcp-server.js"
+
+[env]
+NODE_ENV = "production"
+
+[packager]
+language = "nodejs"

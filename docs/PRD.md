@@ -554,9 +554,8 @@ Prioritized by impact. Items marked 🔴 are highest value before any public lau
 | 12 | **GitHub Actions CI/CD** | 1 day | Auto-run tests + lint on every push. Auto-deploy to Vercel on merge to `main`. |
 | 13 | **AI Assistant Widget** | 30 min | AI-powered assistant for user support and inquiries. Makes the product feel supported with instant assistance. |
 | 14 | **Fix Social Proof Numbers** | 30 min | Landing page claims "100K+ Active Users" and "$500M+ Money Tracked" with zero real users. Replace with "Built for 100K+ users" or remove until real data exists. |
-| 15 | **Mobile App — Google Play Publish** | 1 week | React Native/Expo app already in development. Publish to Google Play. Adds ~$2,000–$5,000 to valuation and opens a new user acquisition channel. |
+| 15 | **Mobile App — Google Play Publish** | ❌ Removed | Browser-only — mobile scaffold removed. |
 | 16 | **Multi-currency Live FX Rates** | 2–3 days | Integrate a free FX API (ExchangeRate-API free tier) to auto-convert transaction amounts. Currently currency is a display-only setting. |
-| 17 | **Bank Account Linking (Plaid/Finicity)** | 1–2 weeks | Auto-import transactions from real bank accounts. This is the single biggest technical moat in the fintech space. Requires Plaid API keys (~$500/mo at scale but free in development). |
 
 ### 🔵 Tier 4 — Pro Plan Upgrades (After Supabase Pro)
 

@@ -15,27 +15,18 @@
 //     in Paddle Dashboard → Catalog → Products → [product] → Prices tab.
 export const PADDLE_PRICE_IDS = {
   pro: {
-    // Sandbox IDs — replace with live IDs when Paddle verifies your account
-    monthlyTrial: 'pri_01kjtc14vr6gnjtwhej3n712x0', // sandbox (no trial variant)
-    yearlyTrial:  'pri_01kjtc41pf8cxdsh58kdddwj1s', // sandbox (no trial variant)
-    monthly:      'pri_01kjtc14vr6gnjtwhej3n712x0',
-    yearly:       'pri_01kjtc41pf8cxdsh58kdddwj1s',
-    // LIVE (uncomment when verification approved):
-    // monthlyTrial: 'pri_01kpjef8c48hr2hb60fmtgn1yx',
-    // yearlyTrial:  'pri_01kpjerzv1sxndswe1xy8x3t3c',
-    // monthly:      'pri_01kpjeaqgj2jee2kdyhvpwb1dt',
-    // yearly:       'pri_01kpjen114xwk6rv87t0mrse8j',
+    // LIVE IDs (verified account)
+    monthlyTrial: 'pri_01kpjef8c48hr2hb60fmtgn1yx',
+    yearlyTrial:  'pri_01kpjerzv1sxndswe1xy8x3t3c',
+    monthly:      'pri_01kpjeaqgj2jee2kdyhvpwb1dt',
+    yearly:       'pri_01kpjen114xwk6rv87t0mrse8j',
   },
   business: {
-    monthlyTrial: 'pri_01kjtc6pwd86m38sbpjxfp7aw3', // sandbox
-    yearlyTrial:  'pri_01kjtc80nwm0nh70cbc755nbdq', // sandbox
-    monthly:      'pri_01kjtc6pwd86m38sbpjxfp7aw3',
-    yearly:       'pri_01kjtc80nwm0nh70cbc755nbdq',
-    // LIVE (uncomment when verification approved):
-    // monthlyTrial: 'pri_01kpjfakbv47fhyqa899704nhg',
-    // yearlyTrial:  'pri_01kpjfmzrd0ae227q77qqja3jv',
-    // monthly:      'pri_01kpjf646mpzsfy5g9j9079rwe',
-    // yearly:       'pri_01kpjffwt20daa9ra66myxxed8',
+    // LIVE IDs (verified account)
+    monthlyTrial: 'pri_01kpjfakbv47fhyqa899704nhg',
+    yearlyTrial:  'pri_01kpjfmzrd0ae227q77qqja3jv',
+    monthly:      'pri_01kpjf646mpzsfy5g9j9079rwe',
+    yearly:       'pri_01kpjffwt20daa9ra66myxxed8',
   },
 };
 

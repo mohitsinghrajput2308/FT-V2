@@ -37,3 +37,4 @@ yarn-error.log*
 
 # large/unused media — commit only intentional assets via src/assets/
 public/assets/
+.vercel
