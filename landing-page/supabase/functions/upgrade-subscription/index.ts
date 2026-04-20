@@ -8,11 +8,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const SUPABASE_URL             = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const PADDLE_API_KEY           = Deno.env.get('PADDLE_API_KEY')!;
-const PADDLE_ENV               = Deno.env.get('PADDLE_ENV') ?? 'sandbox'; // 'sandbox' | 'production'
 
-const PADDLE_BASE = PADDLE_ENV === 'production'
-  ? 'https://api.paddle.com'
-  : 'https://sandbox-api.paddle.com';
+// Production only
+const PADDLE_BASE = 'https://api.paddle.com';
 
 // Same price IDs as in paddle.js / paddle-webhook
 const PRICE_IDS: Record<string, Record<string, string>> = {

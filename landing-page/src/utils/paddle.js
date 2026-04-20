@@ -1,12 +1,11 @@
 /**
- * paddle.js — Paddle Billing (Paddle.js v2) integration utility
+ * paddle.js — Paddle Billing (Paddle.js v2) integration utility (Production)
  *
  * Setup:
  * 1. Add to your public/index.html <head>:
  *    <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
  *
- * 2. Set REACT_APP_PADDLE_CLIENT_TOKEN in your .env
- *    (Live token starts with: live_  — Sandbox token starts with: test_)
+ * 2. Set REACT_APP_PADDLE_CLIENT_TOKEN in your .env (live_ token)
  */
 
 // ── Price IDs ─────────────────────────────────────────────────────────────────
@@ -35,8 +34,7 @@ let paddleInitialized = false;
 let _onCheckoutSuccess = null;
 
 /**
- * Initialize Paddle.js — call once on app start or before first checkout.
- * Uses sandbox if REACT_APP_PADDLE_SANDBOX=true
+ * Initialize Paddle.js — call once on app start or before first checkout (Production).
  */
 export function initPaddle() {
   if (paddleInitialized || typeof window === 'undefined') return paddleInitialized;
@@ -45,16 +43,11 @@ export function initPaddle() {
     return false;
   }
 
-  const isSandbox = process.env.REACT_APP_PADDLE_SANDBOX === 'true';
   const token = process.env.REACT_APP_PADDLE_CLIENT_TOKEN;
 
   if (!token) {
     console.error('[Paddle] Missing REACT_APP_PADDLE_CLIENT_TOKEN in .env');
     return false;
-  }
-
-  if (isSandbox) {
-    window.Paddle.Environment.set('sandbox');
   }
 
   // eventCallback MUST live in Initialize(), not in Checkout.open()
