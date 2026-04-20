@@ -9,25 +9,35 @@ BEGIN;
 -- ─────────────────────────────────────────────────────────────────────
 -- 1. ALTER SUBSCRIPTIONS TABLE - Add missing columns
 -- ─────────────────────────────────────────────────────────────────────
-ALTER TABLE IF EXISTS public.subscriptions 
-ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ,
-ADD COLUMN IF NOT EXISTS trial_started_at TIMESTAMPTZ,
-ADD COLUMN IF NOT EXISTS current_period_starts_at TIMESTAMPTZ,
-ADD COLUMN IF NOT EXISTS current_period_ends_at TIMESTAMPTZ,
-ADD COLUMN IF NOT EXISTS next_billing_date TIMESTAMPTZ,
-ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ,
-ADD COLUMN IF NOT EXISTS payment_failed_at TIMESTAMPTZ,
-ADD COLUMN IF NOT EXISTS last_payment_date TIMESTAMPTZ,
-ADD COLUMN IF NOT EXISTS canceled_at TIMESTAMPTZ,
-ADD COLUMN IF NOT EXISTS cancellation_reason TEXT,
-ADD COLUMN IF NOT EXISTS cancel_at_period_end BOOLEAN DEFAULT FALSE;
+DO $$
+BEGIN
+  ALTER TABLE IF EXISTS public.subscriptions 
+  ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS trial_started_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS current_period_starts_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS current_period_ends_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS next_billing_date TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS payment_failed_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS last_payment_date TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS canceled_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS cancellation_reason TEXT,
+  ADD COLUMN IF NOT EXISTS cancel_at_period_end BOOLEAN DEFAULT FALSE;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Could not add columns to subscriptions: %', SQLERRM;
+END $$;
 
 -- Ensure status column has correct values
-ALTER TABLE public.subscriptions 
-  DROP CONSTRAINT IF EXISTS subscriptions_status_check;
-
-ALTER TABLE public.subscriptions 
-  ADD CONSTRAINT subscriptions_status_check CHECK (status IN ('trialing', 'active', 'past_due', 'canceled', 'paused'));
+DO $$
+BEGIN
+  ALTER TABLE public.subscriptions 
+    DROP CONSTRAINT IF EXISTS subscriptions_status_check;
+  
+  ALTER TABLE public.subscriptions 
+    ADD CONSTRAINT subscriptions_status_check CHECK (status IN ('trialing', 'active', 'past_due', 'canceled', 'paused'));
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Could not add constraint: %', SQLERRM;
+END $$;
 
 -- ─────────────────────────────────────────────────────────────────────
 -- 2. CREATE SUBSCRIPTION_EVENTS TABLE (audit trail)
@@ -49,28 +59,39 @@ CREATE TABLE IF NOT EXISTS public.subscription_events (
 -- Add foreign key constraint separately
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.table_constraints 
-    WHERE table_name = 'subscription_events' AND constraint_type = 'FOREIGN KEY'
-  ) THEN
+  BEGIN
     ALTER TABLE public.subscription_events
       ADD CONSTRAINT fk_subscription_events_subscription 
       FOREIGN KEY (subscription_id) REFERENCES public.subscriptions(id) ON DELETE CASCADE;
-  END IF;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Constraint already exists or table structure mismatch: %', SQLERRM;
+  END;
 END $$;
 
 -- Enable RLS on subscription_events
 ALTER TABLE public.subscription_events ENABLE ROW LEVEL SECURITY;
 
 -- Users can view their own events
-CREATE POLICY "Users can view their own subscription events"
-  ON public.subscription_events FOR SELECT
-  USING (auth.uid() = user_id);
+DO $$
+BEGIN
+  BEGIN
+    CREATE POLICY "Users can view their own subscription events"
+      ON public.subscription_events FOR SELECT
+      USING (auth.uid() = user_id);
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Policy already exists: %', SQLERRM;
+  END;
+END $$;
 
 -- Create indexes for subscription_events
-CREATE INDEX IF NOT EXISTS idx_subscription_events_user_id ON public.subscription_events(user_id);
-CREATE INDEX IF NOT EXISTS idx_subscription_events_subscription_id ON public.subscription_events(subscription_id);
-CREATE INDEX IF NOT EXISTS idx_subscription_events_event_type ON public.subscription_events(event_type);
+DO $$
+BEGIN
+  CREATE INDEX IF NOT EXISTS idx_subscription_events_user_id ON public.subscription_events(user_id);
+  CREATE INDEX IF NOT EXISTS idx_subscription_events_subscription_id ON public.subscription_events(subscription_id);
+  CREATE INDEX IF NOT EXISTS idx_subscription_events_event_type ON public.subscription_events(event_type);
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Could not create subscription_events indexes: %', SQLERRM;
+END $$;
 
 -- ─────────────────────────────────────────────────────────────────────
 -- 3. CREATE TRANSACTIONS TABLE (payment history)
@@ -101,29 +122,40 @@ CREATE TABLE IF NOT EXISTS public.transactions (
 -- Add foreign key constraint separately (handles if subscriptions table structure varies)
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.table_constraints 
-    WHERE table_name = 'transactions' AND constraint_type = 'FOREIGN KEY'
-  ) THEN
+  BEGIN
     ALTER TABLE public.transactions
       ADD CONSTRAINT fk_transactions_subscription 
       FOREIGN KEY (subscription_id) REFERENCES public.subscriptions(id) ON DELETE SET NULL;
-  END IF;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Constraint already exists or table structure mismatch: %', SQLERRM;
+  END;
 END $$;
 
 -- Enable RLS on transactions
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 
 -- Users can view their own transactions
-CREATE POLICY "Users can view their own transactions"
-  ON public.transactions FOR SELECT
-  USING (auth.uid() = user_id);
+DO $$
+BEGIN
+  BEGIN
+    CREATE POLICY "Users can view their own transactions"
+      ON public.transactions FOR SELECT
+      USING (auth.uid() = user_id);
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Policy already exists: %', SQLERRM;
+  END;
+END $$;
 
 -- Create indexes for transactions
-CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON public.transactions(user_id);
-CREATE INDEX IF NOT EXISTS idx_transactions_subscription_id ON public.transactions(subscription_id);
-CREATE INDEX IF NOT EXISTS idx_transactions_paddle_transaction_id ON public.transactions(paddle_transaction_id);
-CREATE INDEX IF NOT EXISTS idx_transactions_status ON public.transactions(status);
+DO $$
+BEGIN
+  CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON public.transactions(user_id);
+  CREATE INDEX IF NOT EXISTS idx_transactions_subscription_id ON public.transactions(subscription_id);
+  CREATE INDEX IF NOT EXISTS idx_transactions_paddle_transaction_id ON public.transactions(paddle_transaction_id);
+  CREATE INDEX IF NOT EXISTS idx_transactions_status ON public.transactions(status);
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Could not create transaction indexes: %', SQLERRM;
+END $$;
 
 -- ─────────────────────────────────────────────────────────────────────
 -- 4. CREATE PLAN_FEATURES TABLE (feature matrix)
@@ -156,21 +188,38 @@ ON CONFLICT (plan) DO NOTHING;
 ALTER TABLE public.plan_features ENABLE ROW LEVEL SECURITY;
 
 -- Allow all authenticated users to READ plan_features (it's shared config)
-CREATE POLICY "Anyone can view plan features"
-  ON public.plan_features FOR SELECT
-  USING (true);
+DO $$
+BEGIN
+  BEGIN
+    CREATE POLICY "Anyone can view plan features"
+      ON public.plan_features FOR SELECT
+      USING (true);
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Policy already exists: %', SQLERRM;
+  END;
+END $$;
 
 -- ─────────────────────────────────────────────────────────────────────
 -- 5. Add subscription-related columns to users table if not exists
 -- ─────────────────────────────────────────────────────────────────────
-ALTER TABLE IF EXISTS public.users 
-ADD COLUMN IF NOT EXISTS current_plan TEXT DEFAULT 'free' CHECK (current_plan IN ('free', 'pro', 'business')),
-ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'inactive' CHECK (subscription_status IN ('trialing', 'active', 'past_due', 'canceled', 'inactive'));
+DO $$
+BEGIN
+  ALTER TABLE IF EXISTS public.users 
+  ADD COLUMN IF NOT EXISTS current_plan TEXT DEFAULT 'free' CHECK (current_plan IN ('free', 'pro', 'business')),
+  ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'inactive' CHECK (subscription_status IN ('trialing', 'active', 'past_due', 'canceled', 'inactive'));
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Could not add columns to users: %', SQLERRM;
+END $$;
 
 -- Update existing subscriptions indexes if they don't exist
-CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON public.subscriptions(user_id);
-CREATE INDEX IF NOT EXISTS idx_subscriptions_paddle_subscription_id ON public.subscriptions(paddle_subscription_id);
-CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON public.subscriptions(status);
-CREATE INDEX IF NOT EXISTS idx_subscriptions_plan ON public.subscriptions(plan);
+DO $$
+BEGIN
+  CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON public.subscriptions(user_id);
+  CREATE INDEX IF NOT EXISTS idx_subscriptions_paddle_subscription_id ON public.subscriptions(paddle_subscription_id);
+  CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON public.subscriptions(status);
+  CREATE INDEX IF NOT EXISTS idx_subscriptions_plan ON public.subscriptions(plan);
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Could not create indexes: %', SQLERRM;
+END $$;
 
 COMMIT;

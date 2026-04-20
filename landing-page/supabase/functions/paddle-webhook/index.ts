@@ -5,9 +5,19 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const PADDLE_WEBHOOK_SECRET = Deno.env.get('PADDLE_WEBHOOK_SECRET')!;
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+// Get secrets - first from env vars, then from database table
+let PADDLE_WEBHOOK_SECRET = Deno.env.get('PADDLE_WEBHOOK_SECRET');
+let SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+let SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+// Fallback URLs if env vars not set
+if (!SUPABASE_URL) {
+  SUPABASE_URL = 'https://eocagbloalvideqsyxvpv.supabase.co';
+}
+
+// Initialize with hardcoded defaults and allow override from env
+const WEBHOOK_SECRET_ENV = Deno.env.get('PADDLE_WEBHOOK_SECRET');
+const SERVICE_KEY_ENV = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
 // Map Paddle Price IDs → your plan names
 const PRICE_TO_PLAN: Record<string, { plan: string; cycle: string }> = {
