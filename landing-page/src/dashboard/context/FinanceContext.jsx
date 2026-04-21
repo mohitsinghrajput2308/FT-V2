@@ -289,17 +289,59 @@ export const FinanceProvider = ({ children }) => {
 
     const updateTransaction = useCallback(async (id, data) => {
         const result = await SecureAPI.transactions.update(id, data, userId);
-        if (result.error) { notifyError?.(result.error); return; }
+        if (result.error) {
+            const errorMsg = result.error?.toString().toLowerCase() || '';
+            if (errorMsg.includes('401') || errorMsg.includes('unauthorized') || 
+                errorMsg.includes('403') || errorMsg.includes('forbidden') ||
+                errorMsg.includes('session') || errorMsg.includes('expired')) {
+                const newSession = await refreshSession?.();
+                if (!newSession) {
+                    notifyError?.('Your session has expired. Please log in again.');
+                    return;
+                }
+                const retryResult = await SecureAPI.transactions.update(id, data, userId);
+                if (retryResult.error) {
+                    notifyError?.(retryResult.error);
+                    return;
+                }
+                setTransactions(prev => prev.map(t => t.id === id ? { ...t, ...retryResult.data } : t));
+                success?.('Transaction updated');
+                return;
+            }
+            notifyError?.(result.error);
+            return;
+        }
         setTransactions(prev => prev.map(t => t.id === id ? { ...t, ...result.data } : t));
         success?.('Transaction updated');
-    }, [userId, success, notifyError]);
+    }, [userId, success, notifyError, refreshSession]);
 
     const deleteTransaction = useCallback(async (id) => {
         const result = await SecureAPI.transactions.delete(id, userId);
-        if (result.error) { notifyError?.(result.error); return; }
+        if (result.error) {
+            const errorMsg = result.error?.toString().toLowerCase() || '';
+            if (errorMsg.includes('401') || errorMsg.includes('unauthorized') || 
+                errorMsg.includes('403') || errorMsg.includes('forbidden') ||
+                errorMsg.includes('session') || errorMsg.includes('expired')) {
+                const newSession = await refreshSession?.();
+                if (!newSession) {
+                    notifyError?.('Your session has expired. Please log in again.');
+                    return;
+                }
+                const retryResult = await SecureAPI.transactions.delete(id, userId);
+                if (retryResult.error) {
+                    notifyError?.(retryResult.error);
+                    return;
+                }
+                setTransactions(prev => prev.filter(t => t.id !== id));
+                success?.('Transaction deleted');
+                return;
+            }
+            notifyError?.(result.error);
+            return;
+        }
         setTransactions(prev => prev.filter(t => t.id !== id));
         success?.('Transaction deleted');
-    }, [userId, success, notifyError]);
+    }, [userId, success, notifyError, refreshSession]);
 
     // ─── BUDGET CRUD ──────────────────────────────────────────
     const addBudget = useCallback(async (data, limitInfo = null) => {
@@ -337,17 +379,59 @@ export const FinanceProvider = ({ children }) => {
 
     const updateBudget = useCallback(async (id, data) => {
         const result = await SecureAPI.budgets.update(id, data, userId);
-        if (result.error) { notifyError?.(result.error); return; }
+        if (result.error) {
+            const errorMsg = result.error?.toString().toLowerCase() || '';
+            if (errorMsg.includes('401') || errorMsg.includes('unauthorized') || 
+                errorMsg.includes('403') || errorMsg.includes('forbidden') ||
+                errorMsg.includes('session') || errorMsg.includes('expired')) {
+                const newSession = await refreshSession?.();
+                if (!newSession) {
+                    notifyError?.('Your session has expired. Please log in again.');
+                    return;
+                }
+                const retryResult = await SecureAPI.budgets.update(id, data, userId);
+                if (retryResult.error) {
+                    notifyError?.(retryResult.error);
+                    return;
+                }
+                setBudgets(prev => prev.map(b => b.id === id ? { ...b, ...retryResult.data } : b));
+                success?.('Budget updated');
+                return;
+            }
+            notifyError?.(result.error);
+            return;
+        }
         setBudgets(prev => prev.map(b => b.id === id ? { ...b, ...result.data } : b));
         success?.('Budget updated');
-    }, [userId, success, notifyError]);
+    }, [userId, success, notifyError, refreshSession]);
 
     const deleteBudget = useCallback(async (id) => {
         const result = await SecureAPI.budgets.delete(id, userId);
-        if (result.error) { notifyError?.(result.error); return; }
+        if (result.error) {
+            const errorMsg = result.error?.toString().toLowerCase() || '';
+            if (errorMsg.includes('401') || errorMsg.includes('unauthorized') || 
+                errorMsg.includes('403') || errorMsg.includes('forbidden') ||
+                errorMsg.includes('session') || errorMsg.includes('expired')) {
+                const newSession = await refreshSession?.();
+                if (!newSession) {
+                    notifyError?.('Your session has expired. Please log in again.');
+                    return;
+                }
+                const retryResult = await SecureAPI.budgets.delete(id, userId);
+                if (retryResult.error) {
+                    notifyError?.(retryResult.error);
+                    return;
+                }
+                setBudgets(prev => prev.filter(b => b.id !== id));
+                success?.('Budget deleted');
+                return;
+            }
+            notifyError?.(result.error);
+            return;
+        }
         setBudgets(prev => prev.filter(b => b.id !== id));
         success?.('Budget deleted');
-    }, [userId, success, notifyError]);
+    }, [userId, success, notifyError, refreshSession]);
 
     // ─── GOALS CRUD ───────────────────────────────────────────
     const addGoal = useCallback(async (data, limitInfo = null) => {
@@ -385,17 +469,59 @@ export const FinanceProvider = ({ children }) => {
 
     const updateGoal = useCallback(async (id, data) => {
         const result = await SecureAPI.goals.update(id, data, userId);
-        if (result.error) { notifyError?.(result.error); return; }
+        if (result.error) {
+            const errorMsg = result.error?.toString().toLowerCase() || '';
+            if (errorMsg.includes('401') || errorMsg.includes('unauthorized') || 
+                errorMsg.includes('403') || errorMsg.includes('forbidden') ||
+                errorMsg.includes('session') || errorMsg.includes('expired')) {
+                const newSession = await refreshSession?.();
+                if (!newSession) {
+                    notifyError?.('Your session has expired. Please log in again.');
+                    return;
+                }
+                const retryResult = await SecureAPI.goals.update(id, data, userId);
+                if (retryResult.error) {
+                    notifyError?.(retryResult.error);
+                    return;
+                }
+                setGoals(prev => prev.map(g => g.id === id ? { ...g, ...retryResult.data } : g));
+                success?.('Goal updated');
+                return;
+            }
+            notifyError?.(result.error);
+            return;
+        }
         setGoals(prev => prev.map(g => g.id === id ? { ...g, ...result.data } : g));
         success?.('Goal updated');
-    }, [userId, success, notifyError]);
+    }, [userId, success, notifyError, refreshSession]);
 
     const deleteGoal = useCallback(async (id) => {
         const result = await SecureAPI.goals.delete(id, userId);
-        if (result.error) { notifyError?.(result.error); return; }
+        if (result.error) {
+            const errorMsg = result.error?.toString().toLowerCase() || '';
+            if (errorMsg.includes('401') || errorMsg.includes('unauthorized') || 
+                errorMsg.includes('403') || errorMsg.includes('forbidden') ||
+                errorMsg.includes('session') || errorMsg.includes('expired')) {
+                const newSession = await refreshSession?.();
+                if (!newSession) {
+                    notifyError?.('Your session has expired. Please log in again.');
+                    return;
+                }
+                const retryResult = await SecureAPI.goals.delete(id, userId);
+                if (retryResult.error) {
+                    notifyError?.(retryResult.error);
+                    return;
+                }
+                setGoals(prev => prev.filter(g => g.id !== id));
+                success?.('Goal deleted');
+                return;
+            }
+            notifyError?.(result.error);
+            return;
+        }
         setGoals(prev => prev.filter(g => g.id !== id));
         success?.('Goal deleted');
-    }, [userId, success, notifyError]);
+    }, [userId, success, notifyError, refreshSession]);
 
     const addToGoal = useCallback(async (id, amount) => {
         const goal = goals.find(g => g.id === id);
@@ -411,18 +537,60 @@ export const FinanceProvider = ({ children }) => {
     // ─── INVESTMENTS CRUD ─────────────────────────────────────
     const addInvestment = useCallback(async (data) => {
         const result = await SecureAPI.investments.create(data, userId);
-        if (result.error) { notifyError?.(result.error); return null; }
+        if (result.error) {
+            const errorMsg = result.error?.toString().toLowerCase() || '';
+            if (errorMsg.includes('401') || errorMsg.includes('unauthorized') || 
+                errorMsg.includes('403') || errorMsg.includes('forbidden') ||
+                errorMsg.includes('session') || errorMsg.includes('expired')) {
+                const newSession = await refreshSession?.();
+                if (!newSession) {
+                    notifyError?.('Your session has expired. Please log in again.');
+                    return null;
+                }
+                const retryResult = await SecureAPI.investments.create(data, userId);
+                if (retryResult.error) {
+                    notifyError?.(retryResult.error);
+                    return null;
+                }
+                setInvestments(prev => [...prev, retryResult.data]);
+                success?.('Investment added');
+                return retryResult.data;
+            }
+            notifyError?.(result.error);
+            return null;
+        }
         setInvestments(prev => [...prev, result.data]);
         success?.('Investment added');
         return result.data;
-    }, [userId, success, notifyError]);
+    }, [userId, success, notifyError, refreshSession]);
 
     const updateInvestment = useCallback(async (id, data) => {
         const result = await SecureAPI.investments.update(id, data, userId);
-        if (result.error) { notifyError?.(result.error); return; }
+        if (result.error) {
+            const errorMsg = result.error?.toString().toLowerCase() || '';
+            if (errorMsg.includes('401') || errorMsg.includes('unauthorized') || 
+                errorMsg.includes('403') || errorMsg.includes('forbidden') ||
+                errorMsg.includes('session') || errorMsg.includes('expired')) {
+                const newSession = await refreshSession?.();
+                if (!newSession) {
+                    notifyError?.('Your session has expired. Please log in again.');
+                    return;
+                }
+                const retryResult = await SecureAPI.investments.update(id, data, userId);
+                if (retryResult.error) {
+                    notifyError?.(retryResult.error);
+                    return;
+                }
+                setInvestments(prev => prev.map(i => i.id === id ? { ...i, ...retryResult.data } : i));
+                success?.('Investment updated');
+                return;
+            }
+            notifyError?.(result.error);
+            return;
+        }
         setInvestments(prev => prev.map(i => i.id === id ? { ...i, ...result.data } : i));
         success?.('Investment updated');
-    }, [userId, success, notifyError]);
+    }, [userId, success, notifyError, refreshSession]);
 
     // Silent price-only update: optimistic UI first, then background DB sync
     // Does NOT show any toast notification — used exclusively by price pollers.
@@ -441,10 +609,31 @@ export const FinanceProvider = ({ children }) => {
 
     const deleteInvestment = useCallback(async (id) => {
         const result = await SecureAPI.investments.delete(id, userId);
-        if (result.error) { notifyError?.(result.error); return; }
+        if (result.error) {
+            const errorMsg = result.error?.toString().toLowerCase() || '';
+            if (errorMsg.includes('401') || errorMsg.includes('unauthorized') || 
+                errorMsg.includes('403') || errorMsg.includes('forbidden') ||
+                errorMsg.includes('session') || errorMsg.includes('expired')) {
+                const newSession = await refreshSession?.();
+                if (!newSession) {
+                    notifyError?.('Your session has expired. Please log in again.');
+                    return;
+                }
+                const retryResult = await SecureAPI.investments.delete(id, userId);
+                if (retryResult.error) {
+                    notifyError?.(retryResult.error);
+                    return;
+                }
+                setInvestments(prev => prev.filter(i => i.id !== id));
+                success?.('Investment deleted');
+                return;
+            }
+            notifyError?.(result.error);
+            return;
+        }
         setInvestments(prev => prev.filter(i => i.id !== id));
         success?.('Investment deleted');
-    }, [userId, success, notifyError]);
+    }, [userId, success, notifyError, refreshSession]);
 
     // ─── BILLS CRUD ───────────────────────────────────────────
     const addBill = useCallback(async (data, limitInfo = null) => {
@@ -483,17 +672,59 @@ export const FinanceProvider = ({ children }) => {
 
     const updateBill = useCallback(async (id, data) => {
         const result = await SecureAPI.bills.update(id, data, userId);
-        if (result.error) { notifyError?.(result.error); return; }
+        if (result.error) {
+            const errorMsg = result.error?.toString().toLowerCase() || '';
+            if (errorMsg.includes('401') || errorMsg.includes('unauthorized') || 
+                errorMsg.includes('403') || errorMsg.includes('forbidden') ||
+                errorMsg.includes('session') || errorMsg.includes('expired')) {
+                const newSession = await refreshSession?.();
+                if (!newSession) {
+                    notifyError?.('Your session has expired. Please log in again.');
+                    return;
+                }
+                const retryResult = await SecureAPI.bills.update(id, data, userId);
+                if (retryResult.error) {
+                    notifyError?.(retryResult.error);
+                    return;
+                }
+                setBills(prev => prev.map(b => b.id === id ? { ...b, ...retryResult.data } : b));
+                success?.('Bill updated');
+                return;
+            }
+            notifyError?.(result.error);
+            return;
+        }
         setBills(prev => prev.map(b => b.id === id ? { ...b, ...result.data } : b));
         success?.('Bill updated');
-    }, [userId, success, notifyError]);
+    }, [userId, success, notifyError, refreshSession]);
 
     const deleteBill = useCallback(async (id) => {
         const result = await SecureAPI.bills.delete(id, userId);
-        if (result.error) { notifyError?.(result.error); return; }
+        if (result.error) {
+            const errorMsg = result.error?.toString().toLowerCase() || '';
+            if (errorMsg.includes('401') || errorMsg.includes('unauthorized') || 
+                errorMsg.includes('403') || errorMsg.includes('forbidden') ||
+                errorMsg.includes('session') || errorMsg.includes('expired')) {
+                const newSession = await refreshSession?.();
+                if (!newSession) {
+                    notifyError?.('Your session has expired. Please log in again.');
+                    return;
+                }
+                const retryResult = await SecureAPI.bills.delete(id, userId);
+                if (retryResult.error) {
+                    notifyError?.(retryResult.error);
+                    return;
+                }
+                setBills(prev => prev.filter(b => b.id !== id));
+                success?.('Bill deleted');
+                return;
+            }
+            notifyError?.(result.error);
+            return;
+        }
         setBills(prev => prev.filter(b => b.id !== id));
         success?.('Bill deleted');
-    }, [userId, success, notifyError]);
+    }, [userId, success, notifyError, refreshSession]);
 
     const markBillPaid = useCallback(async (id) => {
         await updateBill(id, { isPaid: true, paidDate: new Date().toISOString().split('T')[0] });
