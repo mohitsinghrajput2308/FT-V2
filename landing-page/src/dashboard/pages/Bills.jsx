@@ -98,7 +98,7 @@ const Bills = () => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validate()) return;
 
@@ -114,11 +114,13 @@ const Bills = () => {
         };
 
         if (editingItem) {
-            updateBill(editingItem.id, data);
+            await updateBill(editingItem.id, data);
+            closeModal();
         } else {
-            addBill(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: bills.length });
+            const result = await addBill(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: bills.length });
+            // Only close modal on success; null means an error was shown as toast
+            if (result !== null && result !== undefined) closeModal();
         }
-        closeModal();
     };
 
     const openModal = (item = null) => {

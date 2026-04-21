@@ -69,7 +69,7 @@ const Goals = () => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validate()) return;
 
@@ -83,11 +83,13 @@ const Goals = () => {
         };
 
         if (editingItem) {
-            updateGoal(editingItem.id, data);
+            await updateGoal(editingItem.id, data);
+            closeModal();
         } else {
-            addGoal(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: goals.length });
+            const result = await addGoal(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: goals.length });
+            // Only close modal on success; null means an error was shown as toast
+            if (result !== null && result !== undefined) closeModal();
         }
-        closeModal();
     };
 
     const handleAddMoney = () => {

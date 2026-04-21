@@ -188,7 +188,7 @@ const Budgets = () => {
         return Object.keys(errs).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateCategory()) return;
         const data = {
@@ -199,11 +199,13 @@ const Budgets = () => {
             month: viewPeriod,
         };
         if (editingItem) {
-            updateBudget(editingItem.id, data);
+            await updateBudget(editingItem.id, data);
+            closeModal();
         } else {
-            addBudget(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: viewBudgets.length });
+            const result = await addBudget(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: viewBudgets.length });
+            // Only close modal on success; null means an error was shown as toast
+            if (result !== null && result !== undefined) closeModal();
         }
-        closeModal();
     };
 
     const openModal = (item = null) => {
