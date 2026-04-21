@@ -29,6 +29,7 @@ const Button = ({
     type = 'button',
     ...props
 }) => {
+    if (loading) console.log('🔄 Button rendered with loading=true, child:', children);
     return (
         <button
             type={type}

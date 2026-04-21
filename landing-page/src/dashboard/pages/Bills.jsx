@@ -101,8 +101,12 @@ const Bills = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!validate()) return;
-
+        console.log('📋 Bills handleSubmit triggered');
+        if (!validate()) {
+            console.log('❌ Validation failed, returning');
+            return;
+        }
+        console.log('✅ Validation passed, setting isSubmitting = true');
         setIsSubmitting(true);
         try {
             const data = {
@@ -116,19 +120,25 @@ const Bills = () => {
                 priority: formData.priority
             };
 
+            console.log('📤 Submitting bill data:', data);
             if (editingItem) {
+                console.log('✏️  Updating bill');
                 await updateBill(editingItem.id, data);
             } else {
+                console.log('➕ Adding new bill');
                 const result = await addBill(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: bills.length });
+                console.log('📥 Result:', result);
                 if (result === null || result === undefined) {
+                    console.log('❌ API returned null/undefined (error shown as toast)');
                     setIsSubmitting(false);
                     return;
                 }
             }
+            console.log('✅ Success! Setting isSubmitting = false and closing modal');
             setIsSubmitting(false);
             closeModal();
         } catch (err) {
-            console.error('Bill submission error:', err);
+            console.error('❌ Bill submission error:', err);
             setIsSubmitting(false);
         }
     };
