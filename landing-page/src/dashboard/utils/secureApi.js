@@ -68,6 +68,91 @@ function validationError(message, details) {
     return { error: message, details };
 }
 
+/**
+ * Retry wrapper for transient API failures
+ * Implements exponential backoff to handle temporary network issues
+ */
+async function withRetry(fn, maxRetries = 3, delayMs = 100) {
+    let lastError;
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+            const result = await fn();
+            
+            // Check for auth errors that should NOT be retried
+            if (result?.error) {
+                const errorMsg = result.error.toString().toLowerCase();
+                if (errorMsg.includes('401') || errorMsg.includes('unauthorized') || 
+                    errorMsg.includes('forbidden') || errorMsg.includes('invalid token')) {
+                    console.error('[SecureAPI] Auth error - not retrying:', result.error);
+                    return result; // Return auth error immediately, don't retry
+                }
+            }
+            
+            return result;
+        } catch (err) {
+            lastError = err;
+            
+            // Check if error is retryable
+            const errorStr = err?.message?.toLowerCase() || '';
+            const isNetworkError = errorStr.includes('network') || 
+                                   errorStr.includes('timeout') || 
+                                   errorStr.includes('connection');
+            
+            if (!isNetworkError && attempt < maxRetries - 1) {
+                // If not network error, don't waste retries
+                throw err;
+            }
+            
+            if (attempt < maxRetries - 1) {
+                // Exponential backoff: 100ms → 200ms → 400ms
+                const delay = delayMs * Math.pow(2, attempt);
+                console.log(`[SecureAPI] Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms:`, err?.message);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+    }
+    
+    console.error('[SecureAPI] All retry attempts failed:', lastError?.message);
+    return { error: lastError?.message || 'Request failed after multiple attempts' };
+}
+
+/**
+ * Handle API errors and return standardized response
+ */
+function handleApiError(error, action = 'API call') {
+    if (!error) return null;
+    
+    const errorStr = error.message || error.toString();
+    
+    // Auth/Token errors
+    if (errorStr.includes('401') || errorStr.includes('Unauthorized')) {
+        console.warn(`[SecureAPI] ${action}: Session expired (401)`);
+        return { error: 'Your session has expired. Please login again.' };
+    }
+    
+    if (errorStr.includes('403') || errorStr.includes('Forbidden')) {
+        console.warn(`[SecureAPI] ${action}: Access denied (403)`);
+        return { error: 'You do not have permission to perform this action.' };
+    }
+    
+    // Network errors
+    if (errorStr.includes('Network') || errorStr.includes('NETWORK')) {
+        console.warn(`[SecureAPI] ${action}: Network error`);
+        return { error: 'Network error. Please check your connection and try again.' };
+    }
+    
+    // Timeout errors
+    if (errorStr.includes('timeout') || errorStr.includes('Timeout')) {
+        console.warn(`[SecureAPI] ${action}: Request timeout`);
+        return { error: 'Request timed out. Please try again.' };
+    }
+    
+    // Generic error
+    console.error(`[SecureAPI] ${action} error:`, error);
+    return { error: 'An error occurred. Please try again.' };
+}
+
 // ============================================
 // SECURE TRANSACTION API
 // ============================================
@@ -90,8 +175,12 @@ export const SecureTransactionAPI = {
             return validationError('Invalid transaction data', validation.errors);
         }
 
-        // Pass validated + sanitized data to Supabase layer
-        return TransactionService.create({ ...validation.data, userId });
+        // Wrap in retry logic for resilience
+        return withRetry(
+            () => TransactionService.create({ ...validation.data, userId }),
+            3, // max retries
+            100 // base delay in ms
+        ).catch(err => handleApiError(err, 'Create transaction'));
     },
 
     async update(id, data, userId) {
@@ -130,7 +219,11 @@ export const SecureTransactionAPI = {
             sanitized.date = d.toISOString().split('T')[0];
         }
 
-        return TransactionService.update(idCheck.value, sanitized);
+        return withRetry(
+            () => TransactionService.update(idCheck.value, sanitized),
+            3,
+            100
+        ).catch(err => handleApiError(err, 'Update transaction'));
     },
 
     async delete(id, userId) {
@@ -140,7 +233,11 @@ export const SecureTransactionAPI = {
         const idCheck = validateUUID(id);
         if (!idCheck.valid) return validationError(idCheck.error);
 
-        return TransactionService.delete(idCheck.value);
+        return withRetry(
+            () => TransactionService.delete(idCheck.value),
+            3,
+            100
+        ).catch(err => handleApiError(err, 'Delete transaction'));
     },
 };
 
@@ -171,7 +268,11 @@ export const SecureBudgetAPI = {
         const validation = validateBudgetData(data);
         if (!validation.valid) return validationError('Invalid budget data', validation.errors);
 
-        return BudgetService.create({ ...validation.data, userId });
+        return withRetry(
+            () => BudgetService.create({ ...validation.data, userId }),
+            3,
+            100
+        ).catch(err => handleApiError(err, 'Create budget'));
     },
 
     async update(id, data, userId) {
@@ -195,7 +296,11 @@ export const SecureBudgetAPI = {
             if (!isNaN(num) && num >= 0) sanitized.spent = Math.round(num * 100) / 100;
         }
 
-        return BudgetService.update(idCheck.value, sanitized);
+        return withRetry(
+            () => BudgetService.update(idCheck.value, sanitized),
+            3,
+            100
+        ).catch(err => handleApiError(err, 'Update budget'));
     },
 
     async delete(id, userId) {
@@ -205,7 +310,11 @@ export const SecureBudgetAPI = {
         const idCheck = validateUUID(id);
         if (!idCheck.valid) return validationError(idCheck.error);
 
-        return BudgetService.delete(idCheck.value);
+        return withRetry(
+            () => BudgetService.delete(idCheck.value),
+            3,
+            100
+        ).catch(err => handleApiError(err, 'Delete budget'));
     },
 };
 

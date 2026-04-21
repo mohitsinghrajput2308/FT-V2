@@ -88,6 +88,54 @@ export const AuthProvider = ({ children }) => {
         return () => subscription.unsubscribe();
     }, []);
 
+    // ── Tab visibility & network recovery: Refresh session when user returns to tab or comes online ──
+    useEffect(() => {
+        if (!user) return;
+
+        // When user returns to this tab after switching tabs
+        const handleVisibilityChange = async () => {
+            if (document.visibilityState === 'visible') {
+                console.log('[AuthContext] Tab became visible - refreshing session...');
+                try {
+                    const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession();
+                    if (!error && refreshedSession) {
+                        setSession(refreshedSession);
+                        setUser(refreshedSession.user);
+                        console.log('[AuthContext] ✓ Session refreshed on tab return');
+                    } else if (error?.status === 401) {
+                        // Token expired while away - need to sign back in
+                        console.warn('[AuthContext] Session expired - signing out');
+                        await supabase.auth.signOut();
+                    }
+                } catch (err) {
+                    console.error('[AuthContext] Failed to refresh session on tab return:', err);
+                }
+            }
+        };
+
+        // When user comes back online
+        const handleOnline = async () => {
+            console.log('[AuthContext] Network restored - verifying session...');
+            try {
+                const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+                if (!error && currentSession) {
+                    setSession(currentSession);
+                    console.log('[AuthContext] ✓ Session verified after coming online');
+                }
+            } catch (err) {
+                console.error('[AuthContext] Failed to verify session after coming online:', err);
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('online', handleOnline);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('online', handleOnline);
+        };
+    }, [user]);
+
     // ── Fetch subscription status from profiles table for current user ──
     useEffect(() => {
         const fetchSubscriptionStatus = async () => {
