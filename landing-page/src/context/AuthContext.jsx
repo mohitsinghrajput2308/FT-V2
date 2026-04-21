@@ -5,6 +5,7 @@ const AuthContext = createContext(undefined);
 
 // ── Session timeout: 30 minutes of inactivity ──
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+const MIN_REFRESH_INTERVAL_MS = 30 * 1000;
 
 export const AuthProvider = ({ children }) => {
     // Modal open/view state
@@ -20,6 +21,9 @@ export const AuthProvider = ({ children }) => {
     const [subscriptionTier, setSubscriptionTier] = useState('free');
 
     const inactivityTimer = useRef(null);
+    // Debounce tab-return session refreshes: don't hammer Supabase if user
+    // switches tabs rapidly (e.g. Cmd+Tab back and forth).
+    const lastRefreshRef = useRef(0);
 
     // ── Sign out (stable reference) ──
     const signOut = useCallback(async () => {
@@ -75,10 +79,12 @@ export const AuthProvider = ({ children }) => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
             setUser(session?.user ?? null);
-            // Re-enable auto-refresh when a new session is established after sign-out
-            if (_event === 'SIGNED_IN') {
-                try { supabase.auth.startAutoRefresh(); } catch { /* not critical */ }
-            }
+            // NOTE: Do NOT call supabase.auth.startAutoRefresh() here.
+            // supabase-js v2 manages auto-refresh internally via autoRefreshToken: true.
+            // Calling startAutoRefresh() REMOVES the built-in visibilitychange handler
+            // (_removeVisibilityChangedCallback), which breaks session recovery when
+            // the user returns from a background tab — the root cause of the silent
+            // dashboard freeze bug.
             // When user clicks password reset email link, open the reset view
             if (_event === 'PASSWORD_RECOVERY') {
                 setModalState({ isOpen: true, view: 'resetPassword' });
@@ -88,34 +94,51 @@ export const AuthProvider = ({ children }) => {
         return () => subscription.unsubscribe();
     }, []);
 
-    // ── Tab visibility & network recovery: Refresh session when user returns to tab or comes online ──
+    // ── Tab visibility & network recovery ──
+    // supabase-js v2 handles token refresh on tab return via its internal
+    // visibilitychange handler (_onVisibilityChanged → _recoverAndRefresh).
+    // Our job here is just to ensure React state stays in sync with the
+    // supabase client's internal session after the library has refreshed it.
     useEffect(() => {
         if (!user) return;
 
-        // When user returns to this tab after switching tabs
+        let visibilityTimeout = null;
+
         const handleVisibilityChange = async () => {
             if (document.visibilityState === 'visible') {
-                console.log('[AuthContext] Tab became visible - refreshing session...');
-                try {
-                    const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession();
-                    if (!error && refreshedSession) {
-                        setSession(refreshedSession);
-                        setUser(refreshedSession.user);
-                        console.log('[AuthContext] ✓ Session refreshed on tab return');
-                    } else if (error?.status === 401) {
-                        // Token expired while away - need to sign back in
-                        console.warn('[AuthContext] Session expired - signing out');
-                        await supabase.auth.signOut();
-                    }
-                } catch (err) {
-                    console.error('[AuthContext] Failed to refresh session on tab return:', err);
+                // Clear any pending timeout (rapid tab switching)
+                if (visibilityTimeout) clearTimeout(visibilityTimeout);
+
+                const now = Date.now();
+                if (now - lastRefreshRef.current < MIN_REFRESH_INTERVAL_MS) {
+                    return; // Debounce
                 }
+                lastRefreshRef.current = now;
+
+                // Wait for supabase-js's internal handler to refresh the token first,
+                // then sync React state with whatever session the client now holds.
+                visibilityTimeout = setTimeout(async () => {
+                    try {
+                        const { data: { session: currentSession } } = await supabase.auth.getSession();
+                        if (currentSession) {
+                            setSession(currentSession);
+                            setUser(currentSession.user);
+                            console.log('[AuthContext] ✓ Session synced on tab return');
+                        } else {
+                            // Session was removed (expired, revoked, etc.)
+                            console.warn('[AuthContext] No session found on tab return — signing out');
+                            await supabase.auth.signOut();
+                        }
+                    } catch (err) {
+                        console.error('[AuthContext] Session sync on tab return failed:', err);
+                    }
+                }, 1000); // 1s — let supabase-js refresh the token first
             }
         };
 
-        // When user comes back online
+        // When user comes back online — verify session is still valid
         const handleOnline = async () => {
-            console.log('[AuthContext] Network restored - verifying session...');
+            console.log('[AuthContext] Network restored — verifying session...');
             try {
                 const { data: { session: currentSession }, error } = await supabase.auth.getSession();
                 if (!error && currentSession) {
@@ -133,6 +156,7 @@ export const AuthProvider = ({ children }) => {
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             window.removeEventListener('online', handleOnline);
+            if (visibilityTimeout) clearTimeout(visibilityTimeout);
         };
     }, [user]);
 

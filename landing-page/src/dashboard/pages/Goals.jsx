@@ -31,6 +31,8 @@ const Goals = () => {
     const [selectedGoal, setSelectedGoal] = useState(null);
     const [addAmount, setAddAmount] = useState('');
     const [addAmountError, setAddAmountError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isAddingMoney, setIsAddingMoney] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         targetAmount: '',
@@ -73,26 +75,35 @@ const Goals = () => {
         e.preventDefault();
         if (!validate()) return;
 
-        const data = {
-            name: formData.name,
-            targetAmount: parseFloat(formData.targetAmount),
-            currentAmount: parseFloat(formData.currentAmount) || 0,
-            deadline: formData.deadline,
-            priority: formData.priority,
-            description: formData.description
-        };
+        setIsSubmitting(true);
+        try {
+            const data = {
+                name: formData.name,
+                targetAmount: parseFloat(formData.targetAmount),
+                currentAmount: parseFloat(formData.currentAmount) || 0,
+                deadline: formData.deadline,
+                priority: formData.priority,
+                description: formData.description
+            };
 
-        if (editingItem) {
-            await updateGoal(editingItem.id, data);
+            if (editingItem) {
+                await updateGoal(editingItem.id, data);
+            } else {
+                const result = await addGoal(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: goals.length });
+                if (result === null || result === undefined) {
+                    setIsSubmitting(false);
+                    return;
+                }
+            }
+            setIsSubmitting(false);
             closeModal();
-        } else {
-            const result = await addGoal(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: goals.length });
-            // Only close modal on success; null means an error was shown as toast
-            if (result !== null && result !== undefined) closeModal();
+        } catch (err) {
+            console.error('Goal submission error:', err);
+            setIsSubmitting(false);
         }
     };
 
-    const handleAddMoney = () => {
+    const handleAddMoney = async () => {
         setAddAmountError('');
         if (selectedGoal && addAmount && parseFloat(addAmount) > 0) {
             const added = parseFloat(addAmount);
@@ -100,10 +111,18 @@ const Goals = () => {
                 setAddAmountError(`Cannot exceed target amount of ${formatCurrency(selectedGoal.targetAmount, currency)}`);
                 return;
             }
-            addToGoal(selectedGoal.id, added);
-            setAddMoneyModal(false);
-            setSelectedGoal(null);
-            setAddAmount('');
+            setIsAddingMoney(true);
+            try {
+                await addToGoal(selectedGoal.id, added);
+                setIsAddingMoney(false);
+                setAddMoneyModal(false);
+                setSelectedGoal(null);
+                setAddAmount('');
+            } catch (err) {
+                console.error('Error adding money to goal:', err);
+                setAddAmountError('Failed to add amount. Please try again.');
+                setIsAddingMoney(false);
+            }
         } else if (!addAmount || parseFloat(addAmount) <= 0) {
             setAddAmountError('Enter a valid amount');
         }
@@ -408,7 +427,7 @@ const Goals = () => {
                         <Button type="button" variant="secondary" onClick={closeModal} fullWidth>
                             Cancel
                         </Button>
-                        <Button type="submit" fullWidth>
+                        <Button type="submit" fullWidth loading={isSubmitting}>
                             {editingItem ? 'Update' : 'Create'} Goal
                         </Button>
                     </div>
@@ -442,7 +461,7 @@ const Goals = () => {
                         }} fullWidth>
                             Cancel
                         </Button>
-                        <Button onClick={handleAddMoney} fullWidth>
+                        <Button onClick={handleAddMoney} fullWidth loading={isAddingMoney}>
                             Add Money
                         </Button>
                     </div>

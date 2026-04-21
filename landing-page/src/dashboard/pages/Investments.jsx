@@ -53,6 +53,7 @@ const Investments = () => {
     const [editingItem,  setEditingItem]  = useState(null);
     const [errors,       setErrors]       = useState({});
     const [formData,     setFormData]     = useState(emptyForm());
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [manualOverride, setManualOverride] = useState(false);
     const [filterType,   setFilterType]   = useState('All');
     const [chartMode,    setChartMode]    = useState('profit'); // 'profit' | 'loss' | 'invested' | 'value'
@@ -201,23 +202,29 @@ const Investments = () => {
         e.preventDefault();
         if (!validate()) return;
 
-        const data = {
-            name:          formData.name,
-            type:          formData.type === 'Other' ? (formData.customType.trim() || 'Other') : formData.type,
-            purchasePrice: parseFloat(formData.purchasePrice),
-            // If no current value yet (symbol-linked asset, poller will fill it soon), default to purchasePrice
-            currentValue:  parseFloat(formData.currentValue) || parseFloat(formData.purchasePrice),
-            quantity:      parseFloat(formData.quantity),
-            purchaseDate:  formData.purchaseDate,
-            symbol:        selectedAsset?.symbol ?? null,
-        };
+        setIsSubmitting(true);
+        try {
+            const data = {
+                name:          formData.name,
+                type:          formData.type === 'Other' ? (formData.customType.trim() || 'Other') : formData.type,
+                purchasePrice: parseFloat(formData.purchasePrice),
+                currentValue:  parseFloat(formData.currentValue) || parseFloat(formData.purchasePrice),
+                quantity:      parseFloat(formData.quantity),
+                purchaseDate:  formData.purchaseDate,
+                symbol:        selectedAsset?.symbol ?? null,
+            };
 
-        if (editingItem) {
-            await updateInvestment(editingItem.id, data);
-        } else {
-            await addInvestment(data);
+            if (editingItem) {
+                await updateInvestment(editingItem.id, data);
+            } else {
+                await addInvestment(data);
+            }
+            setIsSubmitting(false);
+            closeModal();
+        } catch (err) {
+            console.error('Investment submission error:', err);
+            setIsSubmitting(false);
         }
-        closeModal();
     };
 
     const openModal = (item = null) => {
@@ -595,7 +602,7 @@ const Investments = () => {
 
                     <div className="flex gap-3 pt-4">
                         <Button type="button" variant="secondary" onClick={closeModal} fullWidth>Cancel</Button>
-                        <Button type="submit" fullWidth>{editingItem ? 'Update' : 'Add'} Investment</Button>
+                        <Button type="submit" fullWidth loading={isSubmitting}>{editingItem ? 'Update' : 'Add'} Investment</Button>
                     </div>
                 </form>
             </Modal>

@@ -43,6 +43,7 @@ const Bills = () => {
     const [editingItem, setEditingItem] = useState(null);
     const [limitModal, setLimitModal] = useState(false);
     const [filter, setFilter] = useState('all');
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         amount: '',
@@ -102,24 +103,33 @@ const Bills = () => {
         e.preventDefault();
         if (!validate()) return;
 
-        const data = {
-            name: formData.name,
-            amount: parseFloat(formData.amount),
-            dueDate: formData.dueDate,
-            category: formData.category === 'Other'
-                ? (formData.customCategory.trim() || 'Other')
-                : formData.category,
-            recurring: formData.recurring,
-            priority: formData.priority
-        };
+        setIsSubmitting(true);
+        try {
+            const data = {
+                name: formData.name,
+                amount: parseFloat(formData.amount),
+                dueDate: formData.dueDate,
+                category: formData.category === 'Other'
+                    ? (formData.customCategory.trim() || 'Other')
+                    : formData.category,
+                recurring: formData.recurring,
+                priority: formData.priority
+            };
 
-        if (editingItem) {
-            await updateBill(editingItem.id, data);
+            if (editingItem) {
+                await updateBill(editingItem.id, data);
+            } else {
+                const result = await addBill(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: bills.length });
+                if (result === null || result === undefined) {
+                    setIsSubmitting(false);
+                    return;
+                }
+            }
+            setIsSubmitting(false);
             closeModal();
-        } else {
-            const result = await addBill(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: bills.length });
-            // Only close modal on success; null means an error was shown as toast
-            if (result !== null && result !== undefined) closeModal();
+        } catch (err) {
+            console.error('Bill submission error:', err);
+            setIsSubmitting(false);
         }
     };
 
@@ -418,7 +428,7 @@ const Bills = () => {
                     <Select label="Priority" name="priority" options={priorities} value={formData.priority} onChange={handleChange} />
                     <div className="flex gap-3 pt-4">
                         <Button type="button" variant="secondary" onClick={closeModal} fullWidth>Cancel</Button>
-                        <Button type="submit" fullWidth>{editingItem ? 'Update' : 'Add'} Bill</Button>
+                        <Button type="submit" fullWidth loading={isSubmitting}>{editingItem ? 'Update' : 'Add'} Bill</Button>
                     </div>
                 </form>
             </Modal>

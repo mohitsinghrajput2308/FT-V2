@@ -99,6 +99,7 @@ const Budgets = () => {
     const [editingItem, setEditingItem] = useState(null);
     const [formData, setFormData] = useState({ category: '', customCategory: '', limit: '', spent: '' });
     const [formErrors, setFormErrors] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [deletingId, setDeletingId] = useState(null);
     const [limitModal, setLimitModal] = useState(false);
 
@@ -191,20 +192,30 @@ const Budgets = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateCategory()) return;
-        const data = {
-            category: formData.category === 'Other' && formData.customCategory?.trim()
-                ? formData.customCategory.trim() : formData.category,
-            amount: parseFloat(formData.limit),
-            spent: parseFloat(formData.spent) || 0,
-            month: viewPeriod,
-        };
-        if (editingItem) {
-            await updateBudget(editingItem.id, data);
+        
+        setIsSubmitting(true);
+        try {
+            const data = {
+                category: formData.category === 'Other' && formData.customCategory?.trim()
+                    ? formData.customCategory.trim() : formData.category,
+                amount: parseFloat(formData.limit),
+                spent: parseFloat(formData.spent) || 0,
+                month: viewPeriod,
+            };
+            if (editingItem) {
+                await updateBudget(editingItem.id, data);
+            } else {
+                const result = await addBudget(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: viewBudgets.length });
+                if (result === null || result === undefined) {
+                    setIsSubmitting(false);
+                    return;
+                }
+            }
+            setIsSubmitting(false);
             closeModal();
-        } else {
-            const result = await addBudget(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: viewBudgets.length });
-            // Only close modal on success; null means an error was shown as toast
-            if (result !== null && result !== undefined) closeModal();
+        } catch (err) {
+            console.error('Budget submission error:', err);
+            setIsSubmitting(false);
         }
     };
 
@@ -597,7 +608,7 @@ const Budgets = () => {
                     )}
                     <div className="flex gap-3 pt-2">
                         <Button type="button" variant="secondary" onClick={closeModal} fullWidth>Cancel</Button>
-                        <Button type="submit" fullWidth>{editingItem ? 'Update' : 'Create'}</Button>
+                        <Button type="submit" fullWidth loading={isSubmitting}>{editingItem ? 'Update' : 'Create'}</Button>
                     </div>
                 </form>
             </Modal>

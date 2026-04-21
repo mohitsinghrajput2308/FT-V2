@@ -41,6 +41,7 @@ const Expenses = () => {
     const [filterCategory, setFilterCategory] = useState('');
     const [filterPayment, setFilterPayment] = useState('');
     const [sortBy, setSortBy] = useState('date');
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         amount: '',
@@ -114,26 +115,35 @@ const Expenses = () => {
         e.preventDefault();
         if (!validate()) return;
 
-        const data = {
-            ...formData,
-            amount: parseFloat(formData.amount),
-            category: formData.category,
-            type: 'expense',
-            paymentMethod: formData.paymentMethod === 'Other'
-                ? (formData.customPaymentMethod.trim() || 'Other')
-                : formData.paymentMethod,
-            is_recurring: formData.is_recurring,
-            recurrence: formData.is_recurring ? formData.recurrence : null,
-            next_occurrence: formData.is_recurring ? calculateNextOccurrence(formData.date, formData.recurrence) : null
-        };
+        setIsSubmitting(true);
+        try {
+            const data = {
+                ...formData,
+                amount: parseFloat(formData.amount),
+                category: formData.category,
+                type: 'expense',
+                paymentMethod: formData.paymentMethod === 'Other'
+                    ? (formData.customPaymentMethod.trim() || 'Other')
+                    : formData.paymentMethod,
+                is_recurring: formData.is_recurring,
+                recurrence: formData.is_recurring ? formData.recurrence : null,
+                next_occurrence: formData.is_recurring ? calculateNextOccurrence(formData.date, formData.recurrence) : null
+            };
 
-        if (editingItem) {
-            await updateTransaction(editingItem.id, data);
+            if (editingItem) {
+                await updateTransaction(editingItem.id, data);
+            } else {
+                const result = await addTransaction(data);
+                if (result === null || result === undefined) {
+                    setIsSubmitting(false);
+                    return;
+                }
+            }
+            setIsSubmitting(false);
             closeModal();
-        } else {
-            const result = await addTransaction(data);
-            // Only close modal on success; null means an error was shown as toast
-            if (result !== null && result !== undefined) closeModal();
+        } catch (err) {
+            console.error('Expense submission error:', err);
+            setIsSubmitting(false);
         }
     };
 
@@ -411,7 +421,7 @@ const Expenses = () => {
                         <Button type="button" variant="secondary" onClick={closeModal} fullWidth>
                             Cancel
                         </Button>
-                        <Button type="submit" fullWidth>
+                        <Button type="submit" fullWidth loading={isSubmitting}>
                             {editingItem ? 'Update' : 'Add'} Expense
                         </Button>
                     </div>

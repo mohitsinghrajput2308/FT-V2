@@ -76,6 +76,8 @@ export const FinanceProvider = ({ children }) => {
 
     const userId = currentUser?.id;
     const hasFetched = useRef(false);
+    // Stable ref to fetchAll so visibility/online handlers always call the latest version
+    const fetchAllRef = useRef(null);
 
     // ── Load data from Supabase via Secure API (no localStorage for financial data) ──
     useEffect(() => {
@@ -87,6 +89,7 @@ export const FinanceProvider = ({ children }) => {
         hasFetched.current = true;
 
         let cancelled = false;
+
         const fetchAll = async () => {
             setSyncStatus('syncing');
             try {
@@ -113,7 +116,7 @@ export const FinanceProvider = ({ children }) => {
                 // Settings only: allow localStorage fallback (non-sensitive)
                 const resolveSettings = (result) => {
                     const savedLocally = getFromStorage(STORAGE_KEYS.SETTINGS);
-                    
+
                     // If we have successful Supabase data, merge with localStorage
                     // (localStorage takes precedence to preserve user preferences)
                     if (result.status === 'fulfilled' && result.value.data && !result.value.error) {
@@ -121,7 +124,7 @@ export const FinanceProvider = ({ children }) => {
                         try { saveToStorage(STORAGE_KEYS.SETTINGS, merged); } catch { /* silent */ }
                         return merged;
                     }
-                    
+
                     // Fall back to localStorage with default fallback
                     return savedLocally || { currency: '$', dateFormat: 'MM/DD/YYYY' };
                 };
@@ -153,11 +156,71 @@ export const FinanceProvider = ({ children }) => {
             }
         };
 
+        // Keep the ref up-to-date so visibility/online handlers can call the latest version
+        fetchAllRef.current = fetchAll;
+
         fetchAll();
         return () => { cancelled = true; };
     }, [userId]);
 
+    // Reset the hasFetched guard when the user changes (login / logout)
     useEffect(() => { hasFetched.current = false; }, [userId]);
+
+    // ── Tab-visibility recovery: re-sync when user switches back to this tab ──
+    // This is the PRIMARY fix for the "dashboard goes silent after tab switch" bug.
+    // When the browser resumes a background tab, supabase-js's internal handler
+    // refreshes the JWT first. We add a short delay so the token refresh completes
+    // before we re-fetch data, avoiding stale-token errors.
+    useEffect(() => {
+        if (!userId) return;
+
+        let visibilityTimeout = null;
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                // Clear any pending timeout (e.g. rapid tab switching)
+                if (visibilityTimeout) clearTimeout(visibilityTimeout);
+
+                // Wait briefly for supabase-js's internal token refresh to complete
+                // before re-fetching all data with a (hopefully) fresh JWT.
+                visibilityTimeout = setTimeout(() => {
+                    console.log('[FinanceContext] Tab became visible — re-syncing data...');
+                    hasFetched.current = false;
+                    fetchAllRef.current?.();
+                    hasFetched.current = true;
+                }, 1500); // 1.5s — enough for supabase-js token refresh round-trip
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            if (visibilityTimeout) clearTimeout(visibilityTimeout);
+        };
+    }, [userId]);
+
+    // ── Network-recovery: re-sync when browser comes back online ──
+    useEffect(() => {
+        if (!userId) return;
+
+        const handleOnline = () => {
+            console.log('[FinanceContext] Network restored — re-syncing data...');
+            hasFetched.current = false;
+            fetchAllRef.current?.();
+            hasFetched.current = true;
+        };
+
+        window.addEventListener('online', handleOnline);
+        return () => window.removeEventListener('online', handleOnline);
+    }, [userId]);
+
+    // ── Manual retry: exposed in context so UI can offer a "Retry" button ──
+    const retrySync = useCallback(() => {
+        if (!userId) return;
+        hasFetched.current = false;
+        fetchAllRef.current?.();
+        hasFetched.current = true;
+    }, [userId]);
 
     // ── Fetch live FX rates (updates whenever currency setting changes) ──
     useEffect(() => {
@@ -430,6 +493,7 @@ export const FinanceProvider = ({ children }) => {
     const value = {
         loading,
         syncStatus,
+        retrySync,       // ← manual re-sync trigger (use in "Retry" UI buttons)
         transactions: userTransactions,
         budgets: userBudgets,
         goals: userGoals,
