@@ -88,17 +88,20 @@ const Goals = () => {
 
             if (editingItem) {
                 await updateGoal(editingItem.id, data);
+                console.log('✅ Goal updated successfully');
             } else {
                 const result = await addGoal(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: goals.length });
                 if (result === null || result === undefined) {
+                    console.log('❌ Goal API returned error - keeping modal open for retry');
                     setIsSubmitting(false);
                     return;
                 }
+                console.log('✅ Goal added successfully');
             }
             setIsSubmitting(false);
             closeModal();
         } catch (err) {
-            console.error('Goal submission error:', err);
+            console.error('❌ Goal submission error:', err);
             setIsSubmitting(false);
         }
     };
@@ -114,13 +117,14 @@ const Goals = () => {
             setIsAddingMoney(true);
             try {
                 await addToGoal(selectedGoal.id, added);
+                console.log('✅ Money added to goal successfully');
                 setIsAddingMoney(false);
                 setAddMoneyModal(false);
                 setSelectedGoal(null);
                 setAddAmount('');
             } catch (err) {
-                console.error('Error adding money to goal:', err);
-                setAddAmountError('Failed to add amount. Please try again.');
+                console.error('❌ Error adding money to goal:', err);
+                setAddAmountError('Failed to add amount. Please check your connection and try again.');
                 setIsAddingMoney(false);
             }
         } else if (!addAmount || parseFloat(addAmount) <= 0) {

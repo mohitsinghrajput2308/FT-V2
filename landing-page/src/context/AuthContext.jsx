@@ -377,6 +377,32 @@ export const AuthProvider = ({ children }) => {
         window.location.href = '/pricing';
     };
 
+    // ── Session Recovery for API failures ──
+    // Called when an API returns 401/403 (unauthorized) — attempts to refresh the session
+    // and returns the refreshed session if successful, or null if refresh fails
+    const refreshSession = useCallback(async () => {
+        console.log('[AuthContext] 🔄 Attempting to refresh session after API error...');
+        try {
+            const { data: { session: newSession }, error } = await supabase.auth.refreshSession();
+            if (error) {
+                console.error('[AuthContext] ❌ Session refresh failed:', error.message);
+                // Session can't be refreshed — user must re-authenticate
+                await supabase.auth.signOut();
+                return null;
+            }
+            if (newSession) {
+                setSession(newSession);
+                setUser(newSession.user);
+                console.log('[AuthContext] ✅ Session refreshed successfully');
+                return newSession;
+            }
+            return null;
+        } catch (err) {
+            console.error('[AuthContext] ❌ Session refresh exception:', err);
+            return null;
+        }
+    }, []);
+
     return (
         <AuthContext.Provider value={{
             // Landing page API (useAuthModal consumers)
@@ -396,6 +422,7 @@ export const AuthProvider = ({ children }) => {
             changePassword,
             deleteAccount,
             upgradeToPro,
+            refreshSession,
             
             // Subscription status (NEW - for Priority Support + paid features)
             localIsPro,

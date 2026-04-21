@@ -134,17 +134,20 @@ const Income = () => {
 
             if (editingItem) {
                 await updateTransaction(editingItem.id, data);
+                console.log('✅ Income transaction updated successfully');
             } else {
                 const result = await addTransaction(data);
                 if (result === null || result === undefined) {
+                    console.log('❌ Income API returned error - keeping modal open for retry');
                     setIsSubmitting(false);
                     return;
                 }
+                console.log('✅ Income transaction added successfully');
             }
             setIsSubmitting(false);
             closeModal();
         } catch (err) {
-            console.error('Income submission error:', err);
+            console.error('❌ Income submission error:', err);
             setIsSubmitting(false);
         }
     };

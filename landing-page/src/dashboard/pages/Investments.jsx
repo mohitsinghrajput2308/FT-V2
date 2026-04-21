@@ -216,13 +216,15 @@ const Investments = () => {
 
             if (editingItem) {
                 await updateInvestment(editingItem.id, data);
+                console.log('✅ Investment updated successfully');
             } else {
                 await addInvestment(data);
+                console.log('✅ Investment added successfully');
             }
             setIsSubmitting(false);
             closeModal();
         } catch (err) {
-            console.error('Investment submission error:', err);
+            console.error('❌ Investment submission error:', err);
             setIsSubmitting(false);
         }
     };

@@ -132,17 +132,20 @@ const Expenses = () => {
 
             if (editingItem) {
                 await updateTransaction(editingItem.id, data);
+                console.log('✅ Expense transaction updated successfully');
             } else {
                 const result = await addTransaction(data);
                 if (result === null || result === undefined) {
+                    console.log('❌ Expense API returned error - keeping modal open for retry');
                     setIsSubmitting(false);
                     return;
                 }
+                console.log('✅ Expense transaction added successfully');
             }
             setIsSubmitting(false);
             closeModal();
         } catch (err) {
-            console.error('Expense submission error:', err);
+            console.error('❌ Expense submission error:', err);
             setIsSubmitting(false);
         }
     };

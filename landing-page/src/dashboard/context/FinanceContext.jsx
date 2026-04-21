@@ -56,7 +56,7 @@ export const useFinance = () => {
 };
 
 export const FinanceProvider = ({ children }) => {
-    const { currentUser } = useAuth();
+    const { currentUser, refreshSession } = useAuth();
     const { success, error: notifyError } = useNotification();
 
     const [transactions, setTransactions] = useState([]);
@@ -257,13 +257,35 @@ export const FinanceProvider = ({ children }) => {
     const addTransaction = useCallback(async (data) => {
         const result = await SecureAPI.transactions.create(data, userId);
         if (result.error) {
+            console.error('[FinanceContext] Transaction creation failed:', result.error);
+            // Check if error is auth-related
+            const errorMsg = result.error?.toString().toLowerCase() || '';
+            if (errorMsg.includes('401') || errorMsg.includes('unauthorized') || 
+                errorMsg.includes('403') || errorMsg.includes('forbidden') ||
+                errorMsg.includes('session') || errorMsg.includes('expired')) {
+                console.log('[FinanceContext] Auth error detected - attempting session refresh...');
+                const newSession = await refreshSession?.();
+                if (!newSession) {
+                    notifyError?.('Your session has expired. Please log in again.');
+                    return null;
+                }
+                // Retry once
+                const retryResult = await SecureAPI.transactions.create(data, userId);
+                if (retryResult.error) {
+                    notifyError?.(retryResult.error);
+                    return null;
+                }
+                setTransactions(prev => [retryResult.data, ...prev]);
+                success?.(`${data.type === 'income' ? 'Income' : 'Expense'} added successfully`);
+                return retryResult.data;
+            }
             notifyError?.(result.error);
             return null;
         }
         setTransactions(prev => [result.data, ...prev]);
         success?.(`${data.type === 'income' ? 'Income' : 'Expense'} added successfully`);
         return result.data;
-    }, [userId, success, notifyError]);
+    }, [userId, success, notifyError, refreshSession]);
 
     const updateTransaction = useCallback(async (id, data) => {
         const result = await SecureAPI.transactions.update(id, data, userId);
@@ -282,11 +304,36 @@ export const FinanceProvider = ({ children }) => {
     // ─── BUDGET CRUD ──────────────────────────────────────────
     const addBudget = useCallback(async (data, limitInfo = null) => {
         const result = await SecureAPI.budgets.create(data, userId, limitInfo);
-        if (result.error) { notifyError?.(result.error); return null; }
+        if (result.error) {
+            console.error('[FinanceContext] Budget creation failed:', result.error);
+            // Check if error is auth-related
+            const errorMsg = result.error?.toString().toLowerCase() || '';
+            if (errorMsg.includes('401') || errorMsg.includes('unauthorized') || 
+                errorMsg.includes('403') || errorMsg.includes('forbidden') ||
+                errorMsg.includes('session') || errorMsg.includes('expired')) {
+                console.log('[FinanceContext] Auth error detected - attempting session refresh...');
+                const newSession = await refreshSession?.();
+                if (!newSession) {
+                    notifyError?.('Your session has expired. Please log in again.');
+                    return null;
+                }
+                // Retry once
+                const retryResult = await SecureAPI.budgets.create(data, userId, limitInfo);
+                if (retryResult.error) {
+                    notifyError?.(retryResult.error);
+                    return null;
+                }
+                setBudgets(prev => [...prev, retryResult.data]);
+                success?.('Budget created');
+                return retryResult.data;
+            }
+            notifyError?.(result.error);
+            return null;
+        }
         setBudgets(prev => [...prev, result.data]);
         success?.('Budget created');
         return result.data;
-    }, [userId, success, notifyError]);
+    }, [userId, success, notifyError, refreshSession]);
 
     const updateBudget = useCallback(async (id, data) => {
         const result = await SecureAPI.budgets.update(id, data, userId);
@@ -305,11 +352,36 @@ export const FinanceProvider = ({ children }) => {
     // ─── GOALS CRUD ───────────────────────────────────────────
     const addGoal = useCallback(async (data, limitInfo = null) => {
         const result = await SecureAPI.goals.create(data, userId, limitInfo);
-        if (result.error) { notifyError?.(result.error); return null; }
+        if (result.error) {
+            console.error('[FinanceContext] Goal creation failed:', result.error);
+            // Check if error is auth-related
+            const errorMsg = result.error?.toString().toLowerCase() || '';
+            if (errorMsg.includes('401') || errorMsg.includes('unauthorized') || 
+                errorMsg.includes('403') || errorMsg.includes('forbidden') ||
+                errorMsg.includes('session') || errorMsg.includes('expired')) {
+                console.log('[FinanceContext] Auth error detected - attempting session refresh...');
+                const newSession = await refreshSession?.();
+                if (!newSession) {
+                    notifyError?.('Your session has expired. Please log in again.');
+                    return null;
+                }
+                // Retry once
+                const retryResult = await SecureAPI.goals.create(data, userId, limitInfo);
+                if (retryResult.error) {
+                    notifyError?.(retryResult.error);
+                    return null;
+                }
+                setGoals(prev => [...prev, retryResult.data]);
+                success?.('Goal created');
+                return retryResult.data;
+            }
+            notifyError?.(result.error);
+            return null;
+        }
         setGoals(prev => [...prev, result.data]);
         success?.('Goal created');
         return result.data;
-    }, [userId, success, notifyError]);
+    }, [userId, success, notifyError, refreshSession]);
 
     const updateGoal = useCallback(async (id, data) => {
         const result = await SecureAPI.goals.update(id, data, userId);
@@ -377,11 +449,37 @@ export const FinanceProvider = ({ children }) => {
     // ─── BILLS CRUD ───────────────────────────────────────────
     const addBill = useCallback(async (data, limitInfo = null) => {
         const result = await SecureAPI.bills.create(data, userId, limitInfo);
-        if (result.error) { notifyError?.(result.error); return null; }
+        if (result.error) {
+            console.error('[FinanceContext] Bill creation failed:', result.error);
+            // Check if error is auth-related (401/403)
+            const errorMsg = result.error?.toString().toLowerCase() || '';
+            if (errorMsg.includes('401') || errorMsg.includes('unauthorized') || 
+                errorMsg.includes('403') || errorMsg.includes('forbidden') ||
+                errorMsg.includes('session') || errorMsg.includes('expired')) {
+                console.log('[FinanceContext] Auth error detected - attempting session refresh...');
+                const newSession = await refreshSession?.();
+                if (!newSession) {
+                    notifyError?.('Your session has expired. Please log in again.');
+                    return null;
+                }
+                console.log('[FinanceContext] Session refreshed - retrying bill creation...');
+                // Retry the operation once
+                const retryResult = await SecureAPI.bills.create(data, userId, limitInfo);
+                if (retryResult.error) {
+                    notifyError?.(retryResult.error);
+                    return null;
+                }
+                setBills(prev => [...prev, retryResult.data]);
+                success?.('Bill reminder added');
+                return retryResult.data;
+            }
+            notifyError?.(result.error);
+            return null;
+        }
         setBills(prev => [...prev, result.data]);
         success?.('Bill reminder added');
         return result.data;
-    }, [userId, success, notifyError]);
+    }, [userId, success, notifyError, refreshSession]);
 
     const updateBill = useCallback(async (id, data) => {
         const result = await SecureAPI.bills.update(id, data, userId);

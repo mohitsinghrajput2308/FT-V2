@@ -124,15 +124,17 @@ const Bills = () => {
             if (editingItem) {
                 console.log('✏️  Updating bill');
                 await updateBill(editingItem.id, data);
+                console.log('✅ Bill updated successfully');
             } else {
                 console.log('➕ Adding new bill');
                 const result = await addBill(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: bills.length });
                 console.log('📥 Result:', result);
                 if (result === null || result === undefined) {
-                    console.log('❌ API returned null/undefined (error shown as toast)');
+                    console.log('❌ API returned error (error toast shown) - keeping modal open');
                     setIsSubmitting(false);
-                    return;
+                    return; // Keep modal open so user can retry
                 }
+                console.log('✅ Bill added successfully');
             }
             console.log('✅ Success! Setting isSubmitting = false and closing modal');
             setIsSubmitting(false);
@@ -140,6 +142,7 @@ const Bills = () => {
         } catch (err) {
             console.error('❌ Bill submission error:', err);
             setIsSubmitting(false);
+            // Error is caught - modal stays open so user can retry
         }
     };
 

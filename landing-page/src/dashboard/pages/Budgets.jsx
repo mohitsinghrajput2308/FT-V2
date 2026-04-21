@@ -204,17 +204,20 @@ const Budgets = () => {
             };
             if (editingItem) {
                 await updateBudget(editingItem.id, data);
+                console.log('✅ Budget updated successfully');
             } else {
                 const result = await addBudget(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: viewBudgets.length });
                 if (result === null || result === undefined) {
+                    console.log('❌ Budget API returned error - keeping modal open for retry');
                     setIsSubmitting(false);
                     return;
                 }
+                console.log('✅ Budget added successfully');
             }
             setIsSubmitting(false);
             closeModal();
         } catch (err) {
-            console.error('Budget submission error:', err);
+            console.error('❌ Budget submission error:', err);
             setIsSubmitting(false);
         }
     };
