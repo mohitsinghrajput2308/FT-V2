@@ -39,7 +39,7 @@ const Button = ({
         rounded-lg font-medium
         transition-all duration-200
         focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-dark-100
-        disabled:opacity-50 disabled:cursor-not-allowed
+        ${loading ? 'opacity-100 ring-2 ring-offset-2' : 'disabled:opacity-50'} disabled:cursor-not-allowed
         ${variants[variant]}
         ${sizes[size]}
         ${fullWidth ? 'w-full' : ''}
@@ -47,9 +47,9 @@ const Button = ({
       `}
             {...props}
         >
-            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+            {loading && <Loader2 className="w-5 h-5 animate-spin" />}
             {!loading && Icon && iconPosition === 'left' && <Icon className="w-4 h-4" />}
-            {children}
+            {loading ? 'Processing...' : children}
             {!loading && Icon && iconPosition === 'right' && <Icon className="w-4 h-4" />}
         </button>
     );
