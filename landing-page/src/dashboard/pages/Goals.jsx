@@ -32,6 +32,7 @@ const Goals = () => {
     const [addAmount, setAddAmount] = useState('');
     const [addAmountError, setAddAmountError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [apiError, setApiError] = useState('');
     const [isAddingMoney, setIsAddingMoney] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
@@ -178,6 +179,7 @@ const Goals = () => {
     const closeModal = () => {
         setModalOpen(false);
         setEditingItem(null);
+        setApiError('');
     };
 
     const handleDelete = (id) => {

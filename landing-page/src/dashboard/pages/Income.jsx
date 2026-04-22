@@ -41,6 +41,7 @@ const Income = () => {
     const [filterPayment, setFilterPayment] = useState('');
     const [sortBy, setSortBy] = useState('date');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [apiError, setApiError] = useState('');
     const [formData, setFormData] = useState({
         name: '',
         amount: '',
@@ -119,6 +120,7 @@ const Income = () => {
 
         console.log('📤 [Income] Form submitted - starting load animation...');
         setIsSubmitting(true);
+        setApiError('');
         const startTime = Date.now();
         
         try {
@@ -156,6 +158,7 @@ const Income = () => {
                     if (elapsedTime < minLoadTime) {
                         await new Promise(resolve => setTimeout(resolve, minLoadTime - elapsedTime));
                     }
+                    setApiError('❌ Failed to add income. Please check your connection and try again.');
                     setIsSubmitting(false);
                     return;
                 }
@@ -179,6 +182,7 @@ const Income = () => {
             if (elapsedTime < minLoadTime) {
                 await new Promise(resolve => setTimeout(resolve, minLoadTime - elapsedTime));
             }
+            setApiError('❌ An error occurred. Please try again.');
             setIsSubmitting(false);
         }
     };
@@ -223,6 +227,7 @@ const Income = () => {
     const closeModal = () => {
         setModalOpen(false);
         setEditingItem(null);
+        setApiError('');
         setFormData({
             name: '',
             amount: '',
@@ -374,6 +379,11 @@ const Income = () => {
             {/* Add/Edit Modal */}
             <Modal isOpen={modalOpen} onClose={closeModal} title={editingItem ? 'Edit Income' : 'Add Income'}>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {apiError && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
+                            {apiError}
+                        </div>
+                    )}
                     <Input
                         label="Income Source"
                         name="name"

@@ -44,6 +44,7 @@ const Bills = () => {
     const [limitModal, setLimitModal] = useState(false);
     const [filter, setFilter] = useState('all');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [apiError, setApiError] = useState('');
     const [formData, setFormData] = useState({
         name: '',
         amount: '',
@@ -195,6 +196,7 @@ const Bills = () => {
     const closeModal = () => {
         setModalOpen(false);
         setEditingItem(null);
+        setApiError('');
     };
 
     const handleDelete = (id) => {

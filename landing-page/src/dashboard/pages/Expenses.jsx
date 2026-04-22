@@ -42,6 +42,7 @@ const Expenses = () => {
     const [filterPayment, setFilterPayment] = useState('');
     const [sortBy, setSortBy] = useState('date');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [apiError, setApiError] = useState('');
     const [formData, setFormData] = useState({
         name: '',
         amount: '',
@@ -204,6 +205,7 @@ const Expenses = () => {
     const closeModal = () => {
         setModalOpen(false);
         setEditingItem(null);
+        setApiError('');
     };
 
     const handleDelete = (id) => {

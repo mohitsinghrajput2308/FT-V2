@@ -100,6 +100,7 @@ const Budgets = () => {
     const [formData, setFormData] = useState({ category: '', customCategory: '', limit: '', spent: '' });
     const [formErrors, setFormErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [apiError, setApiError] = useState('');
     const [deletingId, setDeletingId] = useState(null);
     const [limitModal, setLimitModal] = useState(false);
 
@@ -257,7 +258,7 @@ const Budgets = () => {
         setCategoryModalOpen(true);
     };
 
-    const closeModal = () => { setCategoryModalOpen(false); setEditingItem(null); };
+    const closeModal = () => { setCategoryModalOpen(false); setEditingItem(null); setApiError(''); };
     const confirmDelete = (id) => setDeletingId(id);
     const cancelDelete = () => setDeletingId(null);
     const handleDelete = () => { if (deletingId) { deleteBudget(deletingId); setDeletingId(null); } };

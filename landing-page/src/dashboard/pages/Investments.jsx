@@ -52,6 +52,7 @@ const Investments = () => {
     const [limitModal,   setLimitModal]   = useState(false);
     const [editingItem,  setEditingItem]  = useState(null);
     const [errors,       setErrors]       = useState({});
+    const [apiError,     setApiError]     = useState('');
     const [formData,     setFormData]     = useState(emptyForm());
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [manualOverride, setManualOverride] = useState(false);
@@ -264,6 +265,7 @@ const Investments = () => {
         setModalOpen(false);
         setEditingItem(null);
         setSelectedAsset(null);
+        setApiError('');
     };
 
     const handleDelete = (id) => {
