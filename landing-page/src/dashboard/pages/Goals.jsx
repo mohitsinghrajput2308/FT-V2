@@ -93,10 +93,11 @@ const Goals = () => {
                 console.log('✅ Goal updated successfully');
             } else {
                 const result = await addGoal(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: goals.length });
-                if (result === null || result === undefined) {
-                    console.log('❌ Goal API returned error - keeping modal open for retry');
+                if (result === null || result === undefined || result?.error) {
+                    console.log('❌ Goal API returned error - keeping modal open for retry', result?.error);
                     const elapsedTime = Date.now() - startTime;
                     if (elapsedTime < 800) await new Promise(r => setTimeout(r, 800 - elapsedTime));
+                    setApiError(result?.error || '❌ Failed to add goal. Please check your connection and try again.');
                     setIsSubmitting(false);
                     return;
                 }

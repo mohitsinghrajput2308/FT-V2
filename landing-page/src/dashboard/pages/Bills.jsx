@@ -131,10 +131,11 @@ const Bills = () => {
                 console.log('➕ Adding new bill');
                 const result = await addBill(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: bills.length });
                 console.log('📥 Result:', result);
-                if (result === null || result === undefined) {
-                    console.log('❌ API returned error (error toast shown) - keeping modal open');
+                if (result === null || result === undefined || result?.error) {
+                    console.log('❌ API returned error - keeping modal open', result?.error);
                     const elapsedTime = Date.now() - startTime;
                     if (elapsedTime < 800) await new Promise(r => setTimeout(r, 800 - elapsedTime));
+                    setApiError(result?.error || '❌ Failed to add bill. Please check your connection and try again.');
                     setIsSubmitting(false);
                     return; // Keep modal open so user can retry
                 }

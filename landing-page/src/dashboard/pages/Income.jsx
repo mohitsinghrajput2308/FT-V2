@@ -150,15 +150,15 @@ const Income = () => {
                 result = await addTransaction(data);
                 console.log('📥 [Income] API response:', result);
                 
-                if (result === null || result === undefined) {
-                    console.error('❌ [Income] API returned null/undefined - error was handled in FinanceContext');
+                if (result === null || result === undefined || result?.error) {
+                    console.error('❌ [Income] API returned error - keeping modal open', result?.error);
                     // Ensure loading spinner visible for at least 800ms for error feedback
                     const elapsedTime = Date.now() - startTime;
                     const minLoadTime = 800;
                     if (elapsedTime < minLoadTime) {
                         await new Promise(resolve => setTimeout(resolve, minLoadTime - elapsedTime));
                     }
-                    setApiError('❌ Failed to add income. Please check your connection and try again.');
+                    setApiError(result?.error || '❌ Failed to add income. Please check your connection and try again.');
                     setIsSubmitting(false);
                     return;
                 }

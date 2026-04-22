@@ -209,10 +209,11 @@ const Budgets = () => {
                 console.log('✅ Budget updated successfully');
             } else {
                 const result = await addBudget(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: viewBudgets.length });
-                if (result === null || result === undefined) {
-                    console.log('❌ Budget API returned error - keeping modal open for retry');
+                if (result === null || result === undefined || result?.error) {
+                    console.log('❌ Budget API returned error - keeping modal open for retry', result?.error);
                     const elapsedTime = Date.now() - startTime;
                     if (elapsedTime < 800) await new Promise(r => setTimeout(r, 800 - elapsedTime));
+                    setApiError(result?.error || '❌ Failed to add budget. Please check your connection and try again.');
                     setIsSubmitting(false);
                     return;
                 }

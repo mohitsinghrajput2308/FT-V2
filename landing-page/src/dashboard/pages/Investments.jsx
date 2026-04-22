@@ -217,10 +217,24 @@ const Investments = () => {
             };
 
             if (editingItem) {
-                await updateInvestment(editingItem.id, data);
+                const result = await updateInvestment(editingItem.id, data);
+                if (result?.error) {
+                    const elapsedTime = Date.now() - startTime;
+                    if (elapsedTime < 800) await new Promise(r => setTimeout(r, 800 - elapsedTime));
+                    setApiError(result.error);
+                    setIsSubmitting(false);
+                    return;
+                }
                 console.log('✅ Investment updated successfully');
             } else {
-                await addInvestment(data);
+                const result = await addInvestment(data);
+                if (result?.error) {
+                    const elapsedTime = Date.now() - startTime;
+                    if (elapsedTime < 800) await new Promise(r => setTimeout(r, 800 - elapsedTime));
+                    setApiError(result.error);
+                    setIsSubmitting(false);
+                    return;
+                }
                 console.log('✅ Investment added successfully');
             }
             const elapsedTime = Date.now() - startTime;

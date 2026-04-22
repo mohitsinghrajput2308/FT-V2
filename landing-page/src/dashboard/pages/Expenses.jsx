@@ -143,10 +143,11 @@ const Expenses = () => {
                 result = { success: true };
             } else {
                 result = await addTransaction(data);
-                if (result === null || result === undefined) {
-                    console.error('❌ [Expenses] API error - keeping modal open');
+                if (result === null || result === undefined || result?.error) {
+                    console.error('❌ [Expenses] API error - keeping modal open', result?.error);
                     const elapsedTime = Date.now() - startTime;
                     if (elapsedTime < 800) await new Promise(r => setTimeout(r, 800 - elapsedTime));
+                    setApiError(result?.error || '❌ Failed to add expense. Please check your connection and try again.');
                     setIsSubmitting(false);
                     return;
                 }
