@@ -430,6 +430,11 @@ const Bills = () => {
             {/* Modal */}
             <Modal isOpen={modalOpen} onClose={closeModal} title={editingItem ? 'Edit Bill' : 'Add Bill'}>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {apiError && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
+                            {apiError}
+                        </div>
+                    )}
                     <Input label="Bill Name" name="name" placeholder="e.g., Electricity Bill" value={formData.name} onChange={handleChange} error={errors.name} />
                     <Input label="Amount" name="amount" type="number" placeholder="Enter amount" value={formData.amount} onChange={handleChange} error={errors.amount} />
                     <div className="grid grid-cols-2 gap-4">

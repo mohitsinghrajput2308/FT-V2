@@ -556,6 +556,11 @@ const Budgets = () => {
             {/* ── Add / Edit Category Modal ── */}
             <Modal isOpen={categoryModalOpen} onClose={closeModal} title={editingItem ? 'Edit Category Budget' : `Add Category — ${formatMonthLabel(viewMonth)}`}>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {apiError && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
+                            {apiError}
+                        </div>
+                    )}
                     <div className="bg-gray-50 dark:bg-dark-300 rounded-lg px-4 py-3 text-sm flex justify-between">
                         <span className="text-gray-500 dark:text-gray-400">Unallocated in envelope</span>
                         <span className={`font-semibold ${(editingItem ? totalUnallocated + (editingItem.amount || 0) : totalUnallocated) > 0

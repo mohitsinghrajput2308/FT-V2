@@ -380,6 +380,11 @@ const Goals = () => {
             {/* Add/Edit Modal */}
             <Modal isOpen={modalOpen} onClose={closeModal} title={editingItem ? 'Edit Goal' : 'Create Goal'}>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {apiError && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
+                            {apiError}
+                        </div>
+                    )}
                     <Input
                         label="Goal Name"
                         name="name"
