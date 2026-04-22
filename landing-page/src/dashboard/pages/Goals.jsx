@@ -89,7 +89,15 @@ const Goals = () => {
             };
 
             if (editingItem) {
-                await updateGoal(editingItem.id, data);
+                const result = await updateGoal(editingItem.id, data);
+                if (result === null || result === undefined || result?.error) {
+                    console.error('❌ [Goals] API error on update - keeping modal open', result?.error);
+                    const elapsedTime = Date.now() - startTime;
+                    if (elapsedTime < 800) await new Promise(r => setTimeout(r, 800 - elapsedTime));
+                    setApiError(result?.error || '❌ Failed to update goal. Please check your connection and try again.');
+                    setIsSubmitting(false);
+                    return;
+                }
                 console.log('✅ Goal updated successfully');
             } else {
                 const result = await addGoal(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: goals.length });

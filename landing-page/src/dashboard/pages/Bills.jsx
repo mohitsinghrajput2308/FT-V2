@@ -125,7 +125,15 @@ const Bills = () => {
             console.log('📤 Submitting bill data:', data);
             if (editingItem) {
                 console.log('✏️  Updating bill');
-                await updateBill(editingItem.id, data);
+                const result = await updateBill(editingItem.id, data);
+                if (result === null || result === undefined || result?.error) {
+                    console.error('❌ [Bills] API error on update - keeping modal open', result?.error);
+                    const elapsedTime = Date.now() - startTime;
+                    if (elapsedTime < 800) await new Promise(r => setTimeout(r, 800 - elapsedTime));
+                    setApiError(result?.error || '❌ Failed to update bill. Please check your connection and try again.');
+                    setIsSubmitting(false);
+                    return;
+                }
                 console.log('✅ Bill updated successfully');
             } else {
                 console.log('➕ Adding new bill');

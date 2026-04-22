@@ -138,9 +138,16 @@ const Expenses = () => {
             let result = null;
             
             if (editingItem) {
-                await updateTransaction(editingItem.id, data);
+                result = await updateTransaction(editingItem.id, data);
+                if (result === null || result === undefined || result?.error) {
+                    console.error('❌ [Expenses] API error on update - keeping modal open', result?.error);
+                    const elapsedTime = Date.now() - startTime;
+                    if (elapsedTime < 800) await new Promise(r => setTimeout(r, 800 - elapsedTime));
+                    setApiError(result?.error || '❌ Failed to update expense. Please check your connection and try again.');
+                    setIsSubmitting(false);
+                    return;
+                }
                 console.log('✅ [Expenses] Transaction updated');
-                result = { success: true };
             } else {
                 result = await addTransaction(data);
                 if (result === null || result === undefined || result?.error) {

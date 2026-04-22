@@ -205,7 +205,15 @@ const Budgets = () => {
                 month: viewPeriod,
             };
             if (editingItem) {
-                await updateBudget(editingItem.id, data);
+                const result = await updateBudget(editingItem.id, data);
+                if (result === null || result === undefined || result?.error) {
+                    console.error('❌ [Budgets] API error on update - keeping modal open', result?.error);
+                    const elapsedTime = Date.now() - startTime;
+                    if (elapsedTime < 800) await new Promise(r => setTimeout(r, 800 - elapsedTime));
+                    setApiError(result?.error || '❌ Failed to update budget. Please check your connection and try again.');
+                    setIsSubmitting(false);
+                    return;
+                }
                 console.log('✅ Budget updated successfully');
             } else {
                 const result = await addBudget(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: viewBudgets.length });
