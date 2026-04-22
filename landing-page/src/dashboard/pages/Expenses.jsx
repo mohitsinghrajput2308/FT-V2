@@ -115,7 +115,10 @@ const Expenses = () => {
         e.preventDefault();
         if (!validate()) return;
 
+        console.log('📤 [Expenses] Form submitted - starting load animation...');
         setIsSubmitting(true);
+        const startTime = Date.now();
+        
         try {
             const data = {
                 ...formData,
@@ -130,22 +133,33 @@ const Expenses = () => {
                 next_occurrence: formData.is_recurring ? calculateNextOccurrence(formData.date, formData.recurrence) : null
             };
 
+            console.log('📤 [Expenses] Sending API request...');
+            let result = null;
+            
             if (editingItem) {
                 await updateTransaction(editingItem.id, data);
-                console.log('✅ Expense transaction updated successfully');
+                console.log('✅ [Expenses] Transaction updated');
+                result = { success: true };
             } else {
-                const result = await addTransaction(data);
+                result = await addTransaction(data);
                 if (result === null || result === undefined) {
-                    console.log('❌ Expense API returned error - keeping modal open for retry');
+                    console.error('❌ [Expenses] API error - keeping modal open');
+                    const elapsedTime = Date.now() - startTime;
+                    if (elapsedTime < 800) await new Promise(r => setTimeout(r, 800 - elapsedTime));
                     setIsSubmitting(false);
                     return;
                 }
-                console.log('✅ Expense transaction added successfully');
+                console.log('✅ [Expenses] Transaction added');
             }
+            
+            const elapsedTime = Date.now() - startTime;
+            if (elapsedTime < 500) await new Promise(r => setTimeout(r, 500 - elapsedTime));
             setIsSubmitting(false);
             closeModal();
         } catch (err) {
-            console.error('❌ Expense submission error:', err);
+            console.error('❌ [Expenses] Error:', err);
+            const elapsedTime = Date.now() - startTime;
+            if (elapsedTime < 800) await new Promise(r => setTimeout(r, 800 - elapsedTime));
             setIsSubmitting(false);
         }
     };

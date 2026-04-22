@@ -117,7 +117,10 @@ const Income = () => {
         e.preventDefault();
         if (!validate()) return;
 
+        console.log('📤 [Income] Form submitted - starting load animation...');
         setIsSubmitting(true);
+        const startTime = Date.now();
+        
         try {
             const data = {
                 ...formData,
@@ -132,22 +135,50 @@ const Income = () => {
                 next_occurrence: formData.is_recurring ? calculateNextOccurrence(formData.date, formData.recurrence) : null
             };
 
+            console.log('📤 [Income] Sending API request...', data);
+            let result = null;
+            
             if (editingItem) {
+                console.log('📝 [Income] Updating existing transaction...');
                 await updateTransaction(editingItem.id, data);
-                console.log('✅ Income transaction updated successfully');
+                console.log('✅ [Income] Transaction updated successfully');
+                result = { success: true };
             } else {
-                const result = await addTransaction(data);
+                console.log('➕ [Income] Creating new transaction...');
+                result = await addTransaction(data);
+                console.log('📥 [Income] API response:', result);
+                
                 if (result === null || result === undefined) {
-                    console.log('❌ Income API returned error - keeping modal open for retry');
+                    console.error('❌ [Income] API returned null/undefined - error was handled in FinanceContext');
+                    // Ensure loading spinner visible for at least 800ms for error feedback
+                    const elapsedTime = Date.now() - startTime;
+                    const minLoadTime = 800;
+                    if (elapsedTime < minLoadTime) {
+                        await new Promise(resolve => setTimeout(resolve, minLoadTime - elapsedTime));
+                    }
                     setIsSubmitting(false);
                     return;
                 }
-                console.log('✅ Income transaction added successfully');
             }
+            
+            console.log('✅ [Income] Success - transaction processed');
+            // Ensure loading spinner visible for at least 500ms
+            const elapsedTime = Date.now() - startTime;
+            const minLoadTime = 500;
+            if (elapsedTime < minLoadTime) {
+                await new Promise(resolve => setTimeout(resolve, minLoadTime - elapsedTime));
+            }
+            
             setIsSubmitting(false);
             closeModal();
         } catch (err) {
-            console.error('❌ Income submission error:', err);
+            console.error('❌ [Income] Submission error:', err);
+            // Ensure loading spinner visible for at least 800ms so user sees what went wrong
+            const elapsedTime = Date.now() - startTime;
+            const minLoadTime = 800;
+            if (elapsedTime < minLoadTime) {
+                await new Promise(resolve => setTimeout(resolve, minLoadTime - elapsedTime));
+            }
             setIsSubmitting(false);
         }
     };
