@@ -76,6 +76,7 @@ const Goals = () => {
         if (!validate()) return;
 
         setIsSubmitting(true);
+        const startTime = Date.now();
         try {
             const data = {
                 name: formData.name,
@@ -93,15 +94,21 @@ const Goals = () => {
                 const result = await addGoal(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: goals.length });
                 if (result === null || result === undefined) {
                     console.log('❌ Goal API returned error - keeping modal open for retry');
+                    const elapsedTime = Date.now() - startTime;
+                    if (elapsedTime < 800) await new Promise(r => setTimeout(r, 800 - elapsedTime));
                     setIsSubmitting(false);
                     return;
                 }
                 console.log('✅ Goal added successfully');
             }
+            const elapsedTime = Date.now() - startTime;
+            if (elapsedTime < 500) await new Promise(r => setTimeout(r, 500 - elapsedTime));
             setIsSubmitting(false);
             closeModal();
         } catch (err) {
             console.error('❌ Goal submission error:', err);
+            const elapsedTime = Date.now() - startTime;
+            if (elapsedTime < 800) await new Promise(r => setTimeout(r, 800 - elapsedTime));
             setIsSubmitting(false);
         }
     };

@@ -108,6 +108,7 @@ const Bills = () => {
         }
         console.log('✅ Validation passed, setting isSubmitting = true');
         setIsSubmitting(true);
+        const startTime = Date.now();
         try {
             const data = {
                 name: formData.name,
@@ -131,16 +132,22 @@ const Bills = () => {
                 console.log('📥 Result:', result);
                 if (result === null || result === undefined) {
                     console.log('❌ API returned error (error toast shown) - keeping modal open');
+                    const elapsedTime = Date.now() - startTime;
+                    if (elapsedTime < 800) await new Promise(r => setTimeout(r, 800 - elapsedTime));
                     setIsSubmitting(false);
                     return; // Keep modal open so user can retry
                 }
                 console.log('✅ Bill added successfully');
             }
             console.log('✅ Success! Setting isSubmitting = false and closing modal');
+            const elapsedTime = Date.now() - startTime;
+            if (elapsedTime < 500) await new Promise(r => setTimeout(r, 500 - elapsedTime));
             setIsSubmitting(false);
             closeModal();
         } catch (err) {
             console.error('❌ Bill submission error:', err);
+            const elapsedTime = Date.now() - startTime;
+            if (elapsedTime < 800) await new Promise(r => setTimeout(r, 800 - elapsedTime));
             setIsSubmitting(false);
             // Error is caught - modal stays open so user can retry
         }

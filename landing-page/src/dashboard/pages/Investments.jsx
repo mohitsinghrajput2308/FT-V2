@@ -203,6 +203,7 @@ const Investments = () => {
         if (!validate()) return;
 
         setIsSubmitting(true);
+        const startTime = Date.now();
         try {
             const data = {
                 name:          formData.name,
@@ -221,10 +222,14 @@ const Investments = () => {
                 await addInvestment(data);
                 console.log('✅ Investment added successfully');
             }
+            const elapsedTime = Date.now() - startTime;
+            if (elapsedTime < 500) await new Promise(r => setTimeout(r, 500 - elapsedTime));
             setIsSubmitting(false);
             closeModal();
         } catch (err) {
             console.error('❌ Investment submission error:', err);
+            const elapsedTime = Date.now() - startTime;
+            if (elapsedTime < 800) await new Promise(r => setTimeout(r, 800 - elapsedTime));
             setIsSubmitting(false);
         }
     };

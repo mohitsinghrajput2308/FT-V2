@@ -194,6 +194,7 @@ const Budgets = () => {
         if (!validateCategory()) return;
         
         setIsSubmitting(true);
+        const startTime = Date.now();
         try {
             const data = {
                 category: formData.category === 'Other' && formData.customCategory?.trim()
@@ -209,15 +210,21 @@ const Budgets = () => {
                 const result = await addBudget(data, { plan: isBusiness ? 'business' : isPro ? 'pro' : 'free', existingCount: viewBudgets.length });
                 if (result === null || result === undefined) {
                     console.log('❌ Budget API returned error - keeping modal open for retry');
+                    const elapsedTime = Date.now() - startTime;
+                    if (elapsedTime < 800) await new Promise(r => setTimeout(r, 800 - elapsedTime));
                     setIsSubmitting(false);
                     return;
                 }
                 console.log('✅ Budget added successfully');
             }
+            const elapsedTime = Date.now() - startTime;
+            if (elapsedTime < 500) await new Promise(r => setTimeout(r, 500 - elapsedTime));
             setIsSubmitting(false);
             closeModal();
         } catch (err) {
             console.error('❌ Budget submission error:', err);
+            const elapsedTime = Date.now() - startTime;
+            if (elapsedTime < 800) await new Promise(r => setTimeout(r, 800 - elapsedTime));
             setIsSubmitting(false);
         }
     };
